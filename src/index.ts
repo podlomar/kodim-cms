@@ -1,7 +1,10 @@
-export interface Resource {
-  title: string;
-}
+import { ResourceRef } from './resource';
 
-export const sampleResource = (title: string): Resource => ({
-  title: title,
+export const sampleResourceRef = (
+  targetUrl: string,
+  title: string,
+): ResourceRef => ({
+  targetUrl,
+  title,
+  path: '/',
 });

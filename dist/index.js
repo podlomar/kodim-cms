@@ -1,3 +1,5 @@
-export const sampleResource = (title) => ({
-    title: title,
+export const sampleResourceRef = (targetUrl, title) => ({
+    targetUrl,
+    title,
+    path: '/',
 });
