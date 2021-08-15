@@ -8,7 +8,7 @@
     "dist",
     "types.d.ts"
   ],
-  "typings": "./src/types.d.ts",
+  "typings": "./types.d.ts",
   "dependencies": {},
   "devDependencies": {
     "@types/node": "^16.3.2",
