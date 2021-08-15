@@ -1,5 +1,5 @@
-import { IndexNode } from './tree-index';
 import { Resource } from './resource';
+import { RootNode, loadRootNode } from './loaders/root-loader.js';
 
 export interface DataPayload {
   resource: Resource;
@@ -13,11 +13,19 @@ export type Payload = DataPayload | ErrorPayload;
 
 export class ContentIndex {
   private readonly baseUrl;
-  private readonly rootNode;
+  private readonly rootNode: RootNode;
 
-  constructor(rootNode: IndexNode, baseUrl: string) {
-    this.rootNode = rootNode;
+  private constructor(baseUrl: string, rootNode: RootNode) {
     this.baseUrl = baseUrl;
+    this.rootNode = rootNode;
+  }
+
+  public static async load(
+    rootFolder: string,
+    baseUrl: string,
+  ): Promise<ContentIndex> {
+    const rootNode = await loadRootNode(rootFolder);
+    return new ContentIndex(baseUrl, rootNode);
   }
 
   public async query(path: string): Promise<Payload> {

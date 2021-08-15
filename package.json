@@ -10,10 +10,20 @@
   ],
   "dependencies": {
     "collect.js": "^4.28.6",
+    "line-reader": "^0.4.0",
+    "mdast": "^3.0.0",
+    "mdast-builder": "^1.1.1",
+    "rehype-stringify": "^9.0.1",
+    "remark-directive": "^2.0.0",
+    "remark-frontmatter": "^4.0.0",
+    "remark-parse": "^10.0.0",
+    "remark-rehype": "^9.0.0",
+    "unified": "^10.1.0",
     "yaml": "^1.10.2"
   },
   "devDependencies": {
     "@types/node": "^16.3.2",
+    "@types/line-reader": "0.0.34",
     "@typescript-eslint/eslint-plugin": "^4.29.1",
     "@typescript-eslint/parser": "^4.29.1",
     "eslint": "^7.32.0",
