@@ -6,7 +6,7 @@ export class RootNode extends ContainerIndex {
         super(location, index, sections);
     }
     async loadResource(baseUrl) {
-        const base = this.getResourceBase(baseUrl, 'chapter');
+        const base = this.getResourceBase(baseUrl, 'root');
         return Object.assign(Object.assign({}, base), { sections: this.getChildrenRefs(baseUrl) });
     }
 }
