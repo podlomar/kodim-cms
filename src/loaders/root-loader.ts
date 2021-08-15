@@ -26,7 +26,7 @@ export class RootNode extends ContainerIndex<SectionNode> {
   }
 
   async loadResource(baseUrl: string): Promise<RootResource> {
-    const base = this.getResourceBase(baseUrl, 'chapter');
+    const base = this.getResourceBase(baseUrl, 'root');
 
     return {
       ...base,
