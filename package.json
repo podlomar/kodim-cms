@@ -6,8 +6,8 @@
   "module": "es/index.js",
   "type": "module",
   "files": [
-    "dist",
-    "types.d.ts"
+    "es",
+    "lib"
   ],
   "dependencies": {
     "collect.js": "^4.28.6",
