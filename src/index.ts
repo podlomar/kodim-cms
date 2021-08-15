@@ -1,4 +1,4 @@
-import { Resource } from './resource';
+import { Resource } from './resource.js';
 import { RootNode, loadRootNode } from './loaders/root-loader.js';
 
 export interface DataPayload {

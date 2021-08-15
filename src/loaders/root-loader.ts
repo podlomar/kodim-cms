@@ -5,7 +5,7 @@ import {
   loadYamlFile,
   ResourceIndex,
 } from '../tree-index.js';
-import { Resource, ResourceRef } from '../resource';
+import { Resource, ResourceRef } from '../resource.js';
 import { SectionNode, loadSectionNode } from './section-loader.js';
 
 interface RootIndex extends ResourceIndex {

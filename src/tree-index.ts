@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import yaml, { stringify } from 'yaml';
 import collect from 'collect.js';
-import { ResourceRef, Resource, Crumb } from './resource';
+import { ResourceRef, Resource, Crumb } from './resource.js';
 
 export class NodeLocation {
   public readonly fsPath: string;

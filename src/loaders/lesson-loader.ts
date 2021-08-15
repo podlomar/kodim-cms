@@ -11,7 +11,7 @@ import lineReader from 'line-reader';
 import path from 'path';
 import yaml from 'yaml';
 import { IndexNode, NodeLocation, ResourceIndex } from '../tree-index.js';
-import { Resource, ResourceRef } from '../resource';
+import { Resource, ResourceRef } from '../resource.js';
 
 interface ArticleSection {
   title: string | null;
