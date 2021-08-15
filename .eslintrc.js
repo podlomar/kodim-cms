@@ -9,6 +9,17 @@ module.exports = {
     ecmaVersion: 12,
     sourceType: 'module',
   },
-  plugins: ['@typescript-eslint', 'prettier'],
-  rules: {},
+  plugins: ['import', '@typescript-eslint', 'prettier'],
+  rules: {
+    'import/prefer-default-export': 'off',
+  },
+  settings: {
+    'import/parsers': {
+      '@typescript-eslint/parser': ['.ts', '.d.ts'],
+    },
+    'typescript': {
+      'directory': '.',
+    },
+  }
 };
+ 

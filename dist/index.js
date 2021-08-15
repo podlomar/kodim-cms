@@ -1,2 +1,3 @@
-"use strict";
-console.log('it works');
+export const sampleResource = () => ({
+    title: 'hello',
+});
