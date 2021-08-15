@@ -1,5 +1,5 @@
 import { ContainerIndex, NodeLocation, ResourceIndex } from '../tree-index.js';
-import { Resource, ResourceRef } from '../resource';
+import { Resource, ResourceRef } from '../resource.js';
 import { ChapterNode } from './chapter-loader.js';
 interface CourseIndex extends ResourceIndex {
     title: string;

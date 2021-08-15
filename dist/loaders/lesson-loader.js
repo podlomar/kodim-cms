@@ -1,12 +1,3 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 import { promises as fs } from 'fs';
 import { unified } from 'unified';
 import markdown from 'remark-parse';
@@ -19,14 +10,14 @@ import lineReader from 'line-reader';
 import path from 'path';
 import yaml from 'yaml';
 import { IndexNode } from '../tree-index.js';
-const loadLesson = (lessonPath) => __awaiter(void 0, void 0, void 0, function* () {
+const loadLesson = async (lessonPath) => {
     const processor = unified()
         .use(markdown)
         .use(frontmatter)
         .use(directive)
         .use(rehype)
         .use(stringify);
-    const text = yield fs.readFile(lessonPath, 'utf-8');
+    const text = await fs.readFile(lessonPath, 'utf-8');
     const tree = processor.parse(text);
     const sections = [];
     let currentTitle = '';
@@ -56,7 +47,7 @@ const loadLesson = (lessonPath) => __awaiter(void 0, void 0, void 0, function* (
     }
     console.log('result', sections);
     return Promise.resolve(sections);
-});
+};
 export class LessonNode extends IndexNode {
     constructor(location, frontMatter, num) {
         super(location, frontMatter);
@@ -67,37 +58,33 @@ export class LessonNode extends IndexNode {
         const frontMatter = this.index;
         return Object.assign(Object.assign({}, baseRef), { lead: frontMatter.lead, num: this.num });
     }
-    loadResource(baseUrl) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const sections = yield loadLesson(path.join(this.location.fsPath, 'lesson.md'));
-            const base = this.getResourceBase(baseUrl, 'lesson');
-            const frontMatter = this.index;
-            return Object.assign(Object.assign({}, base), { lead: frontMatter.lead, num: this.num, sections });
-        });
+    async loadResource(baseUrl) {
+        const sections = await loadLesson(path.join(this.location.fsPath, 'lesson.md'));
+        const base = this.getResourceBase(baseUrl, 'lesson');
+        const frontMatter = this.index;
+        return Object.assign(Object.assign({}, base), { lead: frontMatter.lead, num: this.num, sections });
     }
 }
-const loadFrontMatter = (filePath) => __awaiter(void 0, void 0, void 0, function* () {
-    return new Promise((resolve) => {
-        let inside = false;
-        let lines = '';
-        lineReader.eachLine(filePath, (line) => {
-            if (inside) {
-                if (line.startsWith('---')) {
-                    resolve(yaml.parse(lines));
-                    return false;
-                }
-                lines += `${line}\n`;
-                return true;
-            }
+const loadFrontMatter = async (filePath) => new Promise((resolve) => {
+    let inside = false;
+    let lines = '';
+    lineReader.eachLine(filePath, (line) => {
+        if (inside) {
             if (line.startsWith('---')) {
-                inside = true;
+                resolve(yaml.parse(lines));
+                return false;
             }
+            lines += `${line}\n`;
             return true;
-        });
+        }
+        if (line.startsWith('---')) {
+            inside = true;
+        }
+        return true;
     });
 });
-export const loadLessonNode = (parentLocation, fileName, num) => __awaiter(void 0, void 0, void 0, function* () {
-    const frontMatter = yield loadFrontMatter(path.join(parentLocation.fsPath, fileName, 'lesson.md'));
+export const loadLessonNode = async (parentLocation, fileName, num) => {
+    const frontMatter = await loadFrontMatter(path.join(parentLocation.fsPath, fileName, 'lesson.md'));
     const location = parentLocation.createChildLocation(fileName, frontMatter);
     return new LessonNode(location, frontMatter, num);
-});
+};

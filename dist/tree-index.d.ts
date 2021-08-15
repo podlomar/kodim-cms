@@ -1,4 +1,4 @@
-import { ResourceRef, Resource, Crumb } from './resource';
+import { ResourceRef, Resource, Crumb } from './resource.js';
 export declare class NodeLocation {
     readonly fsPath: string;
     readonly link: string;
