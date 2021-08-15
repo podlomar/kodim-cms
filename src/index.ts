@@ -1,5 +1,7 @@
-import { Resource } from '../types';
+export interface Resource {
+  title: string;
+}
 
-export const sampleResource = (): Resource => ({
-  title: 'hello',
+export const sampleResource = (title: string): Resource => ({
+  title: title,
 });

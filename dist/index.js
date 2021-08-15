@@ -1,3 +1,3 @@
-export const sampleResource = () => ({
-    title: 'hello',
+export const sampleResource = (title) => ({
+    title: title,
 });
