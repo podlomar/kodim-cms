@@ -4,7 +4,6 @@
   "description": "Content management system for kodim.cz",
   "main": "lib/index.js",
   "module": "es/index.js",
-  "type": "module",
   "files": [
     "es",
     "lib"
