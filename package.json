@@ -37,8 +37,8 @@
     "typescript": "^4.3.5"
   },
   "scripts": {
-    "build": "tsc --target es5 --outDir lib && tsc --target es2017 --outDir es",
-    "watch": "tsc -w --target es2017 --outDir es"
+    "build": "tsc && tsc --module commonjs --outDir lib",
+    "watch": "tsc -w"
   },
   "repository": {
     "type": "git",

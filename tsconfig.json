@@ -1,8 +1,10 @@
 {
   "compilerOptions": {
+    "outDir": "es",
+    "module": "es6",
+    "target": "es2017",
     "strict": true,
     "noImplicitAny": true,
-    "module": "es6",
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "declaration": true,
