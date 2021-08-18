@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "outDir": "es",
+    "outDir": "esm",
     "module": "es6",
     "target": "es2017",
     "strict": true,
