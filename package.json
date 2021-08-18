@@ -3,7 +3,7 @@
   "version": "0.1.7",
   "description": "Content management system for kodim.cz",
   "main": "esm/index.js",
-  "module": "esm/index.js",
+  "type": "module",
   "files": [
     "esm"
   ],
