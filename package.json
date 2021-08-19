@@ -49,5 +49,9 @@
   "bugs": {
     "url": "https://github.com/podlomar/kodim-cms/issues"
   },
-  "homepage": "https://github.com/podlomar/kodim-cms#readme"
+  "homepage": "https://github.com/podlomar/kodim-cms#readme",
+  "exports": {
+    ".": "./esm/index.js",
+    "./api-router": "./esm/api-router.js"
+  }
 }
