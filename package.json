@@ -1,6 +1,6 @@
 {
   "name": "kodim-cms",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Content management system for kodim.cz",
   "main": "esm/index.js",
   "type": "module",
