@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import yaml, { stringify } from 'yaml';
+import yaml from 'yaml';
 import collect from 'collect.js';
 import { ResourceRef, Resource, Crumb } from './resource.js';
 
