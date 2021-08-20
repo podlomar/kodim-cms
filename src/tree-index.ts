@@ -52,8 +52,9 @@ export abstract class IndexNode {
   public getResourceRef(baseUrl: string): ResourceRef {
     return {
       targetUrl: `${baseUrl}${this.location.path}`,
-      path: this.location.path,
       title: this.index.title,
+      link: this.location.link,
+      path: this.location.path,
     };
   }
 

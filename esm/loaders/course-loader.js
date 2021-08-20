@@ -5,6 +5,10 @@ export class CourseNode extends ContainerIndex {
     constructor(location, index, chapters) {
         super(location, index, chapters);
     }
+    getResourceRef(baseUrl) {
+        const baseRef = super.getResourceRef(baseUrl);
+        return Object.assign(Object.assign({}, baseRef), { lead: this.index.lead });
+    }
     async loadResource(baseUrl) {
         const base = this.getResourceBase(baseUrl, 'course');
         const index = this.index;

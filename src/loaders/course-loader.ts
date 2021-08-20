@@ -14,7 +14,11 @@ interface CourseIndex extends ResourceIndex {
   chapters?: string[];
 }
 
-interface CourseResource extends Resource {
+export interface CourseResourceRef extends ResourceRef {
+  lead: string;
+}
+
+export interface CourseResource extends Resource {
   title: string;
   lead: string;
   chapters?: ResourceRef[];
@@ -27,6 +31,14 @@ export class CourseNode extends ContainerIndex<ChapterNode> {
     chapters: ChapterNode[],
   ) {
     super(location, index, chapters);
+  }
+
+  public getResourceRef(baseUrl: string): CourseResourceRef {
+    const baseRef = super.getResourceRef(baseUrl);
+    return {
+      ...baseRef,
+      lead: (this.index as CourseIndex).lead,
+    }
   }
 
   async loadResource(baseUrl: string): Promise<CourseResource> {

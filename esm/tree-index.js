@@ -32,8 +32,9 @@ export class IndexNode {
     getResourceRef(baseUrl) {
         return {
             targetUrl: `${baseUrl}${this.location.path}`,
-            path: this.location.path,
             title: this.index.title,
+            link: this.location.link,
+            path: this.location.path,
         };
     }
     getResourceBase(baseUrl, type) {

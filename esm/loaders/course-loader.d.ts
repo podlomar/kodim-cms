@@ -6,13 +6,17 @@ interface CourseIndex extends ResourceIndex {
     lead: string;
     chapters?: string[];
 }
-interface CourseResource extends Resource {
+export interface CourseResourceRef extends ResourceRef {
+    lead: string;
+}
+export interface CourseResource extends Resource {
     title: string;
     lead: string;
     chapters?: ResourceRef[];
 }
 export declare class CourseNode extends ContainerIndex<ChapterNode> {
     constructor(location: NodeLocation, index: CourseIndex, chapters: ChapterNode[]);
+    getResourceRef(baseUrl: string): CourseResourceRef;
     loadResource(baseUrl: string): Promise<CourseResource>;
 }
 export declare const loadCourseNode: (parentLocation: NodeLocation, fileName: string) => Promise<CourseNode>;

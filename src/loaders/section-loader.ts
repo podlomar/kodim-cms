@@ -6,7 +6,7 @@ import {
   ResourceIndex,
 } from '../tree-index.js';
 import { Resource, ResourceRef } from '../resource.js';
-import { CourseNode, loadCourseNode } from './course-loader.js';
+import { CourseNode, CourseResourceRef, loadCourseNode } from './course-loader.js';
 
 interface SectionIndex extends ResourceIndex {
   title: string;
@@ -17,7 +17,7 @@ interface SectionIndex extends ResourceIndex {
 export interface SectionResource extends Resource {
   title: string;
   lead: string;
-  courses?: ResourceRef[];
+  courses?: CourseResourceRef[];
 }
 
 export class SectionNode extends ContainerIndex<CourseNode> {
@@ -36,7 +36,7 @@ export class SectionNode extends ContainerIndex<CourseNode> {
     return {
       ...base,
       lead: index.lead,
-      courses: this.getChildrenRefs(baseUrl),
+      courses: this.getChildrenRefs(baseUrl) as CourseResourceRef[],
     };
   }
 }

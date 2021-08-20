@@ -1,6 +1,7 @@
 export interface ResourceRef {
     readonly targetUrl: string;
     readonly title: string;
+    readonly link: string;
     readonly path: string;
 }
 export interface Crumb {
