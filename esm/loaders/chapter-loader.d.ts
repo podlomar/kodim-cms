@@ -1,5 +1,5 @@
-import { ContainerIndex, NodeLocation, ResourceIndex } from '../tree-index.js';
-import { Resource, ResourceRef } from '../resource.js';
+import { IndexNode, NodeLocation, ResourceIndex } from '../tree-index.js';
+import { Resource, ResourceList } from '../resource.js';
 import { LessonNode } from './lesson-loader.js';
 interface ChapterIndex extends ResourceIndex {
     title: string;
@@ -9,11 +9,14 @@ interface ChapterIndex extends ResourceIndex {
 interface ChapterResource extends Resource {
     title: string;
     lead: string;
-    lessons?: ResourceRef[];
+    lessons: ResourceList;
 }
-export declare class ChapterNode extends ContainerIndex<LessonNode> {
+export declare class ChapterNode extends IndexNode {
+    static LESSONS_LIST: string;
+    private lessons;
     constructor(location: NodeLocation, index: ChapterIndex, lessons: LessonNode[]);
-    loadResource(baseUrl: string): Promise<ChapterResource>;
+    getList(name: string): IndexNode[] | null;
+    static load: (parentLocation: NodeLocation, fileName: string) => Promise<ChapterNode>;
+    fetchResource(expand: string[]): Promise<ChapterResource>;
 }
-export declare const loadChapterNode: (parentLocation: NodeLocation, fileName: string) => Promise<ChapterNode>;
 export {};

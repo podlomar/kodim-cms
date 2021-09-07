@@ -1,3 +1,4 @@
+import { Router } from 'express';
 import { ContentIndex } from './index.js';
-declare const createApiRouter: (contentIndex: ContentIndex) => import("express-serve-static-core").Router;
+declare const createApiRouter: (contentIndex: ContentIndex) => Router;
 export default createApiRouter;

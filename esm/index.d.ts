@@ -1,15 +1,15 @@
-import { Resource } from './resource.js';
+import { Data } from './resource.js';
+import { Query } from './tree-index.js';
 export interface DataPayload {
-    resource: Resource;
+    data: Data;
 }
 export interface ErrorPayload {
     errors: string[];
 }
 export declare type Payload = DataPayload | ErrorPayload;
 export declare class ContentIndex {
-    private readonly baseUrl;
     private readonly rootNode;
     private constructor();
     static load(rootFolder: string, baseUrl: string): Promise<ContentIndex>;
-    query(path: string): Promise<Payload>;
+    fetch(query: Query): Promise<Payload>;
 }

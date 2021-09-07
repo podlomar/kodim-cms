@@ -1,90 +1,88 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import yaml from 'yaml';
-import collect from 'collect.js';
 export class NodeLocation {
-    constructor(fsPath, link, crumbs) {
+    constructor(fsPath, parentUrl, listName, link, title, crumbs) {
         this.link = link;
+        this.parentUrl = parentUrl;
+        this.listName = listName;
         this.fsPath = fsPath;
+        this.title = title;
         this.crumbs = crumbs;
     }
-    get path() {
-        return collect(this.crumbs).last().path;
+    static createRootLocation(fsPath, baseUrl) {
+        return new NodeLocation(fsPath, baseUrl, '', '', '', []);
     }
-    createChildLocation(fileName, index) {
+    get url() {
+        if (this.listName === '') {
+            return this.parentUrl;
+        }
+        return `${this.parentUrl}/${this.listName}/${this.link}`;
+    }
+    createChildLocation(fileName, index, listName) {
         var _a;
         const link = (_a = index.link) !== null && _a !== void 0 ? _a : fileName;
         const crumbs = [
             ...this.crumbs,
             {
-                path: `${this.path === '/' ? '' : this.path}/${link}`,
-                title: index.title,
+                link: this.link,
+                title: this.title,
+                url: this.url,
             },
         ];
-        return new NodeLocation(path.join(this.fsPath, fileName), link, crumbs);
+        return new NodeLocation(path.join(this.fsPath, fileName), this.url, listName, link, index.title, crumbs);
     }
 }
+;
+;
 export class IndexNode {
     constructor(location, index) {
         this.location = location;
         this.index = index;
     }
-    getResourceRef(baseUrl) {
-        return {
-            targetUrl: `${baseUrl}${this.location.path}`,
-            title: this.index.title,
-            link: this.location.link,
-            path: this.location.path,
-        };
+    async fetchList(name, expand) {
+        const nodes = this.getList(name);
+        if (nodes === null) {
+            return null;
+        }
+        if (expand.includes(name)) {
+            return Promise.all(nodes.map((node) => node.fetchResource(expand)));
+        }
+        return nodes.map((node) => node.location.url);
     }
-    getResourceBase(baseUrl, type) {
-        const ref = this.getResourceRef(baseUrl);
+    getResourceBase(type) {
         return {
             type,
+            url: this.location.url,
+            title: this.index.title,
             link: this.location.link,
-            path: ref.path,
-            url: ref.targetUrl,
-            title: ref.title,
             crumbs: this.location.crumbs,
         };
     }
-    findNode(links) {
-        if (links[0] === this.location.link) {
-            return this;
+    async fetch(query) {
+        if (query.steps.length === 0) {
+            const resource = await this.fetchResource(query.expand);
+            return resource;
         }
-        return null;
-    }
-}
-export class ContainerIndex extends IndexNode {
-    constructor(location, index, children = []) {
-        super(location, index);
-        this.children = children;
-    }
-    getChildrenRefs(baseUrl) {
-        return this.children.map((node) => node.getResourceRef(baseUrl));
-    }
-    findNode(links) {
-        const thisNode = super.findNode(links);
-        if (links.length === 1) {
-            return thisNode;
-        }
-        if (thisNode === null) {
+        const step = query.steps[0];
+        const list = this.getList(step.list);
+        if (list === null) {
             return null;
         }
-        const subLinks = links.slice(1);
-        if (subLinks[0] === '') {
-            return thisNode;
+        if (step.link === null) {
+            return this.fetchList(step.list, query.expand);
         }
-        if (this.children.length === 0) {
+        if (list === null) {
             return null;
         }
-        for (const child of this.children) {
-            const node = child.findNode(subLinks);
-            if (node !== null) {
-                return node;
-            }
+        const node = list.find((n) => n.location.link === step.link);
+        if (node === undefined) {
+            return null;
         }
-        return null;
+        return node.fetch({
+            steps: query.steps.slice(1),
+            expand: query.expand,
+        });
     }
 }
 export const loadYamlFile = async (filePath) => {

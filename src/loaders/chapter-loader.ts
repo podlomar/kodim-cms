@@ -1,12 +1,13 @@
 import path from 'path';
 import {
-  ContainerIndex,
+  IndexNode,
   loadYamlFile,
   NodeLocation,
   ResourceIndex,
 } from '../tree-index.js';
-import { Resource, ResourceRef } from '../resource.js';
-import { LessonNode, loadLessonNode } from './lesson-loader.js';
+import { Resource, ResourceList } from '../resource.js';
+import { CourseNode } from './course-loader.js';
+import { LessonNode } from './lesson-loader.js';
 
 interface ChapterIndex extends ResourceIndex {
   title: string;
@@ -17,48 +18,62 @@ interface ChapterIndex extends ResourceIndex {
 interface ChapterResource extends Resource {
   title: string;
   lead: string;
-  lessons?: ResourceRef[];
+  lessons: ResourceList;
 }
 
-export class ChapterNode extends ContainerIndex<LessonNode> {
+export class ChapterNode extends IndexNode {
+  public static LESSONS_LIST = 'lessons';
+
+  private lessons: LessonNode[];
+
   public constructor(
     location: NodeLocation,
     index: ChapterIndex,
     lessons: LessonNode[],
   ) {
-    super(location, index, lessons);
-  }
+    super(location, index);
 
-  async loadResource(baseUrl: string): Promise<ChapterResource> {
-    const base = this.getResourceBase(baseUrl, 'chapter');
+    this.lessons = lessons;
+  }
+  
+  public getList(name: string): IndexNode[] | null {
+    if (name === ChapterNode.LESSONS_LIST) {
+      return this.lessons;
+    }
+
+    return null;
+  }
+  
+  public static load = async (
+    parentLocation: NodeLocation,
+    fileName: string,
+  ): Promise<ChapterNode> => {
+    const index = (await loadYamlFile(
+      path.join(parentLocation.fsPath, fileName, 'index.yml'),
+    )) as ChapterIndex;
+  
+    const location = parentLocation.createChildLocation(
+      fileName, index, CourseNode.CHAPTERS_LIST
+    );
+  
+    const lessons = index.lessons === undefined
+      ? []
+      : await Promise.all(
+        index.lessons.map((name, idx) => LessonNode.load(location, name, idx + 1)),
+      );
+
+    return new ChapterNode(location, index, lessons);
+  };
+
+  public async fetchResource(expand: string[]): Promise<ChapterResource> {
+    const base = this.getResourceBase('chapter');
     const index = this.index as ChapterIndex;
+    const lessons = await this.fetchList(ChapterNode.LESSONS_LIST, expand) as ResourceList;
 
     return {
       ...base,
       lead: index.lead,
-      lessons: this.getChildrenRefs(baseUrl),
+      lessons,
     };
   }
 }
-
-export const loadChapterNode = async (
-  parentLocation: NodeLocation,
-  fileName: string,
-): Promise<ChapterNode> => {
-  const index = (await loadYamlFile(
-    path.join(parentLocation.fsPath, fileName, 'index.yml'),
-  )) as ChapterIndex;
-
-  const location = parentLocation.createChildLocation(fileName, index);
-
-  const lessons =
-    index.lessons === undefined
-      ? []
-      : await Promise.all(
-          index.lessons.map((fileName, idx) =>
-            loadLessonNode(location, fileName, idx + 1),
-          ),
-        );
-
-  return new ChapterNode(location, index, lessons);
-};

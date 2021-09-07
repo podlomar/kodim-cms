@@ -1,8 +1,9 @@
-import { Resource } from './resource.js';
-import { RootNode, loadRootNode } from './loaders/root-loader.js';
+import { Data } from './resource.js';
+import { RootNode } from './loaders/root-loader.js';
+import { Query } from './tree-index.js';
 
 export interface DataPayload {
-  resource: Resource;
+  data: Data;
 }
 
 export interface ErrorPayload {
@@ -12,11 +13,9 @@ export interface ErrorPayload {
 export type Payload = DataPayload | ErrorPayload;
 
 export class ContentIndex {
-  private readonly baseUrl;
   private readonly rootNode: RootNode;
 
-  private constructor(baseUrl: string, rootNode: RootNode) {
-    this.baseUrl = baseUrl;
+  private constructor(rootNode: RootNode) {
     this.rootNode = rootNode;
   }
 
@@ -24,22 +23,19 @@ export class ContentIndex {
     rootFolder: string,
     baseUrl: string,
   ): Promise<ContentIndex> {
-    const rootNode = await loadRootNode(rootFolder);
-    return new ContentIndex(baseUrl, rootNode);
+    const rootNode = await RootNode.load(rootFolder, baseUrl);
+    return new ContentIndex(rootNode);
   }
 
-  public async query(path: string): Promise<Payload> {
-    const links = path.split('/');
-    const node = this.rootNode.findNode(links);
+  public async fetch(query: Query): Promise<Payload> {
+    const data = await this.rootNode.fetch(query);
 
-    if (node === null) {
+    if (data === null) {
       return {
         errors: ['not-found'],
       } as ErrorPayload;
     }
 
-    const resource = await node.loadResource(this.baseUrl);
-
-    return { resource } as DataPayload;
+    return { data } as DataPayload;
   }
 }

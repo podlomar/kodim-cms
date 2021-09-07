@@ -11,7 +11,8 @@ import lineReader from 'line-reader';
 import path from 'path';
 import yaml from 'yaml';
 import { IndexNode, NodeLocation, ResourceIndex } from '../tree-index.js';
-import { Resource, ResourceRef } from '../resource.js';
+import { Resource } from '../resource.js';
+import { ChapterNode } from './chapter-loader.js';
 
 interface ArticleSection {
   title: string | null;
@@ -23,16 +24,11 @@ interface FrontMatter extends ResourceIndex {
   lead: string;
 }
 
-interface LessonResourceRef extends ResourceRef {
-  lead: string;
-  num: number;
-}
-
 interface LessonResource extends Resource {
   title: string;
   lead: string;
   num: number;
-  sections?: ArticleSection[];
+  sections: ArticleSection[];
 }
 
 const loadLesson = async (lessonPath: string): Promise<ArticleSection[]> => {
@@ -51,7 +47,7 @@ const loadLesson = async (lessonPath: string): Promise<ArticleSection[]> => {
   let currentTitle = '';
   let currentRoot = mdast.root() as Root;
 
-  for (const child of tree.children) {
+  tree.children.forEach((child) => {
     if (child.type === 'heading') {
       const hastRoot = processor.runSync(currentRoot);
       const html = processor.stringify(hastRoot);
@@ -66,7 +62,7 @@ const loadLesson = async (lessonPath: string): Promise<ArticleSection[]> => {
     } else {
       currentRoot.children.push(child);
     }
-  }
+  });
 
   if (currentRoot.children.length > 0) {
     const hastRoot = processor.runSync(currentRoot);
@@ -78,49 +74,8 @@ const loadLesson = async (lessonPath: string): Promise<ArticleSection[]> => {
     });
   }
 
-  console.log('result', sections);
-
   return Promise.resolve(sections);
 };
-
-export class LessonNode extends IndexNode {
-  public num: number;
-
-  public constructor(
-    location: NodeLocation,
-    frontMatter: FrontMatter,
-    num: number,
-  ) {
-    super(location, frontMatter);
-    this.num = num;
-  }
-
-  public getResourceRef(baseUrl: string): LessonResourceRef {
-    const baseRef = super.getResourceRef(baseUrl);
-    const frontMatter = this.index as FrontMatter;
-
-    return {
-      ...baseRef,
-      lead: frontMatter.lead,
-      num: this.num,
-    };
-  }
-
-  async loadResource(baseUrl: string): Promise<LessonResource> {
-    const sections = await loadLesson(
-      path.join(this.location.fsPath, 'lesson.md'),
-    );
-    const base = this.getResourceBase(baseUrl, 'lesson');
-    const frontMatter = this.index as FrontMatter;
-
-    return {
-      ...base,
-      lead: frontMatter.lead,
-      num: this.num,
-      sections,
-    };
-  }
-}
 
 const loadFrontMatter = async (filePath: string): Promise<FrontMatter> =>
   new Promise((resolve) => {
@@ -146,15 +101,51 @@ const loadFrontMatter = async (filePath: string): Promise<FrontMatter> =>
     });
   });
 
-export const loadLessonNode = async (
-  parentLocation: NodeLocation,
-  fileName: string,
-  num: number,
-): Promise<LessonNode> => {
-  const frontMatter = await loadFrontMatter(
-    path.join(parentLocation.fsPath, fileName, 'lesson.md'),
-  );
 
-  const location = parentLocation.createChildLocation(fileName, frontMatter);
-  return new LessonNode(location, frontMatter, num);
-};
+export class LessonNode extends IndexNode {
+  public num: number;
+
+  public constructor(
+    location: NodeLocation,
+    frontMatter: FrontMatter,
+    num: number,
+  ) {
+    super(location, frontMatter);
+    this.num = num;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public getList(): IndexNode[] | null {
+    return null;
+  }
+
+  public static async load(
+    parentLocation: NodeLocation,
+    fileName: string,
+    num: number,
+  ): Promise<LessonNode> {
+    const frontMatter = await loadFrontMatter(
+      path.join(parentLocation.fsPath, fileName, 'lesson.md'),
+    );
+  
+    const location = parentLocation.createChildLocation(
+      fileName, frontMatter, ChapterNode.LESSONS_LIST,
+    );
+    return new LessonNode(location, frontMatter, num);
+  };
+
+  public async fetchResource(): Promise<LessonResource> {
+    const base = this.getResourceBase('lesson');
+    const index = this.index as FrontMatter;
+    const sections = await loadLesson(
+      path.join(this.location.fsPath, 'lesson.md'),
+    );
+
+    return {
+      ...base,
+      lead: index.lead,
+      num: this.num,
+      sections,
+    };
+  }
+}

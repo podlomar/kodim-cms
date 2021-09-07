@@ -1,35 +1,67 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import yaml from 'yaml';
-import collect from 'collect.js';
-import { ResourceRef, Resource, Crumb } from './resource.js';
+import { Resource, Crumb, Data, ResourceList } from './resource.js';
 
 export class NodeLocation {
   public readonly fsPath: string;
+  public readonly listName: string;
   public readonly link: string;
+  public readonly title: string;
+  public readonly parentUrl: string;
   public readonly crumbs: readonly Crumb[];
 
-  public constructor(fsPath: string, link: string, crumbs: readonly Crumb[]) {
+  private constructor(
+    fsPath: string,
+    parentUrl: string,
+    listName: string,
+    link: string,
+    title: string,
+    crumbs: readonly Crumb[]
+  ) {
     this.link = link;
+    this.parentUrl = parentUrl;
+    this.listName = listName;
     this.fsPath = fsPath;
+    this.title = title;
     this.crumbs = crumbs;
   }
 
-  get path() {
-    return collect(this.crumbs).last().path;
+  public static createRootLocation(fsPath: string, baseUrl: string): NodeLocation {
+    return new NodeLocation(fsPath, baseUrl, '', '', '', []);
   }
 
-  public createChildLocation(fileName: string, index: ResourceIndex) {
+  public get url(): string {
+    if (this.listName === '') {
+      return this.parentUrl;
+    }
+
+    return `${this.parentUrl}/${this.listName}/${this.link}`
+  }
+
+  public createChildLocation(
+    fileName: string, 
+    index: ResourceIndex, 
+    listName: string,
+  ): NodeLocation {
     const link = index.link ?? fileName;
     const crumbs = [
       ...this.crumbs,
       {
-        path: `${this.path === '/' ? '' : this.path}/${link}`,
-        title: index.title,
+        link: this.link,
+        title: this.title,
+        url: this.url,
       },
     ];
 
-    return new NodeLocation(path.join(this.fsPath, fileName), link, crumbs);
+    return new NodeLocation(
+      path.join(this.fsPath, fileName),
+      this.url,
+      listName,
+      link, 
+      index.title,
+      crumbs
+    );
   }
 }
 
@@ -38,99 +70,89 @@ export interface ResourceIndex {
   link?: string;
 }
 
-export abstract class IndexNode {
-  protected readonly location: NodeLocation;
-  protected readonly index: ResourceIndex;
+export interface QueryStep {
+  list: string,
+  link: string | null,
+};
 
-  protected constructor(location: NodeLocation, index: ResourceIndex) {
+export interface Query {
+  steps: QueryStep[],
+  expand: string[],
+};
+
+export abstract class IndexNode {
+  public readonly location: NodeLocation;
+  protected readonly index: ResourceIndex;
+  
+  protected constructor(
+    location: NodeLocation, 
+    index: ResourceIndex,
+  ) {
     this.location = location;
     this.index = index;
   }
 
-  abstract loadResource(baseUrl: string): Promise<Resource>;
+  public abstract getList(name: string): IndexNode[] | null;
+  public abstract fetchResource(expand: string[]): Promise<Resource>;
 
-  public getResourceRef(baseUrl: string): ResourceRef {
-    return {
-      targetUrl: `${baseUrl}${this.location.path}`,
-      title: this.index.title,
-      link: this.location.link,
-      path: this.location.path,
-    };
+  public async fetchList(name: string, expand: string[]): Promise<ResourceList | null> {
+    const nodes = this.getList(name);
+
+    if (nodes === null) {
+      return null;
+    }
+    
+    if (expand.includes(name)) {
+      return Promise.all(nodes.map((node) => node.fetchResource(expand)));
+    }
+    
+    return nodes.map((node) => node.location.url);
   }
 
-  protected getResourceBase(baseUrl: string, type: string): Resource {
-    const ref = this.getResourceRef(baseUrl);
-
+  public getResourceBase(type: string): Resource {
     return {
       type,
+      url: this.location.url,
+      title: this.index.title,
       link: this.location.link,
-      path: ref.path,
-      url: ref.targetUrl,
-      title: ref.title,
       crumbs: this.location.crumbs,
     };
   }
 
-  public findNode(links: string[]): IndexNode | null {
-    if (links[0] === this.location.link) {
-      return this;
+  public async fetch(query: Query): Promise<Data | null> {
+    if (query.steps.length === 0) {
+      const resource = await this.fetchResource(query.expand);
+      return resource;
     }
 
-    return null;
-  }
-}
-
-export abstract class ContainerIndex<
-  ChildrenType extends IndexNode,
-> extends IndexNode {
-  protected children: readonly ChildrenType[];
-
-  protected constructor(
-    location: NodeLocation,
-    index: ResourceIndex,
-    children: readonly ChildrenType[] = [],
-  ) {
-    super(location, index);
-    this.children = children;
-  }
-
-  protected getChildrenRefs(baseUrl: string): ResourceRef[] {
-    return this.children.map((node) => node.getResourceRef(baseUrl));
-  }
-
-  public findNode(links: string[]): IndexNode | null {
-    const thisNode = super.findNode(links);
-
-    if (links.length === 1) {
-      return thisNode;
-    }
-
-    if (thisNode === null) {
+    const step = query.steps[0];
+    const list = this.getList(step.list);
+    
+    if (list === null) {
       return null;
     }
 
-    const subLinks = links.slice(1);
-
-    if (subLinks[0] === '') {
-      return thisNode;
+    if (step.link === null) {
+      return this.fetchList(step.list, query.expand);
     }
 
-    if (this.children.length === 0) {
+    if (list === null) {
       return null;
     }
 
-    for (const child of this.children) {
-      const node = child.findNode(subLinks);
-      if (node !== null) {
-        return node;
-      }
+    const node = list.find((n) => n.location.link === step.link);
+    if (node === undefined) {
+      return null;
     }
 
-    return null;
+    return node.fetch({
+      steps: query.steps.slice(1),
+      expand: query.expand,
+    });
   }
 }
 
-export const loadYamlFile = async (filePath: string): Promise<any> => {
+export const loadYamlFile = async (filePath: string): Promise<unknown> => {
   const indexContent = await fs.readFile(filePath, 'utf-8');
   return yaml.parse(indexContent);
 };

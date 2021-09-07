@@ -1,15 +1,18 @@
-import { ContainerIndex, NodeLocation, ResourceIndex } from '../tree-index.js';
-import { Resource, ResourceRef } from '../resource.js';
+import { NodeLocation, IndexNode, ResourceIndex } from '../tree-index.js';
+import { Resource, ResourceList } from '../resource.js';
 import { SectionNode } from './section-loader.js';
 interface RootIndex extends ResourceIndex {
     sections: string[];
 }
 export interface RootResource extends Resource {
-    sections?: ResourceRef[];
+    sections: ResourceList;
 }
-export declare class RootNode extends ContainerIndex<SectionNode> {
-    constructor(location: NodeLocation, index: RootIndex, sections: readonly SectionNode[]);
-    loadResource(baseUrl: string): Promise<RootResource>;
+export declare class RootNode extends IndexNode {
+    static SECTIONS_LIST: string;
+    private sections;
+    constructor(location: NodeLocation, index: RootIndex, sections: SectionNode[]);
+    getList(name: string): IndexNode[] | null;
+    fetchResource(expand: string[]): Promise<RootResource>;
+    static load: (rootFolder: string, baseUrl: string) => Promise<RootNode>;
 }
-export declare const loadRootNode: (rootFolder: string) => Promise<RootNode>;
 export {};

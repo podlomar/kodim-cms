@@ -1,21 +1,31 @@
 import path from 'path';
-import { ContainerIndex, loadYamlFile, } from '../tree-index.js';
-import { loadCourseNode } from './course-loader.js';
-export class SectionNode extends ContainerIndex {
+import { IndexNode, loadYamlFile, } from '../tree-index.js';
+import { RootNode } from './root-loader.js';
+import { CourseNode } from './course-loader.js';
+export class SectionNode extends IndexNode {
     constructor(location, index, courses) {
-        super(location, index, courses);
+        super(location, index);
+        this.courses = courses;
     }
-    async loadResource(baseUrl) {
-        const base = this.getResourceBase(baseUrl, 'section');
+    getList(name) {
+        if (name === SectionNode.COURSES_LIST) {
+            return this.courses;
+        }
+        return null;
+    }
+    async fetchResource(expand) {
+        const base = this.getResourceBase('section');
         const index = this.index;
-        return Object.assign(Object.assign({}, base), { lead: index.lead, courses: this.getChildrenRefs(baseUrl) });
+        const courses = await this.fetchList(SectionNode.COURSES_LIST, expand);
+        return Object.assign(Object.assign({}, base), { lead: index.lead, courses });
     }
 }
-export const loadSectionNode = async (parentLocation, fileName) => {
+SectionNode.COURSES_LIST = 'courses';
+SectionNode.load = async (parentLocation, fileName) => {
     const index = (await loadYamlFile(path.join(parentLocation.fsPath, fileName, 'index.yml')));
-    const location = parentLocation.createChildLocation(fileName, index);
+    const location = parentLocation.createChildLocation(fileName, index, RootNode.SECTIONS_LIST);
     const courses = index.courses === undefined
         ? []
-        : await Promise.all(index.courses.map((fileName) => loadCourseNode(location, fileName)));
+        : await Promise.all(index.courses.map((name) => CourseNode.load(location, name)));
     return new SectionNode(location, index, courses);
 };

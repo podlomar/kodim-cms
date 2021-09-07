@@ -1,6 +1,6 @@
-import { ContainerIndex, NodeLocation, ResourceIndex } from '../tree-index.js';
-import { Resource } from '../resource.js';
-import { CourseNode, CourseResourceRef } from './course-loader.js';
+import { IndexNode, NodeLocation, ResourceIndex } from '../tree-index.js';
+import { Resource, ResourceList } from '../resource.js';
+import { CourseNode } from './course-loader.js';
 interface SectionIndex extends ResourceIndex {
     title: string;
     lead: string;
@@ -9,11 +9,14 @@ interface SectionIndex extends ResourceIndex {
 export interface SectionResource extends Resource {
     title: string;
     lead: string;
-    courses?: CourseResourceRef[];
+    courses: ResourceList;
 }
-export declare class SectionNode extends ContainerIndex<CourseNode> {
+export declare class SectionNode extends IndexNode {
+    static COURSES_LIST: string;
+    private courses;
     constructor(location: NodeLocation, index: SectionIndex, courses: CourseNode[]);
-    loadResource(baseUrl: string): Promise<SectionResource>;
+    getList(name: string): IndexNode[] | null;
+    static load: (parentLocation: NodeLocation, fileName: string) => Promise<SectionNode>;
+    fetchResource(expand: string[]): Promise<SectionResource>;
 }
-export declare const loadSectionNode: (parentLocation: NodeLocation, fileName: string) => Promise<SectionNode>;
 export {};

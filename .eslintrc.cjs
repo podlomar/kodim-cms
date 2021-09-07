@@ -3,7 +3,14 @@ module.exports = {
     browser: true,
     es2021: true,
   },
-  extends: ['airbnb-base', 'prettier'],
+  extends: [
+    'airbnb-base',
+    'plugin:@typescript-eslint/recommended',
+    'prettier',
+    'plugin:import/errors',
+    'plugin:import/warnings',
+    'plugin:import/typescript'
+  ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 12,
@@ -19,13 +26,17 @@ module.exports = {
     'import/extensions': ['error', {
       'js': 'always'
     }],
+    'no-use-before-define': 'off',
+    '@typescript-eslint/no-use-before-define': ['error'],
+    'no-unused-vars': "off",
+    '@typescript-eslint/no-unused-vars': ['error'],
   },
   settings: {
-    'import/resolver': {
-      'node': {
-        'extensions': [".js", ".jsx", ".ts", ".tsx"],
-      }
-    },
+    // 'import/resolver': {
+    //   'node': {
+    //     'extensions': [".js", ".jsx", ".ts", ".tsx"],
+    //   }
+    // },
     'import/parsers': {
       '@typescript-eslint/parser': ['.ts', '.d.ts'],
     },
