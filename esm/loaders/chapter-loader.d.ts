@@ -12,7 +12,7 @@ interface ChapterResource extends Resource {
     lessons: ResourceList;
 }
 export declare class ChapterNode extends IndexNode {
-    static LESSONS_LIST: string;
+    static LIST_NAME: string;
     private lessons;
     constructor(location: NodeLocation, index: ChapterIndex, lessons: LessonNode[]);
     getList(name: string): IndexNode[] | null;

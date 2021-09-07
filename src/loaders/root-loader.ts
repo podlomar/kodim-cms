@@ -17,8 +17,6 @@ export interface RootResource extends Resource {
 }
 
 export class RootNode extends IndexNode {
-  public static SECTIONS_LIST = 'sections';
-  
   private sections: SectionNode[];
   
   public constructor(
@@ -32,7 +30,7 @@ export class RootNode extends IndexNode {
   }
 
   public getList(name: string): IndexNode[] | null {
-    if (name === RootNode.SECTIONS_LIST) {
+    if (name === SectionNode.LIST_NAME) {
       return this.sections;
     }
 
@@ -41,7 +39,7 @@ export class RootNode extends IndexNode {
 
   public async fetchResource(expand: string[]): Promise<RootResource> {
     const base = this.getResourceBase('root');
-    const sections = await this.fetchList(RootNode.SECTIONS_LIST, expand) as ResourceList;
+    const sections = await this.fetchList(SectionNode.LIST_NAME, expand) as ResourceList;
 
     return {
       ...base,

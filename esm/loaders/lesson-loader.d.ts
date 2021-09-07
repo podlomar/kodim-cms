@@ -15,6 +15,7 @@ interface LessonResource extends Resource {
     sections: ArticleSection[];
 }
 export declare class LessonNode extends IndexNode {
+    static LIST_NAME: string;
     num: number;
     constructor(location: NodeLocation, frontMatter: FrontMatter, num: number);
     getList(): IndexNode[] | null;

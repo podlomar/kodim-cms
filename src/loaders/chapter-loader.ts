@@ -6,7 +6,6 @@ import {
   ResourceIndex,
 } from '../tree-index.js';
 import { Resource, ResourceList } from '../resource.js';
-import { CourseNode } from './course-loader.js';
 import { LessonNode } from './lesson-loader.js';
 
 interface ChapterIndex extends ResourceIndex {
@@ -22,7 +21,7 @@ interface ChapterResource extends Resource {
 }
 
 export class ChapterNode extends IndexNode {
-  public static LESSONS_LIST = 'lessons';
+  public static LIST_NAME = 'chapters';
 
   private lessons: LessonNode[];
 
@@ -37,7 +36,7 @@ export class ChapterNode extends IndexNode {
   }
   
   public getList(name: string): IndexNode[] | null {
-    if (name === ChapterNode.LESSONS_LIST) {
+    if (name === LessonNode.LIST_NAME) {
       return this.lessons;
     }
 
@@ -53,7 +52,7 @@ export class ChapterNode extends IndexNode {
     )) as ChapterIndex;
   
     const location = parentLocation.createChildLocation(
-      fileName, index, CourseNode.CHAPTERS_LIST
+      fileName, index, ChapterNode.LIST_NAME
     );
   
     const lessons = index.lessons === undefined
@@ -68,7 +67,7 @@ export class ChapterNode extends IndexNode {
   public async fetchResource(expand: string[]): Promise<ChapterResource> {
     const base = this.getResourceBase('chapter');
     const index = this.index as ChapterIndex;
-    const lessons = await this.fetchList(ChapterNode.LESSONS_LIST, expand) as ResourceList;
+    const lessons = await this.fetchList(ChapterNode.LIST_NAME, expand) as ResourceList;
 
     return {
       ...base,

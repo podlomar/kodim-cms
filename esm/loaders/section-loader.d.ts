@@ -12,7 +12,7 @@ export interface SectionResource extends Resource {
     courses: ResourceList;
 }
 export declare class SectionNode extends IndexNode {
-    static COURSES_LIST: string;
+    static LIST_NAME: string;
     private courses;
     constructor(location: NodeLocation, index: SectionIndex, courses: CourseNode[]);
     getList(name: string): IndexNode[] | null;

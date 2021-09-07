@@ -10,7 +10,6 @@ import lineReader from 'line-reader';
 import path from 'path';
 import yaml from 'yaml';
 import { IndexNode } from '../tree-index.js';
-import { ChapterNode } from './chapter-loader.js';
 const loadLesson = async (lessonPath) => {
     const processor = unified()
         .use(markdown)
@@ -77,7 +76,7 @@ export class LessonNode extends IndexNode {
     }
     static async load(parentLocation, fileName, num) {
         const frontMatter = await loadFrontMatter(path.join(parentLocation.fsPath, fileName, 'lesson.md'));
-        const location = parentLocation.createChildLocation(fileName, frontMatter, ChapterNode.LESSONS_LIST);
+        const location = parentLocation.createChildLocation(fileName, frontMatter, LessonNode.LIST_NAME);
         return new LessonNode(location, frontMatter, num);
     }
     ;
@@ -88,3 +87,4 @@ export class LessonNode extends IndexNode {
         return Object.assign(Object.assign({}, base), { lead: index.lead, num: this.num, sections });
     }
 }
+LessonNode.LIST_NAME = 'lessons';

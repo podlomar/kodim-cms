@@ -14,7 +14,7 @@ export interface CourseResource extends Resource {
     chapters: ResourceList;
 }
 export declare class CourseNode extends IndexNode {
-    static CHAPTERS_LIST: string;
+    static LIST_NAME: string;
     private chapters;
     constructor(location: NodeLocation, index: CourseIndex, chapters: ChapterNode[]);
     getList(name: string): IndexNode[] | null;

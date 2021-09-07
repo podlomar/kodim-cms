@@ -1,6 +1,5 @@
 import path from 'path';
 import { IndexNode, loadYamlFile, } from '../tree-index.js';
-import { CourseNode } from './course-loader.js';
 import { LessonNode } from './lesson-loader.js';
 export class ChapterNode extends IndexNode {
     constructor(location, index, lessons) {
@@ -8,7 +7,7 @@ export class ChapterNode extends IndexNode {
         this.lessons = lessons;
     }
     getList(name) {
-        if (name === ChapterNode.LESSONS_LIST) {
+        if (name === LessonNode.LIST_NAME) {
             return this.lessons;
         }
         return null;
@@ -16,14 +15,14 @@ export class ChapterNode extends IndexNode {
     async fetchResource(expand) {
         const base = this.getResourceBase('chapter');
         const index = this.index;
-        const lessons = await this.fetchList(ChapterNode.LESSONS_LIST, expand);
+        const lessons = await this.fetchList(ChapterNode.LIST_NAME, expand);
         return Object.assign(Object.assign({}, base), { lead: index.lead, lessons });
     }
 }
-ChapterNode.LESSONS_LIST = 'lessons';
+ChapterNode.LIST_NAME = 'chapters';
 ChapterNode.load = async (parentLocation, fileName) => {
     const index = (await loadYamlFile(path.join(parentLocation.fsPath, fileName, 'index.yml')));
-    const location = parentLocation.createChildLocation(fileName, index, CourseNode.CHAPTERS_LIST);
+    const location = parentLocation.createChildLocation(fileName, index, ChapterNode.LIST_NAME);
     const lessons = index.lessons === undefined
         ? []
         : await Promise.all(index.lessons.map((name, idx) => LessonNode.load(location, name, idx + 1)));

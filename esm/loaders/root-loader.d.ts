@@ -8,7 +8,6 @@ export interface RootResource extends Resource {
     sections: ResourceList;
 }
 export declare class RootNode extends IndexNode {
-    static SECTIONS_LIST: string;
     private sections;
     constructor(location: NodeLocation, index: RootIndex, sections: SectionNode[]);
     getList(name: string): IndexNode[] | null;

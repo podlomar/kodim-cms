@@ -32,11 +32,9 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': ['error'],
   },
   settings: {
-    // 'import/resolver': {
-    //   'node': {
-    //     'extensions': [".js", ".jsx", ".ts", ".tsx"],
-    //   }
-    // },
+    'import/resolver': {
+      'typescript': {},
+    },
     'import/parsers': {
       '@typescript-eslint/parser': ['.ts', '.d.ts'],
     },

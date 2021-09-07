@@ -12,7 +12,6 @@ import path from 'path';
 import yaml from 'yaml';
 import { IndexNode, NodeLocation, ResourceIndex } from '../tree-index.js';
 import { Resource } from '../resource.js';
-import { ChapterNode } from './chapter-loader.js';
 
 interface ArticleSection {
   title: string | null;
@@ -103,6 +102,8 @@ const loadFrontMatter = async (filePath: string): Promise<FrontMatter> =>
 
 
 export class LessonNode extends IndexNode {
+  public static LIST_NAME = 'lessons';
+  
   public num: number;
 
   public constructor(
@@ -129,7 +130,7 @@ export class LessonNode extends IndexNode {
     );
   
     const location = parentLocation.createChildLocation(
-      fileName, frontMatter, ChapterNode.LESSONS_LIST,
+      fileName, frontMatter, LessonNode.LIST_NAME,
     );
     return new LessonNode(location, frontMatter, num);
   };
