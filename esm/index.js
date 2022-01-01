@@ -1,19 +1,17 @@
-import { RootNode } from './loaders/root-loader.js';
-export class ContentIndex {
-    constructor(rootNode) {
-        this.rootNode = rootNode;
+import { CoursesRootProvider, loadCoursesRoot } from "./content/content.js";
+import { SuccessQuery } from "./content/query.js";
+export class KodimCms {
+    constructor(baseUrl, coursesRoot) {
+        this.baseUrl = baseUrl;
+        this.coursesRoot = coursesRoot;
     }
-    static async load(rootFolder, baseUrl) {
-        const rootNode = await RootNode.load(rootFolder, baseUrl);
-        return new ContentIndex(rootNode);
+    static async load(contentFolder, baseUrl) {
+        const root = await loadCoursesRoot(contentFolder, "kurzy");
+        const cms = new KodimCms(baseUrl, root);
+        return cms;
     }
-    async fetch(query) {
-        const data = await this.rootNode.fetch(query);
-        if (data === null) {
-            return {
-                errors: ['not-found'],
-            };
-        }
-        return { data };
+    query() {
+        const provider = new CoursesRootProvider(null, this.coursesRoot, 0, [], { baseUrl: this.baseUrl });
+        return new SuccessQuery(provider);
     }
 }

@@ -1,0 +1,21 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+
+title: ChapterEntry
+type: object
+
+properties:
+  title:
+    type: string
+  lead:
+    type: string
+  lessons:
+    type: array
+    items:
+      type: string
+
+required:
+  - title
+  - lead
+  - lessons
+
+additionalProperties: false

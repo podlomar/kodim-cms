@@ -1,15 +1,9 @@
-import { Data } from './resource.js';
-import { Query } from './tree-index.js';
-export interface DataPayload {
-    data: Data;
-}
-export interface ErrorPayload {
-    errors: string[];
-}
-export declare type Payload = DataPayload | ErrorPayload;
-export declare class ContentIndex {
-    private readonly rootNode;
+import { CoursesRootProvider } from "./content/content.js";
+import { SuccessQuery } from "./content/query.js";
+export declare class KodimCms {
+    readonly baseUrl: string;
+    private readonly coursesRoot;
     private constructor();
-    static load(rootFolder: string, baseUrl: string): Promise<ContentIndex>;
-    fetch(query: Query): Promise<Payload>;
+    static load(contentFolder: string, baseUrl: string): Promise<KodimCms>;
+    query(): SuccessQuery<CoursesRootProvider>;
 }

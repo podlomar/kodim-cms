@@ -1,0 +1,15 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+
+title: RootEntry
+type: object
+
+properties:
+  divisions:
+    type: array
+    items:
+      type: string
+
+required:
+  - segments
+
+additionalProperties: false

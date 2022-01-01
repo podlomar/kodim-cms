@@ -1,12 +1,15 @@
 {
   "compilerOptions": {
+    "strict": true,
     "outDir": "esm",
+    "noImplicitAny": true,
     "module": "es6",
     "target": "es2017",
-    "strict": true,
-    "noImplicitAny": true,
-    "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
-    "declaration": true,
-  }
+    "moduleResolution": "node",
+    "declaration": true
+  },
+  "include": [
+    "src"
+  ]
 }
