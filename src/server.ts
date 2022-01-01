@@ -20,7 +20,6 @@ export class CmsApp {
   }
 
   private handleGetEntry = async (req: Request, res: Response) => {
-    console.log('params', req.params[0]);
     const provider = this.getProviderByPath(req.params[0] ?? '');
     res.json(await provider?.fetch());
   }

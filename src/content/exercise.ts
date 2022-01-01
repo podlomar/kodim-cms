@@ -48,13 +48,11 @@ const loadFrontMatter = async <T>(filePath: string): Promise<T> =>
 
 const getAssignFilePath = (fsPath: string): string | null => {
   const standalone = `${fsPath}.md`;
-  console.log('standalone', standalone);
   if (existsSync(standalone)) {
     return standalone;
   }
 
   const inFolder = `${fsPath}/assign.md`;
-  console.log('inFolder', inFolder);
   if (existsSync(inFolder)) {
     return inFolder;
   }

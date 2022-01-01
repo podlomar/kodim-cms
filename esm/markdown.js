@@ -23,7 +23,7 @@ export class MarkdownProcessor {
             const text = await readFile(file, "utf-8");
             const mdastTree = unifiedProcessor.parse(text);
             // @ts-ignore
-            const hastTree = unifiedProcessor.run(mdastTree);
+            const hastTree = await unifiedProcessor.run(mdastTree);
             // @ts-ignore
             return rootToJsml(hastTree, this.elementTransform);
         };

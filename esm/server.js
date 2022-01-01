@@ -3,7 +3,6 @@ export class CmsApp {
     constructor(cms) {
         this.handleGetEntry = async (req, res) => {
             var _a;
-            console.log('params', req.params[0]);
             const provider = this.getProviderByPath((_a = req.params[0]) !== null && _a !== void 0 ? _a : '');
             res.json(await (provider === null || provider === void 0 ? void 0 : provider.fetch()));
         };
