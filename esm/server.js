@@ -4,14 +4,13 @@ export class CmsApp {
         this.handleGetEntry = async (req, res) => {
             var _a;
             const provider = this.getProviderByPath((_a = req.params[0]) !== null && _a !== void 0 ? _a : '');
-            res.json(await (provider === null || provider === void 0 ? void 0 : provider.fetch()));
+            res.json(await provider.fetch());
         };
         this.handleGetAsset = async (req, res) => {
-            var _a;
             const lastSlashIndex = req.params[0].lastIndexOf('/');
             const fileName = req.params[0].slice(lastSlashIndex + 1);
             const providerPath = req.params[0].slice(0, lastSlashIndex);
-            const assetPath = (_a = this.getProviderByPath(providerPath)) === null || _a === void 0 ? void 0 : _a.asset(fileName);
+            const assetPath = this.getProviderByPath(providerPath).asset(fileName);
             res.sendFile(assetPath);
         };
         this.cms = cms;
@@ -21,6 +20,6 @@ export class CmsApp {
     }
     getProviderByPath(path) {
         const links = path.split('/');
-        return this.cms.query().search(...links).getProvider();
+        return this.cms.getRoot().search(...links);
     }
 }

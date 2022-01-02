@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
-import { buildAssetPath, createFailedResource, createSuccessResource, Crumbs, FailedResource, ResourceRef, SuccessResource } from "./resource.js";
-import { BaseResourceProvider, ProviderSettings } from "./provider.js";
+import { buildAssetPath, ContentResource, createFailedResource, createSuccessResource, Crumbs, ResourceRef } from "./resource.js";
+import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import type { LessonProvider } from "./lesson.js";
 import { unified } from "unified";
 import markdown from "remark-parse";
@@ -22,13 +22,11 @@ export interface SuccessLessonSection extends SuccessEntry {
 
 export type LessonSection = SuccessLessonSection | FailedEntry;
 
-export interface SuccessLessonSectionResource extends SuccessResource {
+export type LessonSectionResource = ContentResource<{
   jsml: Jsml;
   prev: LessonSectionRef | null,
   next: LessonSectionRef | null,
-};
-
-export type LessonSectionResource = SuccessLessonSectionResource | FailedResource;
+}>;
 
 export const processor = unified()
   .use(markdown)
@@ -131,14 +129,14 @@ export class LessonSectionProvider extends BaseResourceProvider<
     }
   }
 
-  public find(link: string): ExerciseProvider | null {
+  public find(link: string): ExerciseProvider | NotFoundProvider {
     if (this.entry.type === 'failed') {
-      return null;
+      return new NotFoundProvider();
     }
 
     const result = findChild(this.entry.exercises, link);
     if (result === null) {
-      return null;
+      return new NotFoundProvider();
     }
     
     return new ExerciseProvider(

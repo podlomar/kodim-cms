@@ -4,8 +4,9 @@ import yaml from "yaml";
 import lineReader from "line-reader";
 import { el } from "../jsml.js";
 import { createFailedEntry, createSuccessEntry } from "./entry.js";
-import { BaseResourceProvider } from "./provider.js";
+import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { MarkdownProcessor } from "../markdown.js";
+import { createNotFoundResource } from "./resource.js";
 ;
 ;
 const loadFrontMatter = async (filePath) => new Promise((resolve, reject) => {
@@ -53,10 +54,10 @@ export class ExerciseProvider extends BaseResourceProvider {
         this.markdownProcessor = new MarkdownProcessor(this.buildAssetPath);
     }
     async fetch() {
-        return null;
+        return createNotFoundResource();
     }
     find(link) {
-        return null;
+        return new NotFoundProvider();
     }
     buildAssetPath(fileName) {
         const baseUrl = this.settings.baseUrl;

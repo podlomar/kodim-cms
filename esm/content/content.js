@@ -1,7 +1,7 @@
 import { createFailedRef, createFailedResource, createSuccessResource } from "./resource.js";
 import { readIndexFile } from "./content-node.js";
 import { CourseProvider, createCourseRef, loadCourse } from "./course.js";
-import { BaseResourceProvider } from "./provider.js";
+import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 ;
 export const loadCoursesRoot = async (contentFolder, coursesFolder) => {
     const index = await readIndexFile(`${contentFolder}/${coursesFolder}`);
@@ -42,12 +42,12 @@ export class CoursesRootProvider extends BaseResourceProvider {
     }
     find(link) {
         if (this.entry.type === 'failed') {
-            return null;
+            return new NotFoundProvider();
         }
         const courses = this.entry.divisions.flatMap((division) => division.courses);
         const pos = courses.findIndex((c) => c.link === link);
         if (pos < 0) {
-            return null;
+            return new NotFoundProvider();
         }
         return new CourseProvider(this, courses[pos], pos, [], this.settings);
     }

@@ -15,11 +15,18 @@ export interface SuccessResource extends ResourceLocation {
     crumbs: Crumbs;
 }
 export interface FailedResource extends ResourceLocation {
-    type: 'error';
+    type: 'failed';
 }
-export declare type ContentResource = SuccessResource | FailedResource;
+export interface ForbiddenResource extends ResourceLocation {
+    type: 'forbidden';
+}
+export interface NotFoundResource {
+    type: 'not-found';
+}
+export declare type ContentResource<T = {}> = ((SuccessResource & T) | FailedResource | ForbiddenResource | NotFoundResource);
 export declare const createSuccessResource: (entry: SuccessEntry, crumbs: Crumbs, baseUrl: string) => SuccessResource;
 export declare const createFailedResource: (entry: FailedEntry, baseUrl: string) => FailedResource;
+export declare const createNotFoundResource: () => NotFoundResource;
 export interface SuccessRef extends ResourceLocation {
     type: 'ref';
     title: string;

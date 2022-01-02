@@ -1,5 +1,5 @@
-import { Crumbs, FailedResource, ResourceRef, SuccessResource } from "./resource.js";
-import { BaseResourceProvider, ProviderSettings } from "./provider.js";
+import { ContentResource, Crumbs, ResourceRef } from "./resource.js";
+import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import type { LessonProvider } from "./lesson.js";
 import { FailedEntry, SuccessEntry } from "./entry.js";
 import { Exercise, ExerciseProvider } from "./exercise.js";
@@ -9,12 +9,11 @@ export interface SuccessLessonSection extends SuccessEntry {
     exercises: Exercise[];
 }
 export declare type LessonSection = SuccessLessonSection | FailedEntry;
-export interface SuccessLessonSectionResource extends SuccessResource {
+export declare type LessonSectionResource = ContentResource<{
     jsml: Jsml;
     prev: LessonSectionRef | null;
     next: LessonSectionRef | null;
-}
-export declare type LessonSectionResource = SuccessLessonSectionResource | FailedResource;
+}>;
 export declare const processor: import("unified").Processor<import("mdast").Root, import("mdast").Root, import("hast").Root, string>;
 interface SectionIndex {
     title: string;
@@ -27,6 +26,6 @@ export declare class LessonSectionProvider extends BaseResourceProvider<LessonPr
     constructor(parent: LessonProvider, entry: LessonSection, position: number, crumbs: Crumbs, settings: ProviderSettings);
     private buildAssetPath;
     fetch(): Promise<LessonSectionResource>;
-    find(link: string): ExerciseProvider | null;
+    find(link: string): ExerciseProvider | NotFoundProvider;
 }
 export {};

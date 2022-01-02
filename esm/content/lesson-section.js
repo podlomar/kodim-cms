@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import { buildAssetPath, createFailedResource, createSuccessResource } from "./resource.js";
-import { BaseResourceProvider } from "./provider.js";
+import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { unified } from "unified";
 import markdown from "remark-parse";
 import directive from "remark-directive";
@@ -11,7 +11,6 @@ import { ExerciseProvider, loadExercise } from "./exercise.js";
 import { findChild } from "./content-node.js";
 import { MarkdownProcessor } from "../markdown.js";
 import { buildExcTransform } from "../markdown-transforms.js";
-;
 ;
 export const processor = unified()
     .use(markdown)
@@ -66,11 +65,11 @@ export class LessonSectionProvider extends BaseResourceProvider {
     }
     find(link) {
         if (this.entry.type === 'failed') {
-            return null;
+            return new NotFoundProvider();
         }
         const result = findChild(this.entry.exercises, link);
         if (result === null) {
-            return null;
+            return new NotFoundProvider();
         }
         return new ExerciseProvider(this, result.child, result.pos, [...this.crumbs, {
                 title: this.entry.title,

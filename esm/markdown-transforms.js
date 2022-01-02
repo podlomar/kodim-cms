@@ -46,7 +46,7 @@ export const buildExcTransform = (sectionProvider) => async (element, node) => {
         return node;
     }
     const link = linkChild.value;
-    const exerciseProvider = sectionProvider.find(link);
+    const exerciseProvider = sectionProvider.find(link).success();
     if (exerciseProvider === null) {
         return node;
     }

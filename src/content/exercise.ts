@@ -5,10 +5,10 @@ import lineReader from "line-reader";
 import { ExerciseFrontMatter } from "../entries.js";
 import { el, Jsml, JsmlElement } from "../jsml.js";
 import { createFailedEntry, createSuccessEntry, FailedEntry, SuccessEntry } from "./entry.js";
-import { BaseResourceProvider, ProviderSettings } from "./provider.js";
+import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import { LessonSectionProvider } from "./lesson-section.js";
 import { MarkdownProcessor } from "../markdown.js";
-import { Crumbs } from "./resource.js";
+import { createNotFoundResource, Crumbs, NotFoundResource } from "./resource.js";
 
 export interface SuccessExercise extends SuccessEntry {
   demand: 1 | 2 | 3 | 4 | 5;
@@ -103,12 +103,12 @@ export class ExerciseProvider extends BaseResourceProvider<
     );
   }
 
-  public async fetch(): Promise<null> {
-    return null;
-  } 
+  public async fetch(): Promise<NotFoundResource> {
+    return createNotFoundResource();
+  }
 
-  public find(link: string): null {
-    return null;
+  public find(link: string): NotFoundProvider {
+    return new NotFoundProvider();
   }
 
   private buildAssetPath(fileName: string): string {

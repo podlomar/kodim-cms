@@ -14,21 +14,21 @@ export class CmsApp {
     this.router.get(['/assets/kurzy', '/assets/kurzy/*'], this.handleGetAsset); 
   }
 
-  private getProviderByPath(path: string): ResourceProvider | null {
+  private getProviderByPath(path: string): ResourceProvider {
     const links = path.split('/');
-    return this.cms.query().search(...links).getProvider();
+    return this.cms.getRoot().search(...links);
   }
 
   private handleGetEntry = async (req: Request, res: Response) => {
-    const provider = this.getProviderByPath(req.params[0] ?? '');
-    res.json(await provider?.fetch());
+    const provider = this.getProviderByPath(req.params[0] ?? '');    
+    res.json(await provider.fetch());
   }
 
   private handleGetAsset = async (req: Request, res: Response) => {
     const lastSlashIndex = req.params[0].lastIndexOf('/');
     const fileName = req.params[0].slice(lastSlashIndex + 1);
     const providerPath = req.params[0].slice(0, lastSlashIndex);
-    const assetPath = this.getProviderByPath(providerPath)?.asset(fileName);  
+    const assetPath = this.getProviderByPath(providerPath).asset(fileName);  
     res.sendFile(assetPath as string);
   };
 }

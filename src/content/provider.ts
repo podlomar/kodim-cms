@@ -1,13 +1,36 @@
 import { Entry } from "./entry.js";
-import { ContentResource, createResourceRef, Crumbs, ResourceRef } from "./resource.js";
+import { ContentResource, createNotFoundResource, createResourceRef, Crumbs, NotFoundResource, ResourceRef } from "./resource.js";
 
 export interface ResourceProvider<
   C extends ResourceProvider<any> = any
 > {
-  fetch(): Promise<ContentResource | null>;
-  find(link: string): C | null;
-  search(...links: string[]): ResourceProvider | null;
-  asset(fileName: string): string;
+  fetch(): Promise<ContentResource>;
+  find(link: string): C | NotFoundProvider;
+  search(...links: string[]): ResourceProvider;
+  asset(fileName: string): string | null;
+  success(): this | null;
+}
+
+export class NotFoundProvider implements ResourceProvider<never> {
+  public async fetch(): Promise<NotFoundResource> {
+    return createNotFoundResource();
+  }
+
+  public find(link: string): this {
+    return this;
+  };
+
+  public search(): this {
+    return this;
+  }
+
+  public asset(fileName: string): null {
+    return null;
+  }
+
+  public success(): null {
+    return null;
+  }
 }
 
 export abstract class BaseResourceProvider<
@@ -33,14 +56,13 @@ export abstract class BaseResourceProvider<
     this.settings = settings;
   }
 
-  public search(...[link, ...restLinks]: string[]): ResourceProvider | null{
+  public search(...[link, ...restLinks]: string[]): ResourceProvider {
     if (link === '') {
       return this;
     }
 
     const child = this.find(link);
-
-    if (child === null || restLinks.length === 0) {
+    if (child.success() === null || restLinks.length === 0) {
       return child;
     }
 
@@ -51,12 +73,16 @@ export abstract class BaseResourceProvider<
     return `${this.entry.fsPath}/assets/${fileName}`;
   }
 
+  public success(): this { 
+    return this;
+  }
+
   public getEntry(): E {
     return this.entry;
   }
 
-  public abstract fetch(): Promise<ContentResource | null>;
-  public abstract find(link: string): C | null;
+  public abstract fetch(): Promise<ContentResource>;
+  public abstract find(link: string): C | NotFoundProvider;
 }
 
 export interface ProviderSettings {

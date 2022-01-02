@@ -5,7 +5,10 @@ const createResourceLocation = (entry, baseUrl) => ({
     url: `${baseUrl}/content${entry.path}`,
 });
 export const createSuccessResource = (entry, crumbs, baseUrl) => (Object.assign(Object.assign({ type: 'content' }, createResourceLocation(entry, baseUrl)), { crumbs, title: entry.title }));
-export const createFailedResource = (entry, baseUrl) => (Object.assign(Object.assign({}, createResourceLocation(entry, baseUrl)), { type: 'error' }));
+export const createFailedResource = (entry, baseUrl) => (Object.assign(Object.assign({}, createResourceLocation(entry, baseUrl)), { type: 'failed' }));
+export const createNotFoundResource = () => ({
+    type: 'not-found',
+});
 export const createSuccessRef = (entry, baseUrl) => (Object.assign(Object.assign({ type: 'ref' }, createResourceLocation(entry, baseUrl)), { title: entry.title }));
 export const createFailedRef = (entry, baseUrl) => (Object.assign({ type: 'failed' }, createResourceLocation(entry, baseUrl)));
 export const createResourceRef = (entry, baseUrl) => entry.type === 'failed'

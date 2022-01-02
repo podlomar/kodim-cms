@@ -2,7 +2,7 @@ import { createFailedEntry, createSuccessEntry } from "./entry.js";
 import { createFailedResource, createSuccessResource } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import { createLessonRef, LessonProvider, loadLesson } from "./lesson.js";
-import { BaseResourceProvider } from "./provider.js";
+import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 export const loadChapter = async (parentEntry, folderName) => {
     const index = await readIndexFile(`${parentEntry.fsPath}/${folderName}`);
     if (index === 'not-found') {
@@ -21,11 +21,11 @@ export class ChapterProvider extends BaseResourceProvider {
     }
     find(link) {
         if (this.entry.type === 'failed') {
-            return null;
+            return new NotFoundProvider();
         }
         const result = findChild(this.entry.lessons, link);
         if (result === null) {
-            return null;
+            return new NotFoundProvider();
         }
         return new LessonProvider(this, result.child, result.pos, [...this.crumbs, {
                 title: this.entry.title,

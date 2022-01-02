@@ -1,9 +1,9 @@
 import { CoursesRootIndex, DivisionIndex } from "../entries";
-import { createFailedRef, createFailedResource, createSuccessRef, createSuccessResource, FailedResource, SuccessResource } from "./resource.js";
+import { ContentResource, createFailedRef, createFailedResource, createSuccessResource } from "./resource.js";
 import { readIndexFile } from "./content-node.js";
 import { Course, CourseProvider, CourseRef, createCourseRef, loadCourse } from "./course.js";
 import { FailedEntry, SuccessEntry } from "./entry.js";
-import { BaseResourceProvider } from "./provider.js";
+import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 
 export interface Division<T extends Course | CourseRef = Course> {
   readonly title: string;
@@ -17,11 +17,9 @@ export interface SuccessCoursesRoot extends SuccessEntry {
 
 export type CoursesRoot = SuccessCoursesRoot | FailedEntry;
 
-export interface SuccessCoursesRootResource extends SuccessResource {
+export type CoursesRootResource = ContentResource<{
   divisions: Division<CourseRef>[],
-}
-
-export type CoursesRootResource = SuccessCoursesRootResource | FailedResource;
+}>;
 
 export const loadCoursesRoot = async (
   contentFolder: string,
@@ -93,9 +91,9 @@ export class CoursesRootProvider extends BaseResourceProvider<
     }
   }
 
-  public find(link: string): CourseProvider | null {
+  public find(link: string): CourseProvider | NotFoundProvider {
     if (this.entry.type === 'failed') {
-      return null;
+      return new NotFoundProvider();
     }
 
     const courses = this.entry.divisions.flatMap(
@@ -105,7 +103,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
     const pos = courses.findIndex((c) => c.link === link);
     
     if (pos < 0) {
-      return null;
+      return new NotFoundProvider();
     } 
 
     return new CourseProvider(

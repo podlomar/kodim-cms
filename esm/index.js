@@ -1,5 +1,4 @@
 import { CoursesRootProvider, loadCoursesRoot } from "./content/content.js";
-import { SuccessQuery } from "./content/query.js";
 export class KodimCms {
     constructor(baseUrl, coursesRoot) {
         this.baseUrl = baseUrl;
@@ -10,8 +9,7 @@ export class KodimCms {
         const cms = new KodimCms(baseUrl, root);
         return cms;
     }
-    query() {
-        const provider = new CoursesRootProvider(null, this.coursesRoot, 0, [], { baseUrl: this.baseUrl });
-        return new SuccessQuery(provider);
+    getRoot() {
+        return new CoursesRootProvider(null, this.coursesRoot, 0, [], { baseUrl: this.baseUrl });
     }
 }

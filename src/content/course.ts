@@ -1,10 +1,10 @@
 import { CourseIndex } from "../entries";
 import { FailedEntry, SuccessEntry, createSuccessEntry, createFailedEntry } from "./entry.js";
-import { createSuccessResource, createResourceRef, FailedResource, ResourceRef, SuccessResource, createFailedResource, buildAssetPath, SuccessRef, createFailedRef, createSuccessRef } from './resource.js';
+import { createSuccessResource, ResourceRef, createFailedResource, buildAssetPath, createFailedRef, createSuccessRef, ContentResource } from './resource.js';
 import { Chapter, ChapterProvider, ChapterResource, loadChapter } from "./chapter.js";
 import type { CoursesRootProvider } from "./content";
 import { findChild, readIndexFile } from "./content-node.js";
-import { BaseResourceProvider } from "./provider.js";
+import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { createLessonRef } from "./lesson.js";
 
 export type CourseRef = ResourceRef<{
@@ -20,13 +20,11 @@ export interface SuccessCourse extends SuccessEntry {
 
 export type Course = SuccessCourse | FailedEntry;
 
-export interface SuccessCourseResource extends SuccessResource {
+export type CourseResource = ContentResource<{
   image: string,
   lead: string,
   chapters: ChapterResource[],
-}
-
-export type CourseResource = SuccessCourseResource | FailedResource;
+}>;
 
 export const loadCourse = async (
   parentEntry: SuccessEntry,
@@ -97,14 +95,14 @@ export class CourseProvider extends BaseResourceProvider<
     }
   }
 
-  public find(link: string): ChapterProvider | null {
+  public find(link: string): ChapterProvider | NotFoundProvider {
     if (this.entry.type === 'failed') {
-      return null;
+      return new NotFoundProvider();
     }
 
     const result = findChild(this.entry.chapters, link);
     if (result === null) {
-      return null;
+      return new NotFoundProvider();
     }
     
     return new ChapterProvider(

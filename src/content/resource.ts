@@ -20,10 +20,23 @@ export interface SuccessResource extends ResourceLocation {
 };
 
 export interface FailedResource extends ResourceLocation {
-  type: 'error',
+  type: 'failed',
 }
 
-export type ContentResource = SuccessResource | FailedResource;
+export interface ForbiddenResource extends ResourceLocation {
+  type: 'forbidden',
+}
+
+export interface NotFoundResource {
+  type: 'not-found',
+}
+
+export type ContentResource<T = {}> = (
+  | (SuccessResource & T)
+  | FailedResource
+  | ForbiddenResource
+  | NotFoundResource
+);  
 
 const createResourceLocation = (entry: Entry, baseUrl: string) => ({
   link: entry.link,
@@ -45,7 +58,11 @@ export const createFailedResource = (
   baseUrl: string,
 ): FailedResource => ({
   ...createResourceLocation(entry, baseUrl),
-  type: 'error',
+  type: 'failed',
+});
+
+export const createNotFoundResource = (): NotFoundResource => ({
+  type: 'not-found',
 });
 
 export interface SuccessRef extends ResourceLocation {
