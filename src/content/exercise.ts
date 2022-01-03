@@ -8,7 +8,7 @@ import { createFailedEntry, createSuccessEntry, FailedEntry, SuccessEntry } from
 import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import { LessonSectionProvider } from "./lesson-section.js";
 import { MarkdownProcessor } from "../markdown.js";
-import { createNotFoundResource, Crumbs, NotFoundResource } from "./resource.js";
+import { createNotFound, Crumbs, NotFound } from "./resource.js";
 
 export interface SuccessExercise extends SuccessEntry {
   demand: 1 | 2 | 3 | 4 | 5;
@@ -103,8 +103,8 @@ export class ExerciseProvider extends BaseResourceProvider<
     );
   }
 
-  public async fetch(): Promise<NotFoundResource> {
-    return createNotFoundResource();
+  public async fetch(): Promise<NotFound> {
+    return createNotFound();
   }
 
   public find(link: string): NotFoundProvider {

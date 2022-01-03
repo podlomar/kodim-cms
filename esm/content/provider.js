@@ -1,7 +1,7 @@
-import { createNotFoundResource } from "./resource.js";
+import { createNotFound } from "./resource.js";
 export class NotFoundProvider {
     async fetch() {
-        return createNotFoundResource();
+        return createNotFound();
     }
     find(link) {
         return this;

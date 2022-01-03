@@ -52,6 +52,9 @@ export class LessonProvider extends BaseResourceProvider {
             return result;
         }
         const fullSection = await fullSectionProvider.fetch();
+        if (fullSection.type === 'not-found') {
+            return result;
+        }
         return Object.assign(Object.assign({}, result), { fullSection });
     }
     find(link) {

@@ -1,14 +1,14 @@
 import { Entry } from "./entry.js";
-import { Resource, Crumbs, NotFoundResource } from "./resource.js";
+import { Resource, Crumbs, NotFound } from "./resource.js";
 export interface ResourceProvider<C extends ResourceProvider<any> = any> {
-    fetch(): Promise<Resource>;
+    fetch(): Promise<Resource | NotFound>;
     find(link: string): C | NotFoundProvider;
     search(...links: string[]): ResourceProvider;
     asset(fileName: string): string | null;
     success(): this | null;
 }
 export declare class NotFoundProvider implements ResourceProvider<never> {
-    fetch(): Promise<NotFoundResource>;
+    fetch(): Promise<NotFound>;
     find(link: string): this;
     search(): this;
     asset(fileName: string): null;
@@ -25,7 +25,7 @@ export declare abstract class BaseResourceProvider<P extends ResourceProvider | 
     asset(fileName: string): string;
     success(): this;
     getEntry(): E;
-    abstract fetch(): Promise<Resource>;
+    abstract fetch(): Promise<Resource | NotFound>;
     abstract find(link: string): C | NotFoundProvider;
 }
 export interface ProviderSettings {

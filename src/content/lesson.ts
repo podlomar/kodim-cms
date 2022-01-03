@@ -122,6 +122,9 @@ export class LessonProvider extends BaseResourceProvider<
     }
 
     const fullSection = await fullSectionProvider.fetch();
+    if (fullSection.type === 'not-found') {
+      return result;
+    }
     
     return { ...result, fullSection }; 
   }

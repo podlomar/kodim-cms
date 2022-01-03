@@ -6,7 +6,7 @@ import { el } from "../jsml.js";
 import { createFailedEntry, createSuccessEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { MarkdownProcessor } from "../markdown.js";
-import { createNotFoundResource } from "./resource.js";
+import { createNotFound } from "./resource.js";
 ;
 ;
 const loadFrontMatter = async (filePath) => new Promise((resolve, reject) => {
@@ -54,7 +54,7 @@ export class ExerciseProvider extends BaseResourceProvider {
         this.markdownProcessor = new MarkdownProcessor(this.buildAssetPath);
     }
     async fetch() {
-        return createNotFoundResource();
+        return createNotFound();
     }
     find(link) {
         return new NotFoundProvider();

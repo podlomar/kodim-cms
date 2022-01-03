@@ -7,46 +7,35 @@ export interface CrumbStep {
 
 export type Crumbs = CrumbStep[];
 
-export interface ResourceLocation {
+export interface BaseResource {
   readonly link: string,
   readonly path: string,
   readonly url: string,
 }
 
-export type SuccessResource<T = {}> = (
-  & ResourceLocation
-  & {
-    type: 'content',
-    title: string,
-    crumbs: Crumbs,
-  } 
-  & T
-);
+export interface SuccessResource extends BaseResource {
+  readonly type: 'content',
+  readonly title: string,
+  readonly crumbs: Crumbs,
+};
 
-export type FailedResource = (
-  & ResourceLocation 
-  & {
-    type: 'failed',
-  }
-);
+export interface FailedResource extends BaseResource {
+  readonly type: 'failed';
+};
 
-export type ForbiddenResource = (
-  & ResourceLocation 
-  & {
-    type: 'forbidden',
-  }
-);
+export interface ForbiddenResource extends BaseResource {
+  readonly type: 'forbidden',
+};
 
-export interface NotFoundResource {
-  type: 'not-found',  
+export interface NotFound {
+  readonly type: 'not-found',  
 };
 
 export type Resource<T = {}> = (
-  | SuccessResource<T>
+  | (SuccessResource & T)
   | FailedResource
   | ForbiddenResource
-  | NotFoundResource
-);  
+);
 
 const createResourceLocation = (entry: Entry, baseUrl: string) => ({
   link: entry.link,
@@ -71,16 +60,16 @@ export const createFailedResource = (
   type: 'failed',
 });
 
-export const createNotFoundResource = (): NotFoundResource => ({
+export const createNotFound = (): NotFound => ({
   type: 'not-found',
 });
 
-export interface SuccessRef extends ResourceLocation {
+export interface SuccessRef extends BaseResource {
   type: 'ref',
   title: string,
 }
 
-export interface FailedRef extends ResourceLocation {
+export interface FailedRef extends BaseResource {
   type: 'failed',
 }
 
