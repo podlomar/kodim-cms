@@ -1,5 +1,5 @@
 import { promises as fs } from "fs";
-import { buildAssetPath, ContentResource, createFailedResource, createSuccessResource, Crumbs, ResourceRef } from "./resource.js";
+import { buildAssetPath, Resource, createFailedResource, createSuccessResource, Crumbs, ResourceRef } from "./resource.js";
 import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import type { LessonProvider } from "./lesson.js";
 import { unified } from "unified";
@@ -22,7 +22,7 @@ export interface SuccessLessonSection extends SuccessEntry {
 
 export type LessonSection = SuccessLessonSection | FailedEntry;
 
-export type LessonSectionResource = ContentResource<{
+export type LessonSectionResource = Resource<{
   jsml: Jsml;
   prev: LessonSectionRef | null,
   next: LessonSectionRef | null,
@@ -141,7 +141,7 @@ export class LessonSectionProvider extends BaseResourceProvider<
     
     return new ExerciseProvider(
       this, 
-      result.child, 
+      result.child,
       result.pos, 
       [...this.crumbs, { 
         title: this.entry.title, 

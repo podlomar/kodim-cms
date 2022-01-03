@@ -1,6 +1,6 @@
 import { LessonIndex } from "../entries";
 import { createFailedEntry, createSuccessEntry, FailedEntry, SuccessEntry } from "./entry.js";
-import { ResourceRef, createSuccessResource, createFailedResource, createSuccessRef, createResourceRef, createFailedRef, ContentResource } from './resource.js';
+import { ResourceRef, createSuccessResource, createFailedResource, createSuccessRef, createResourceRef, createFailedRef, Resource } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import type { ChapterProvider } from "./chapter.js";
@@ -18,7 +18,7 @@ export interface SuccessLesson extends SuccessEntry {
 }
 export type Lesson = SuccessLesson | FailedEntry;
 
-export type LessonResource = ContentResource<{
+export type LessonResource = Resource<{
   num: number,
   lead: string,
   fullSection?: LessonSectionResource,

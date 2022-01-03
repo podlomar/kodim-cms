@@ -13,26 +13,36 @@ export interface ResourceLocation {
   readonly url: string,
 }
 
-export interface SuccessResource extends ResourceLocation {
-  type: 'content',
-  title: string,
-  crumbs: Crumbs,
-};
+export type SuccessResource<T = {}> = (
+  & ResourceLocation
+  & {
+    type: 'content',
+    title: string,
+    crumbs: Crumbs,
+  } 
+  & T
+);
 
-export interface FailedResource extends ResourceLocation {
-  type: 'failed',
-}
+export type FailedResource = (
+  & ResourceLocation 
+  & {
+    type: 'failed',
+  }
+);
 
-export interface ForbiddenResource extends ResourceLocation {
-  type: 'forbidden',
-}
+export type ForbiddenResource = (
+  & ResourceLocation 
+  & {
+    type: 'forbidden',
+  }
+);
 
 export interface NotFoundResource {
-  type: 'not-found',
-}
+  type: 'not-found',  
+};
 
-export type ContentResource<T = {}> = (
-  | (SuccessResource & T)
+export type Resource<T = {}> = (
+  | SuccessResource<T>
   | FailedResource
   | ForbiddenResource
   | NotFoundResource

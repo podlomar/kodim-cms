@@ -1,6 +1,6 @@
 import { ChapterIndex } from "../entries";
 import { createFailedEntry, createSuccessEntry, FailedEntry, SuccessEntry } from "./entry.js";
-import { ContentResource, createFailedResource, createSuccessResource } from './resource.js';
+import { Resource, createFailedResource, createSuccessResource } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import type { CourseProvider } from "./course";
 import { createLessonRef, Lesson, LessonProvider, LessonRef, loadLesson } from "./lesson.js";
@@ -13,7 +13,7 @@ export interface SuccessChapter extends SuccessEntry {
 
 export type Chapter = SuccessChapter | FailedEntry;
 
-export type ChapterResource = ContentResource<{
+export type ChapterResource = Resource<{
   lead: string,
   lessons: LessonRef[],
 }>;

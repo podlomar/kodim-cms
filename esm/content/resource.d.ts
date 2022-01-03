@@ -9,21 +9,21 @@ export interface ResourceLocation {
     readonly path: string;
     readonly url: string;
 }
-export interface SuccessResource extends ResourceLocation {
+export declare type SuccessResource<T = {}> = (ResourceLocation & {
     type: 'content';
     title: string;
     crumbs: Crumbs;
-}
-export interface FailedResource extends ResourceLocation {
+} & T);
+export declare type FailedResource = (ResourceLocation & {
     type: 'failed';
-}
-export interface ForbiddenResource extends ResourceLocation {
+});
+export declare type ForbiddenResource = (ResourceLocation & {
     type: 'forbidden';
-}
+});
 export interface NotFoundResource {
     type: 'not-found';
 }
-export declare type ContentResource<T = {}> = ((SuccessResource & T) | FailedResource | ForbiddenResource | NotFoundResource);
+export declare type Resource<T = {}> = (SuccessResource<T> | FailedResource | ForbiddenResource | NotFoundResource);
 export declare const createSuccessResource: (entry: SuccessEntry, crumbs: Crumbs, baseUrl: string) => SuccessResource;
 export declare const createFailedResource: (entry: FailedEntry, baseUrl: string) => FailedResource;
 export declare const createNotFoundResource: () => NotFoundResource;

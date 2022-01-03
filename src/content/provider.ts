@@ -1,10 +1,10 @@
 import { Entry } from "./entry.js";
-import { ContentResource, createNotFoundResource, createResourceRef, Crumbs, NotFoundResource, ResourceRef } from "./resource.js";
+import { Resource, createNotFoundResource, createResourceRef, Crumbs, NotFoundResource, ResourceRef } from "./resource.js";
 
 export interface ResourceProvider<
   C extends ResourceProvider<any> = any
 > {
-  fetch(): Promise<ContentResource>;
+  fetch(): Promise<Resource>;
   find(link: string): C | NotFoundProvider;
   search(...links: string[]): ResourceProvider;
   asset(fileName: string): string | null;
@@ -81,7 +81,7 @@ export abstract class BaseResourceProvider<
     return this.entry;
   }
 
-  public abstract fetch(): Promise<ContentResource>;
+  public abstract fetch(): Promise<Resource>;
   public abstract find(link: string): C | NotFoundProvider;
 }
 

@@ -1,7 +1,7 @@
 import { Entry } from "./entry.js";
-import { ContentResource, Crumbs, NotFoundResource } from "./resource.js";
+import { Resource, Crumbs, NotFoundResource } from "./resource.js";
 export interface ResourceProvider<C extends ResourceProvider<any> = any> {
-    fetch(): Promise<ContentResource>;
+    fetch(): Promise<Resource>;
     find(link: string): C | NotFoundProvider;
     search(...links: string[]): ResourceProvider;
     asset(fileName: string): string | null;
@@ -25,7 +25,7 @@ export declare abstract class BaseResourceProvider<P extends ResourceProvider | 
     asset(fileName: string): string;
     success(): this;
     getEntry(): E;
-    abstract fetch(): Promise<ContentResource>;
+    abstract fetch(): Promise<Resource>;
     abstract find(link: string): C | NotFoundProvider;
 }
 export interface ProviderSettings {

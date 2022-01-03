@@ -1,4 +1,4 @@
-import { ContentResource } from "./resource.js";
+import { Resource } from "./resource.js";
 import { Course, CourseProvider, CourseRef } from "./course.js";
 import { FailedEntry, SuccessEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
@@ -11,7 +11,7 @@ export interface SuccessCoursesRoot extends SuccessEntry {
     divisions: Division[];
 }
 export declare type CoursesRoot = SuccessCoursesRoot | FailedEntry;
-export declare type CoursesRootResource = ContentResource<{
+export declare type CoursesRootResource = Resource<{
     divisions: Division<CourseRef>[];
 }>;
 export declare const loadCoursesRoot: (contentFolder: string, coursesFolder: string) => Promise<CoursesRoot>;

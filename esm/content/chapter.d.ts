@@ -1,5 +1,5 @@
 import { FailedEntry, SuccessEntry } from "./entry.js";
-import { ContentResource } from './resource.js';
+import { Resource } from './resource.js';
 import type { CourseProvider } from "./course";
 import { Lesson, LessonProvider, LessonRef } from "./lesson.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
@@ -8,7 +8,7 @@ export interface SuccessChapter extends SuccessEntry {
     lessons: Lesson[];
 }
 export declare type Chapter = SuccessChapter | FailedEntry;
-export declare type ChapterResource = ContentResource<{
+export declare type ChapterResource = Resource<{
     lead: string;
     lessons: LessonRef[];
 }>;

@@ -1,5 +1,5 @@
 import { CoursesRootIndex, DivisionIndex } from "../entries";
-import { ContentResource, createFailedRef, createFailedResource, createSuccessResource } from "./resource.js";
+import { Resource, createFailedRef, createFailedResource, createSuccessResource } from "./resource.js";
 import { readIndexFile } from "./content-node.js";
 import { Course, CourseProvider, CourseRef, createCourseRef, loadCourse } from "./course.js";
 import { FailedEntry, SuccessEntry } from "./entry.js";
@@ -17,7 +17,7 @@ export interface SuccessCoursesRoot extends SuccessEntry {
 
 export type CoursesRoot = SuccessCoursesRoot | FailedEntry;
 
-export type CoursesRootResource = ContentResource<{
+export type CoursesRootResource = Resource<{
   divisions: Division<CourseRef>[],
 }>;
 

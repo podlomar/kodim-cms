@@ -1,5 +1,5 @@
 import { FailedEntry, SuccessEntry } from "./entry.js";
-import { ResourceRef, ContentResource } from './resource.js';
+import { ResourceRef, Resource } from './resource.js';
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import type { ChapterProvider } from "./chapter.js";
 import { LessonSection, LessonSectionProvider, LessonSectionRef, LessonSectionResource } from "./lesson-section.js";
@@ -13,7 +13,7 @@ export interface SuccessLesson extends SuccessEntry {
     sections: LessonSection[];
 }
 export declare type Lesson = SuccessLesson | FailedEntry;
-export declare type LessonResource = ContentResource<{
+export declare type LessonResource = Resource<{
     num: number;
     lead: string;
     fullSection?: LessonSectionResource;

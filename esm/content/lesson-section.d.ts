@@ -1,4 +1,4 @@
-import { ContentResource, Crumbs, ResourceRef } from "./resource.js";
+import { Resource, Crumbs, ResourceRef } from "./resource.js";
 import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import type { LessonProvider } from "./lesson.js";
 import { FailedEntry, SuccessEntry } from "./entry.js";
@@ -9,7 +9,7 @@ export interface SuccessLessonSection extends SuccessEntry {
     exercises: Exercise[];
 }
 export declare type LessonSection = SuccessLessonSection | FailedEntry;
-export declare type LessonSectionResource = ContentResource<{
+export declare type LessonSectionResource = Resource<{
     jsml: Jsml;
     prev: LessonSectionRef | null;
     next: LessonSectionRef | null;
