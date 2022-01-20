@@ -93,4 +93,7 @@ export class ExerciseProvider extends BaseResourceProvider {
             demand: this.entry.demand
         }, ...jsml);
     }
+    findRepo(repoUrl) {
+        return null;
+    }
 }

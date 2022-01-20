@@ -76,4 +76,7 @@ export class LessonSectionProvider extends BaseResourceProvider {
                 path: this.entry.path
             }], this.settings);
     }
+    findRepo(repoUrl) {
+        return null;
+    }
 }

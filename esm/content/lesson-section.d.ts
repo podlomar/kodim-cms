@@ -27,5 +27,6 @@ export declare class LessonSectionProvider extends BaseResourceProvider<LessonPr
     private buildAssetPath;
     fetch(): Promise<LessonSectionResource>;
     find(link: string): ExerciseProvider | NotFoundProvider;
+    findRepo(repoUrl: string): null;
 }
 export {};

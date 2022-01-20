@@ -22,4 +22,5 @@ export declare class ExerciseProvider extends BaseResourceProvider<LessonSection
     private buildAssetPath;
     fetchEntry(): Promise<Exercise>;
     fetchAssign(): Promise<JsmlElement>;
+    findRepo(repoUrl: string): null;
 }

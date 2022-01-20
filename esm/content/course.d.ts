@@ -10,6 +10,11 @@ export declare type CourseRef = ResourceRef<{
 export interface SuccessCourse extends SuccessEntry {
     image: string;
     lead: string;
+    repo: {
+        url: string;
+        branch: string;
+        secret: string;
+    } | null;
     chapters: Chapter[];
 }
 export declare type Course = SuccessCourse | FailedEntry;
@@ -21,6 +26,8 @@ export declare type CourseResource = Resource<{
 export declare const loadCourse: (parentEntry: SuccessEntry, folderName: string) => Promise<Course>;
 export declare const createCourseRef: (course: Course, baseUrl: string) => CourseRef;
 export declare class CourseProvider extends BaseResourceProvider<CoursesRootProvider, Course, ChapterProvider> {
+    reload(): Promise<void>;
     fetch(): Promise<CourseResource>;
     find(link: string): ChapterProvider | NotFoundProvider;
+    findRepo(repoUrl: string): null;
 }

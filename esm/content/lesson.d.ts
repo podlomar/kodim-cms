@@ -31,4 +31,5 @@ export declare class LessonProvider extends BaseResourceProvider<ChapterProvider
     find(link: string): LessonSectionProvider | NotFoundProvider;
     getNextSection(pos: number): LessonSectionRef | null;
     getPrevSection(pos: number): LessonSectionRef | null;
+    findRepo(repoUrl: string): null;
 }

@@ -10,11 +10,17 @@ export class NotFoundProvider {
     search() {
         return this;
     }
+    findRepo(repoUrl) {
+        return null;
+    }
     asset(fileName) {
         return null;
     }
     success() {
         return null;
+    }
+    async reload() {
+        return;
     }
 }
 export class BaseResourceProvider {
@@ -43,5 +49,8 @@ export class BaseResourceProvider {
     }
     getEntry() {
         return this.entry;
+    }
+    async reload() {
+        return;
     }
 }

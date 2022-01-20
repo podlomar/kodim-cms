@@ -155,4 +155,8 @@ export class ExerciseProvider extends BaseResourceProvider<
       ...jsml,
     )
   }
+
+  public findRepo(repoUrl: string): null {
+    return null;
+  }
 }

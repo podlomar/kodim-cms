@@ -108,4 +108,8 @@ export class ChapterProvider extends BaseResourceProvider<
 
     return createLessonRef(lesson, this.settings.baseUrl);
   }
+
+  public findRepo(repoUrl: string): null {
+    return null;
+  }
 }

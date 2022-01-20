@@ -176,4 +176,8 @@ export class LessonProvider extends BaseResourceProvider<
 
     return createResourceRef(section, this.settings.baseUrl);
   }
+
+  public findRepo(repoUrl: string): null {
+    return null;
+  }
 }

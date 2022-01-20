@@ -8,6 +8,11 @@ const cms = await KodimCms.load(
   '/home/podlomar/work/projects/kodim/new-content',
   `http://localhost:${PORT}/cms`
 );
+
+const pokus = cms.getRoot().findRepo('https://github.com/Czechitas-podklady-WEB/daweb-vyuka.git');
+
+console.log(pokus);
+
 const app = new CmsApp(cms);
 const access = {
   claims: [
@@ -16,7 +21,6 @@ const access = {
 };
 
 const server = express();
-
 server.use('/cms', app.router);
 
 server.listen(PORT, () => console.log('listenig...'));

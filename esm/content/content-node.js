@@ -15,7 +15,7 @@ export const readYamlFile = async (filePath) => {
         }
     }
 };
-export const readIndexFile = async (folderPath) => readYamlFile(`${folderPath}/index.yml`);
+export const readIndexFile = async (folderPath) => readYamlFile(`${folderPath}/entry.yml`);
 export const findChild = (children, link) => {
     const position = children.findIndex((child) => child.link === link);
     if (position < 0) {

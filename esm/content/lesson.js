@@ -90,4 +90,7 @@ export class LessonProvider extends BaseResourceProvider {
         }
         return createResourceRef(section, this.settings.baseUrl);
     }
+    findRepo(repoUrl) {
+        return null;
+    }
 }

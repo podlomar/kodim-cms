@@ -7,4 +7,5 @@ export declare class CmsApp {
     private getProviderByPath;
     private handleGetEntry;
     private handleGetAsset;
+    private handleHooks;
 }

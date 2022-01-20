@@ -18,4 +18,5 @@ export declare class ChapterProvider extends BaseResourceProvider<CourseProvider
     find(link: string): LessonProvider | NotFoundProvider;
     getNextLesson(pos: number): LessonRef | null;
     getPrevLesson(pos: number): LessonRef | null;
+    findRepo(repoUrl: string): null;
 }

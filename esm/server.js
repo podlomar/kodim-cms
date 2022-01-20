@@ -13,10 +13,23 @@ export class CmsApp {
             const assetPath = this.getProviderByPath(providerPath).asset(fileName);
             res.sendFile(assetPath);
         };
+        this.handleHooks = async (req, res) => {
+            const url = req.body.repository.clone_url;
+            const provider = this.cms.getRoot().findRepo(url);
+            console.log(url);
+            if (provider === null) {
+                res.sendStatus(400);
+                return;
+            }
+            await (provider === null || provider === void 0 ? void 0 : provider.reload());
+            res.send(`reloaded ${url}`);
+        };
         this.cms = cms;
         this.router = express.Router();
+        this.router.use(express.json());
         this.router.get(['/content/kurzy', '/content/kurzy/*'], this.handleGetEntry);
         this.router.get(['/assets/kurzy', '/assets/kurzy/*'], this.handleGetAsset);
+        this.router.post('/hooks', this.handleHooks);
     }
     getProviderByPath(path) {
         const links = path.split('/');

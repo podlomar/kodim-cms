@@ -52,4 +52,7 @@ export class ChapterProvider extends BaseResourceProvider {
         }
         return createLessonRef(lesson, this.settings.baseUrl);
     }
+    findRepo(repoUrl) {
+        return null;
+    }
 }

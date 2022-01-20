@@ -8,7 +8,9 @@ export interface ResourceProvider<
   find(link: string): C | NotFoundProvider;
   search(...links: string[]): ResourceProvider;
   asset(fileName: string): string | null;
+  findRepo(repoUrl: string): ResourceProvider | null;
   success(): this | null;
+  reload(): Promise<void>;
 }
 
 export class NotFoundProvider implements ResourceProvider<never> {
@@ -24,12 +26,20 @@ export class NotFoundProvider implements ResourceProvider<never> {
     return this;
   }
 
+  public findRepo(repoUrl: string): null {
+    return null;
+  }
+
   public asset(fileName: string): null {
     return null;
   }
 
   public success(): null {
     return null;
+  }
+
+  public async reload(): Promise<void> {
+    return;
   }
 }
 
@@ -81,8 +91,13 @@ export abstract class BaseResourceProvider<
     return this.entry;
   }
 
+  public async reload(): Promise<void> {
+    return;
+  }
+
   public abstract fetch(): Promise<Resource | NotFound>;
   public abstract find(link: string): C | NotFoundProvider;
+  public abstract findRepo(repoUrl: string): ResourceProvider | null;
 }
 
 export interface ProviderSettings {

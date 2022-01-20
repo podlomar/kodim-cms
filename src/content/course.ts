@@ -1,11 +1,14 @@
+import { existsSync } from "fs";
+import simpleGit from 'simple-git';
 import { CourseIndex } from "../entries";
 import { FailedEntry, SuccessEntry, createSuccessEntry, createFailedEntry } from "./entry.js";
 import { createSuccessResource, ResourceRef, createFailedResource, buildAssetPath, createFailedRef, createSuccessRef, Resource } from './resource.js';
 import { Chapter, ChapterProvider, ChapterResource, loadChapter } from "./chapter.js";
 import type { CoursesRootProvider } from "./content";
-import { findChild, readIndexFile } from "./content-node.js";
-import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
+import { findChild, readIndexFile, readYamlFile } from "./content-node.js";
+import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
 import { createLessonRef } from "./lesson.js";
+import { stringify } from "querystring";
 
 export type CourseRef = ResourceRef<{
   image: string,
@@ -15,6 +18,11 @@ export type CourseRef = ResourceRef<{
 export interface SuccessCourse extends SuccessEntry {
   image: string,
   lead: string,
+  repo: {
+    url: string,
+    branch: string,
+    secret: string,
+  } | null,
   chapters: Chapter[],
 }
 
@@ -26,6 +34,7 @@ export type CourseResource = Resource<{
   chapters: ChapterResource[],
 }>;
 
+
 export const loadCourse = async (
   parentEntry: SuccessEntry,
   folderName: string,
@@ -33,9 +42,39 @@ export const loadCourse = async (
   const index = await readIndexFile<CourseIndex>(
     `${parentEntry.fsPath}/${folderName}`
   );
-  
+
   if (index === 'not-found') {
     return createFailedEntry(parentEntry, folderName);
+  }
+
+  const isGitRepo = existsSync(`${parentEntry.fsPath}/${folderName}/.git`);
+  let repo = null;
+
+  if (isGitRepo) {
+    const git = simpleGit({
+      baseDir: `${parentEntry.fsPath}/${folderName}`,
+      binary: 'git',
+    });
+    
+    const url = await git.remote(['get-url', 'origin']) as string;
+    const repoParams = await readYamlFile<{branch: string, secret: string}>(
+      `${parentEntry.fsPath}/${folderName}/repo.yml`
+    );
+    
+    if (repoParams === 'not-found') {
+      repo = {
+        url: url.trim(),
+        branch: 'not-found',
+        secret: 'not-found',
+      }
+    } else {
+      repo = {
+        url: url.trim(),
+        ...repoParams,
+      }
+    }
+    
+    console.log('git repo', index.title, repo);
   }
 
   const baseEntry = createSuccessEntry(parentEntry, folderName, index.title);
@@ -51,6 +90,7 @@ export const loadCourse = async (
     ...baseEntry,
     image: index.image,
     lead: index.lead,
+    repo,
     chapters,
   }
 }
@@ -70,6 +110,39 @@ export const createCourseRef = (course: Course, baseUrl: string): CourseRef => {
 export class CourseProvider extends BaseResourceProvider<
   CoursesRootProvider, Course, ChapterProvider
 > {
+  public async reload(): Promise<void> {
+    const git = simpleGit({
+      baseDir: this.entry.fsPath,
+      binary: 'git',
+    });
+    
+    const pullResult = await git.pull();
+    console.log('pullResult', pullResult);
+
+    const index = await readIndexFile<CourseIndex>(
+      this.entry.fsPath,
+    );
+  
+    if (index === 'not-found') {
+      return;
+    }
+  
+    if (this.entry.type === 'failed') {
+      return;
+    }
+
+    const chapters = await Promise.all(
+      index.chapters === undefined ? [] : 
+      index.chapters.map((chapterLink: string) => loadChapter(
+        this.entry as SuccessEntry, chapterLink
+      ))
+    );
+  
+    this.entry.image = index.image;
+    this.entry.lead = index.lead;
+    this.entry.chapters = chapters;
+  }
+
   public async fetch(): Promise<CourseResource> {
     if (this.entry.type === 'failed') {
       return createFailedResource(this.entry, this.settings.baseUrl);
@@ -115,5 +188,9 @@ export class CourseProvider extends BaseResourceProvider<
       }], 
       this.settings
     );
+  }
+
+  public findRepo(repoUrl: string): null {
+    return null;
   }
 }

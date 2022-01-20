@@ -51,4 +51,20 @@ export class CoursesRootProvider extends BaseResourceProvider {
         }
         return new CourseProvider(this, courses[pos], pos, [], this.settings);
     }
+    findRepo(repoUrl) {
+        var _a;
+        if (this.entry.type === 'failed') {
+            return null;
+        }
+        const courses = this.entry.divisions.flatMap((division) => division.courses);
+        for (let i = 0; i < courses.length; i += 1) {
+            const course = courses[i];
+            if (course.type === 'success') {
+                if (((_a = course.repo) === null || _a === void 0 ? void 0 : _a.url) === repoUrl) {
+                    return new CourseProvider(this, course, i, [], this.settings);
+                }
+            }
+        }
+        return null;
+    }
 }

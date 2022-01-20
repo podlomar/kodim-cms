@@ -3,7 +3,7 @@ import { Resource, createFailedRef, createFailedResource, createSuccessResource 
 import { readIndexFile } from "./content-node.js";
 import { Course, CourseProvider, CourseRef, createCourseRef, loadCourse } from "./course.js";
 import { FailedEntry, SuccessEntry } from "./entry.js";
-import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
+import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
 
 export interface Division<T extends Course | CourseRef = Course> {
   readonly title: string;
@@ -107,11 +107,38 @@ export class CoursesRootProvider extends BaseResourceProvider<
     } 
 
     return new CourseProvider(
-      this, 
+      this,
       courses[pos], 
       pos, 
       [],
       this.settings
     );
+  }
+
+  public findRepo(repoUrl: string): ResourceProvider | null {
+    if (this.entry.type === 'failed') {
+      return null;
+    }
+
+    const courses = this.entry.divisions.flatMap(
+      (division) => division.courses
+    );
+
+    for(let i = 0; i < courses.length; i += 1) {
+      const course = courses[i];
+      if (course.type === 'success') {
+        if (course.repo?.url === repoUrl) {
+          return new CourseProvider(
+            this,
+            course,
+            i,
+            [],
+            this.settings
+          );
+        }
+      }
+    }
+
+    return null;
   }
 }

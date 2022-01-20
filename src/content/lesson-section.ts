@@ -150,4 +150,8 @@ export class LessonSectionProvider extends BaseResourceProvider<
       this.settings
     );
   }
+
+  public findRepo(repoUrl: string): null {
+    return null;
+  }
 }

@@ -17,7 +17,7 @@ export const readYamlFile = async <T>(filePath: string): Promise<T | 'not-found'
 };
 
 export const readIndexFile = async <T>(folderPath: string): Promise<T | 'not-found'> =>
-  readYamlFile(`${folderPath}/index.yml`);
+  readYamlFile(`${folderPath}/entry.yml`);
 
 export const findChild = <T extends Entry>(
   children: T[], link: string
