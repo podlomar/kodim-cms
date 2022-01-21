@@ -17,6 +17,6 @@ export const createFailedRef = (entry, baseUrl) => (Object.assign({ type: 'faile
 export const createResourceRef = (entry, baseUrl) => entry.type === 'failed'
     ? createFailedRef(entry, baseUrl)
     : createSuccessRef(entry, baseUrl);
-export const buildAssetPath = (fileName, entry, baseUrl) => {
-    return `${baseUrl}/assets${entry.path}/${fileName}`;
+export const buildAssetPath = (fileName, entryPath, baseUrl) => {
+    return `${baseUrl}/assets${entryPath}/${fileName}`;
 };

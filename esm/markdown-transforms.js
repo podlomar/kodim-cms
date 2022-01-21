@@ -45,7 +45,7 @@ export const buildExcTransform = (sectionProvider) => async (element, node) => {
     if (linkChild.type !== 'text') {
         return node;
     }
-    const link = linkChild.value;
+    const link = linkChild.value.replace('/', ':');
     const exerciseProvider = sectionProvider.find(link).success();
     if (exerciseProvider === null) {
         return node;

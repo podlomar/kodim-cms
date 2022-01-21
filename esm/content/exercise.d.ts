@@ -13,7 +13,7 @@ export interface ExerciseAssign {
     num: number;
     jsml: Jsml;
 }
-export declare const loadExercise: (parentEntry: SuccessEntry, link: string, pos: number) => Promise<Exercise>;
+export declare const loadExercise: (parentEntry: SuccessEntry, entryPath: string, pos: number) => Promise<Exercise>;
 export declare class ExerciseProvider extends BaseResourceProvider<LessonSectionProvider, Exercise, never> {
     private markdownProcessor;
     constructor(parent: LessonSectionProvider, entry: Exercise, position: number, crumbs: Crumbs, settings: ProviderSettings);

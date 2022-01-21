@@ -42,6 +42,7 @@ export class BaseResourceProvider {
         return child.search(...restLinks);
     }
     asset(fileName) {
+        console.log('asset', `${this.entry.fsPath}/assets/${fileName}`);
         return `${this.entry.fsPath}/assets/${fileName}`;
     }
     success() {

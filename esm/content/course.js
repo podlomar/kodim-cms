@@ -42,7 +42,7 @@ export const createCourseRef = (course, baseUrl) => {
     if (course.type === 'failed') {
         return createFailedRef(course, baseUrl);
     }
-    return Object.assign(Object.assign({}, createSuccessRef(course, baseUrl)), { image: buildAssetPath(course.image, course, baseUrl), lead: course.lead });
+    return Object.assign(Object.assign({}, createSuccessRef(course, baseUrl)), { image: buildAssetPath(course.image, course.path, baseUrl), lead: course.lead });
 };
 export class CourseProvider extends BaseResourceProvider {
     async reload() {
@@ -69,7 +69,7 @@ export class CourseProvider extends BaseResourceProvider {
         if (this.entry.type === 'failed') {
             return createFailedResource(this.entry, this.settings.baseUrl);
         }
-        return Object.assign(Object.assign({}, createSuccessResource(this.entry, this.crumbs, this.settings.baseUrl)), { image: buildAssetPath(this.entry.image, this.entry, this.settings.baseUrl), lead: this.entry.lead, chapters: this.entry.chapters.map((chapter) => {
+        return Object.assign(Object.assign({}, createSuccessResource(this.entry, this.crumbs, this.settings.baseUrl)), { image: buildAssetPath(this.entry.image, this.entry.path, this.settings.baseUrl), lead: this.entry.lead, chapters: this.entry.chapters.map((chapter) => {
                 if (chapter.type === 'failed') {
                     return createFailedResource(chapter, this.settings.baseUrl);
                 }

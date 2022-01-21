@@ -92,6 +92,6 @@ export const createResourceRef = (
   ? createFailedRef(entry, baseUrl)
   : createSuccessRef(entry, baseUrl);
 
-export const buildAssetPath = (fileName: string, entry: Entry, baseUrl: string) => {
-  return `${baseUrl}/assets${entry.path}/${fileName}`;
+export const buildAssetPath = (fileName: string, entryPath: string, baseUrl: string) => {
+  return `${baseUrl}/assets${entryPath}/${fileName}`;
 }

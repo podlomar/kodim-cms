@@ -1,4 +1,5 @@
 import { promises as fs } from "fs";
+import path from 'path';
 import { buildAssetPath, Resource, createFailedResource, createSuccessResource, Crumbs, ResourceRef } from "./resource.js";
 import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import type { LessonProvider } from "./lesson.js";
@@ -109,7 +110,7 @@ export class LessonSectionProvider extends BaseResourceProvider<
   }
   
   private buildAssetPath = (fileName: string) => buildAssetPath(
-    fileName, this.entry, this.settings.baseUrl
+    fileName, path.join(this.entry.path, '..'), this.settings.baseUrl
   )
 
   public async fetch(): Promise<LessonSectionResource> {

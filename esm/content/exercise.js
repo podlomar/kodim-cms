@@ -38,19 +38,26 @@ const getAssignFilePath = (fsPath) => {
     }
     return null;
 };
-export const loadExercise = async (parentEntry, link, pos) => {
-    const fsPath = path.join(parentEntry.fsPath, "../excs", link);
+export const loadExercise = async (parentEntry, entryPath, pos) => {
+    const fsPath = path.join(parentEntry.fsPath, '..', entryPath);
+    const link = entryPath.replace('/', ':');
     const assignPath = getAssignFilePath(fsPath);
     if (assignPath === null) {
         return createFailedEntry(parentEntry, link, fsPath);
     }
+    console.log('assingPath', assignPath);
     const frontMatter = await loadFrontMatter(assignPath);
+    console.log('frontMatter', frontMatter);
     const baseEntry = createSuccessEntry(parentEntry, link, frontMatter.title, fsPath);
     return Object.assign(Object.assign({}, baseEntry), { demand: frontMatter.demand, num: pos + 1 });
 };
 export class ExerciseProvider extends BaseResourceProvider {
     constructor(parent, entry, position, crumbs, settings) {
         super(parent, entry, position, crumbs, settings);
+        this.buildAssetPath = (fileName) => {
+            const baseUrl = this.settings.baseUrl;
+            return `${baseUrl}/assets${this.entry.path}/${fileName}`;
+        };
         this.markdownProcessor = new MarkdownProcessor(this.buildAssetPath);
     }
     async fetch() {
@@ -58,10 +65,6 @@ export class ExerciseProvider extends BaseResourceProvider {
     }
     find(link) {
         return new NotFoundProvider();
-    }
-    buildAssetPath(fileName) {
-        const baseUrl = this.settings.baseUrl;
-        return `${baseUrl}/assets${this.entry.path}/${fileName}`;
     }
     async fetchEntry() {
         // const filePath = path.join(

@@ -62,20 +62,24 @@ const getAssignFilePath = (fsPath: string): string | null => {
 
 export const loadExercise = async (
   parentEntry: SuccessEntry,
-  link: string,
+  entryPath: string,
   pos: number,
 ): Promise<Exercise> => {
-  const fsPath = path.join(parentEntry.fsPath, "../excs", link);
+  const fsPath = path.join(parentEntry.fsPath, '..', entryPath);
+  const link = entryPath.replace('/', ':');
+
   const assignPath = getAssignFilePath(fsPath);
   
   if (assignPath === null) {
     return createFailedEntry(parentEntry, link, fsPath);
   }
+  console.log('assingPath', assignPath);
 
   const frontMatter = await loadFrontMatter<ExerciseFrontMatter>(
     assignPath,
   );
 
+  console.log('frontMatter', frontMatter);
   const baseEntry = createSuccessEntry(parentEntry, link, frontMatter.title, fsPath);
 
   return {
@@ -111,7 +115,7 @@ export class ExerciseProvider extends BaseResourceProvider<
     return new NotFoundProvider();
   }
 
-  private buildAssetPath(fileName: string): string {
+  private buildAssetPath = (fileName: string): string => {
     const baseUrl = this.settings.baseUrl;
     return `${baseUrl}/assets${this.entry.path}/${fileName}`;
   }

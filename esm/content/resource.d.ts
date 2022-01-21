@@ -38,4 +38,4 @@ export declare type ResourceRef<T = {}> = (SuccessRef & T) | FailedRef;
 export declare const createSuccessRef: (entry: SuccessEntry, baseUrl: string) => SuccessRef;
 export declare const createFailedRef: (entry: FailedEntry, baseUrl: string) => FailedRef;
 export declare const createResourceRef: (entry: Entry, baseUrl: string) => ResourceRef;
-export declare const buildAssetPath: (fileName: string, entry: Entry, baseUrl: string) => string;
+export declare const buildAssetPath: (fileName: string, entryPath: string, baseUrl: string) => string;

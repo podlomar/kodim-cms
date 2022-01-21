@@ -87,7 +87,7 @@ export const buildExcTransform = (
     return node;
   }
     
-  const link = linkChild.value;
+  const link = linkChild.value.replace('/', ':');
   const exerciseProvider = sectionProvider.find(link).success();
   
   if (exerciseProvider === null) {

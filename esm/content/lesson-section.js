@@ -1,4 +1,5 @@
 import { promises as fs } from "fs";
+import path from 'path';
 import { buildAssetPath, createFailedResource, createSuccessResource } from "./resource.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { unified } from "unified";
@@ -48,7 +49,7 @@ export const loadLessonSection = async (parentEntry, folderName) => {
 export class LessonSectionProvider extends BaseResourceProvider {
     constructor(parent, entry, position, crumbs, settings) {
         super(parent, entry, position, crumbs, settings);
-        this.buildAssetPath = (fileName) => buildAssetPath(fileName, this.entry, this.settings.baseUrl);
+        this.buildAssetPath = (fileName) => buildAssetPath(fileName, path.join(this.entry.path, '..'), this.settings.baseUrl);
         this.markdownProcessor = new MarkdownProcessor(this.buildAssetPath).useTransform('exc', buildExcTransform(this));
         ;
     }

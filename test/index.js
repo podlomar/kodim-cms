@@ -9,10 +9,6 @@ const cms = await KodimCms.load(
   `http://localhost:${PORT}/cms`
 );
 
-const pokus = cms.getRoot().findRepo('https://github.com/Czechitas-podklady-WEB/daweb-vyuka.git');
-
-console.log(pokus);
-
 const app = new CmsApp(cms);
 const access = {
   claims: [

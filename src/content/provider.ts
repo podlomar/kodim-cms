@@ -80,6 +80,7 @@ export abstract class BaseResourceProvider<
   }
 
   public asset(fileName: string): string {
+    console.log('asset', `${this.entry.fsPath}/assets/${fileName}`);
     return `${this.entry.fsPath}/assets/${fileName}`;
   }
 

@@ -102,7 +102,7 @@ export const createCourseRef = (course: Course, baseUrl: string): CourseRef => {
 
   return {
     ...createSuccessRef(course, baseUrl),
-    image: buildAssetPath(course.image, course, baseUrl),
+    image: buildAssetPath(course.image, course.path, baseUrl),
     lead: course.lead,
   }
 }
@@ -150,7 +150,7 @@ export class CourseProvider extends BaseResourceProvider<
     
     return {
       ...createSuccessResource(this.entry, this.crumbs, this.settings.baseUrl),
-      image: buildAssetPath(this.entry.image, this.entry, this.settings.baseUrl),
+      image: buildAssetPath(this.entry.image, this.entry.path, this.settings.baseUrl),
       lead: this.entry.lead,
       chapters: this.entry.chapters.map((chapter) => {
         if (chapter.type === 'failed') {
