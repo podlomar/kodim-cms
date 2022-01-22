@@ -6,4 +6,5 @@ export declare class MarkdownProcessor {
     constructor(buildAssetPath: (path: string) => string, elementTransform?: ElementTransform);
     useTransform(tagName: string, transformFunc: TransformFunc): MarkdownProcessor;
     process: (file: string) => Promise<Jsml>;
+    processString: (text: string) => Promise<Jsml>;
 }

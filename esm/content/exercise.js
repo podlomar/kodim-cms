@@ -2,7 +2,7 @@ import path from "path";
 import { existsSync } from "fs";
 import yaml from "yaml";
 import lineReader from "line-reader";
-import { el } from "../jsml.js";
+import { el, getChildren, getTag, isElement } from "../jsml.js";
 import { createFailedEntry, createSuccessEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { MarkdownProcessor } from "../markdown.js";
@@ -23,6 +23,30 @@ const loadFrontMatter = async (filePath) => new Promise((resolve, reject) => {
         }
         if (line.startsWith("---")) {
             inside = true;
+        }
+        return true;
+    }, reject);
+});
+const loadAssign = async (filePath) => new Promise((resolve, reject) => {
+    let opened = 0;
+    let lines = "";
+    lineReader.eachLine(filePath, (line, last) => {
+        console.log('line', line);
+        lines += `${line}\n`;
+        if (last) {
+            resolve(lines);
+        }
+        const trimmed = line.trim();
+        if (trimmed === ":::") {
+            opened -= 1;
+            if (opened === 0) {
+                resolve(lines);
+                return false;
+            }
+            return true;
+        }
+        if (trimmed.startsWith(":::")) {
+            opened += 1;
         }
         return true;
     }, reject);
@@ -89,12 +113,19 @@ export class ExerciseProvider extends BaseResourceProvider {
         if (this.entry.type === 'failed') {
             return ['error'];
         }
-        const jsml = await this.markdownProcessor.process(assignPath);
-        return el('exc', {
+        const assignText = await loadAssign(assignPath);
+        const jsml = await this.markdownProcessor.processString(assignText);
+        const attrs = {
             num: this.entry.num,
             title: this.entry.title,
+            path: this.entry.path,
             demand: this.entry.demand
-        }, ...jsml);
+        };
+        const firstNode = jsml[0];
+        const content = isElement(firstNode) && getTag(firstNode) === 'assign'
+            ? getChildren(firstNode)
+            : jsml;
+        return el('exc', attrs, ...content);
     }
     findRepo(repoUrl) {
         return null;

@@ -3,7 +3,7 @@ import { promises as fs, existsSync } from "fs";
 import yaml from "yaml";
 import lineReader from "line-reader";
 import { ExerciseFrontMatter } from "../entries.js";
-import { el, Jsml, JsmlElement } from "../jsml.js";
+import { el, getChildren, getTag, isElement, Jsml, JsmlElement } from "../jsml.js";
 import { createFailedEntry, createSuccessEntry, FailedEntry, SuccessEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import { LessonSectionProvider } from "./lesson-section.js";
@@ -39,6 +39,40 @@ const loadFrontMatter = async <T>(filePath: string): Promise<T> =>
         }
         if (line.startsWith("---")) {
           inside = true;
+        }
+        return true;
+      },
+      reject,
+    );
+  });
+
+const loadAssign = async(filePath: string): Promise<string> =>
+  new Promise((resolve, reject) => {
+    let opened = 0;
+    let lines = "";
+    lineReader.eachLine(filePath, 
+      (line: string, last: boolean) => {
+        console.log('line', line);
+        lines += `${line}\n`;
+        
+        if (last) {
+          resolve(lines);
+        }
+
+        const trimmed = line.trim();
+        
+        if (trimmed === ":::") {
+          opened -= 1;
+          if (opened === 0) {
+            resolve(lines);
+            return false;
+          }
+
+          return true;
+        }
+
+        if (trimmed.startsWith(":::")) {
+          opened += 1;
         }
         return true;
       },
@@ -147,16 +181,25 @@ export class ExerciseProvider extends BaseResourceProvider<
       return ['error'];
     }
     
-    const jsml = await this.markdownProcessor.process(assignPath);
+    const assignText = await loadAssign(assignPath);
+    const jsml = await this.markdownProcessor.processString(assignText);
+
+    const attrs = {
+      num: this.entry.num,
+      title: this.entry.title,
+      path: this.entry.path,
+      demand: this.entry.demand
+    };
+
+    const firstNode = jsml[0];
+    const content = isElement(firstNode) && getTag(firstNode) === 'assign'
+      ? getChildren(firstNode)
+      : jsml;
 
     return el(
       'exc', 
-      {
-        num: this.entry.num,
-        title: this.entry.title,
-        demand: this.entry.demand
-      }, 
-      ...jsml,
+      attrs,
+      ...content,
     )
   }
 

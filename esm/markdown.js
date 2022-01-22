@@ -21,6 +21,9 @@ export class MarkdownProcessor {
     constructor(buildAssetPath, elementTransform = {}) {
         this.process = async (file) => {
             const text = await readFile(file, "utf-8");
+            return this.processString(text);
+        };
+        this.processString = async (text) => {
             const mdastTree = unifiedProcessor.parse(text);
             // @ts-ignore
             const hastTree = await unifiedProcessor.run(mdastTree);

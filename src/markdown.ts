@@ -50,6 +50,10 @@ export class MarkdownProcessor {
 
   public process = async (file: string): Promise<Jsml> => {
     const text = await readFile(file, "utf-8");
+    return this.processString(text);
+  };
+
+  public processString = async (text: string): Promise<Jsml> => {
     const mdastTree = unifiedProcessor.parse(text);
     // @ts-ignore
     const hastTree = await unifiedProcessor.run(mdastTree);
