@@ -6,7 +6,7 @@ import { el, getChildren, getTag, isElement } from "../jsml.js";
 import { createFailedEntry, createSuccessEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { MarkdownProcessor } from "../markdown.js";
-import { createNotFound } from "./resource.js";
+import { createFailedResource, createSuccessResource } from "./resource.js";
 ;
 ;
 const loadFrontMatter = async (filePath) => new Promise((resolve, reject) => {
@@ -31,7 +31,6 @@ const loadAssign = async (filePath) => new Promise((resolve, reject) => {
     let opened = 0;
     let lines = "";
     lineReader.eachLine(filePath, (line, last) => {
-        console.log('line', line);
         lines += `${line}\n`;
         if (last) {
             resolve(lines);
@@ -69,9 +68,7 @@ export const loadExercise = async (parentEntry, entryPath, pos) => {
     if (assignPath === null) {
         return createFailedEntry(parentEntry, link, fsPath);
     }
-    console.log('assingPath', assignPath);
     const frontMatter = await loadFrontMatter(assignPath);
-    console.log('frontMatter', frontMatter);
     const baseEntry = createSuccessEntry(parentEntry, link, frontMatter.title, fsPath);
     return Object.assign(Object.assign({}, baseEntry), { demand: frontMatter.demand, num: pos + 1 });
 };
@@ -84,26 +81,30 @@ export class ExerciseProvider extends BaseResourceProvider {
         };
         this.markdownProcessor = new MarkdownProcessor(this.buildAssetPath);
     }
-    async fetch() {
-        return createNotFound();
-    }
     find(link) {
         return new NotFoundProvider();
     }
-    async fetchEntry() {
-        // const filePath = path.join(
-        //   this.parent.location.fsPath,
-        //   'assign.md',
-        // );
-        // const assignHtml = await readAssignFile(`${filePath}/assign.md`);
-        // return {
-        //   ...createBaseEntry(this.location),
-        //   demand: this.frontMatter.demand,
-        //   assignHtml,
-        //   solutionHtml: "<p>solution</p>",
-        // };
-        // @ts-ignore
-        return null;
+    async fetch() {
+        var _a;
+        if (this.entry.type === 'failed') {
+            return createFailedResource(this.entry, this.settings.baseUrl);
+        }
+        const assignPath = getAssignFilePath(this.entry.fsPath);
+        if (assignPath === null) {
+            throw new Error('no assign file found');
+        }
+        const jsml = await this.markdownProcessor.process(assignPath);
+        console.log(jsml);
+        const firstNode = jsml[0];
+        const secondNode = (_a = jsml[1]) !== null && _a !== void 0 ? _a : '';
+        const assignJsml = isElement(firstNode) && getTag(firstNode) === 'assign'
+            ? getChildren(firstNode)
+            : jsml;
+        const solutionJsml = isElement(secondNode) && getTag(secondNode) === 'solution'
+            ? getChildren(secondNode)
+            : [];
+        return Object.assign(Object.assign({}, createSuccessResource(this.entry, this.crumbs, this.settings.baseUrl)), { demand: this.entry.demand, title: this.entry.title, num: this.entry.num, assignJsml,
+            solutionJsml });
     }
     async fetchAssign() {
         const assignPath = getAssignFilePath(this.entry.fsPath);
