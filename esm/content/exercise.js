@@ -50,12 +50,12 @@ const loadAssign = async (filePath) => new Promise((resolve, reject) => {
         return true;
     }, reject);
 });
-const getAssignFilePath = (fsPath) => {
+const getExcFilePath = (fsPath) => {
     const standalone = `${fsPath}.md`;
     if (existsSync(standalone)) {
         return standalone;
     }
-    const inFolder = `${fsPath}/assign.md`;
+    const inFolder = `${fsPath}/exercise.md`;
     if (existsSync(inFolder)) {
         return inFolder;
     }
@@ -64,7 +64,7 @@ const getAssignFilePath = (fsPath) => {
 export const loadExercise = async (parentEntry, entryPath, pos) => {
     const fsPath = path.join(parentEntry.fsPath, '..', entryPath);
     const link = entryPath.replace('/', ':');
-    const assignPath = getAssignFilePath(fsPath);
+    const assignPath = getExcFilePath(fsPath);
     if (assignPath === null) {
         return createFailedEntry(parentEntry, link, fsPath);
     }
@@ -89,12 +89,11 @@ export class ExerciseProvider extends BaseResourceProvider {
         if (this.entry.type === 'failed') {
             return createFailedResource(this.entry, this.settings.baseUrl);
         }
-        const assignPath = getAssignFilePath(this.entry.fsPath);
+        const assignPath = getExcFilePath(this.entry.fsPath);
         if (assignPath === null) {
             throw new Error('no assign file found');
         }
         const jsml = await this.markdownProcessor.process(assignPath);
-        console.log(jsml);
         const firstNode = jsml[0];
         const secondNode = (_a = jsml[1]) !== null && _a !== void 0 ? _a : '';
         const assignJsml = isElement(firstNode) && getTag(firstNode) === 'assign'
@@ -107,14 +106,14 @@ export class ExerciseProvider extends BaseResourceProvider {
             solutionJsml });
     }
     async fetchAssign() {
-        const assignPath = getAssignFilePath(this.entry.fsPath);
-        if (assignPath === null) {
+        const excPath = getExcFilePath(this.entry.fsPath);
+        if (excPath === null) {
             throw new Error('no assign file found');
         }
         if (this.entry.type === 'failed') {
             return ['error'];
         }
-        const assignText = await loadAssign(assignPath);
+        const assignText = await loadAssign(excPath);
         const jsml = await this.markdownProcessor.processString(assignText);
         const attrs = {
             num: this.entry.num,

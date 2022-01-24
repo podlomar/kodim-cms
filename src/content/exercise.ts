@@ -86,13 +86,13 @@ const loadAssign = async(filePath: string): Promise<string> =>
     );
   });
 
-const getAssignFilePath = (fsPath: string): string | null => {
+const getExcFilePath = (fsPath: string): string | null => {
   const standalone = `${fsPath}.md`;
   if (existsSync(standalone)) {
     return standalone;
   }
 
-  const inFolder = `${fsPath}/assign.md`;
+  const inFolder = `${fsPath}/exercise.md`;
   if (existsSync(inFolder)) {
     return inFolder;
   }
@@ -108,7 +108,7 @@ export const loadExercise = async (
   const fsPath = path.join(parentEntry.fsPath, '..', entryPath);
   const link = entryPath.replace('/', ':');
 
-  const assignPath = getAssignFilePath(fsPath);
+  const assignPath = getExcFilePath(fsPath);
   
   if (assignPath === null) {
     return createFailedEntry(parentEntry, link, fsPath);
@@ -157,13 +157,12 @@ export class ExerciseProvider extends BaseResourceProvider<
       return createFailedResource(this.entry, this.settings.baseUrl);
     }
     
-    const assignPath = getAssignFilePath(this.entry.fsPath);
+    const assignPath = getExcFilePath(this.entry.fsPath);
     if (assignPath === null) {
       throw new Error('no assign file found');
     }
 
     const jsml = await this.markdownProcessor.process(assignPath);
-    console.log(jsml);
     const firstNode = jsml[0];
     const secondNode = jsml[1] ?? '';
     
@@ -186,15 +185,15 @@ export class ExerciseProvider extends BaseResourceProvider<
   }
 
   public async fetchAssign(): Promise<JsmlElement> {
-    const assignPath = getAssignFilePath(this.entry.fsPath);
-    if (assignPath === null) {
+    const excPath = getExcFilePath(this.entry.fsPath);
+    if (excPath === null) {
       throw new Error('no assign file found');
     }    
     if (this.entry.type === 'failed') {
       return ['error'];
     }
     
-    const assignText = await loadAssign(assignPath);
+    const assignText = await loadAssign(excPath);
     const jsml = await this.markdownProcessor.processString(assignText);
 
     const attrs = {
