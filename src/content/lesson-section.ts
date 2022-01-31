@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from 'path';
 import { buildAssetPath, Resource, createFailedResource, createSuccessResource, Crumbs, ResourceRef } from "./resource.js";
-import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
+import { BaseResourceProvider, NoAccessProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import type { LessonProvider } from "./lesson.js";
 import { unified } from "unified";
 import markdown from "remark-parse";
@@ -14,6 +14,7 @@ import { findChild } from "./content-node.js";
 import { MarkdownProcessor } from "../markdown.js";
 import { buildExcTransform } from "../markdown-transforms.js";
 import { Jsml } from "../jsml.js";
+import { Access } from "./access.js";
 
 export type LessonSectionRef = ResourceRef;
 
@@ -99,9 +100,10 @@ export class LessonSectionProvider extends BaseResourceProvider<
     entry: LessonSection, 
     position: number, 
     crumbs: Crumbs,
+    access: Access,
     settings: ProviderSettings
   ) {
-    super(parent, entry, position, crumbs, settings);
+    super(parent, entry, position, crumbs, access, settings);
     this.markdownProcessor = new MarkdownProcessor(
       this.buildAssetPath,
     ).useTransform(
@@ -130,7 +132,7 @@ export class LessonSectionProvider extends BaseResourceProvider<
     }
   }
 
-  public find(link: string): ExerciseProvider | NotFoundProvider {
+  public find(link: string): ExerciseProvider | NotFoundProvider | NoAccessProvider {
     if (this.entry.type === 'failed') {
       return new NotFoundProvider();
     }
@@ -140,6 +142,11 @@ export class LessonSectionProvider extends BaseResourceProvider<
       return new NotFoundProvider();
     }
     
+    const childAccess = this.access.step(result.child.link);
+    if (!childAccess.accepts()) {
+      return new NoAccessProvider(result.child, this.settings);
+    }
+
     return new ExerciseProvider(
       this, 
       result.child,
@@ -148,6 +155,30 @@ export class LessonSectionProvider extends BaseResourceProvider<
         title: this.entry.title, 
         path: this.entry.path
       }],
+      childAccess,
+      this.settings
+    );
+  }
+
+  public findProvider(link: string): ExerciseProvider | null {
+    if (this.entry.type === 'failed') {
+      return null;
+    }
+
+    const result = findChild(this.entry.exercises, link);
+    if (result === null) {
+      return null;
+    }
+
+    return new ExerciseProvider(
+      this, 
+      result.child,
+      result.pos, 
+      [...this.crumbs, { 
+        title: this.entry.title, 
+        path: this.entry.path
+      }],
+      this.access.step(result.child.link),
       this.settings
     );
   }

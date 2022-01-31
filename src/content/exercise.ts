@@ -6,6 +6,7 @@ import { ExerciseFrontMatter } from "../entries.js";
 import { el, getChildren, getTag, isElement, Jsml, JsmlElement } from "../jsml.js";
 import { createFailedEntry, createSuccessEntry, FailedEntry, SuccessEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
+import { Access } from "./access.js";
 import { LessonSectionProvider } from "./lesson-section.js";
 import { MarkdownProcessor } from "../markdown.js";
 import { createFailedResource, createNotFound, createSuccessResource, Crumbs, NotFound, Resource } from "./resource.js";
@@ -102,12 +103,10 @@ const getExcFilePath = (fsPath: string): string | null => {
 
 export const loadExercise = async (
   parentEntry: SuccessEntry,
-  entryPath: string,
+  link: string,
   pos: number,
 ): Promise<Exercise> => {
-  const fsPath = path.join(parentEntry.fsPath, '..', entryPath);
-  const link = entryPath.replace('/', ':');
-
+  const fsPath = path.join(parentEntry.fsPath, '..', link.replace('>', '/'));
   const assignPath = getExcFilePath(fsPath);
   
   if (assignPath === null) {
@@ -135,9 +134,10 @@ export class ExerciseProvider extends BaseResourceProvider<
     entry: Exercise, 
     position: number, 
     crumbs: Crumbs,
+    access: Access,
     settings: ProviderSettings,
   ) {
-    super(parent, entry, position, crumbs, settings);
+    super(parent, entry, position, crumbs, access, settings);
     this.markdownProcessor = new MarkdownProcessor(
       this.buildAssetPath,
     );
@@ -192,15 +192,15 @@ export class ExerciseProvider extends BaseResourceProvider<
     if (this.entry.type === 'failed') {
       return ['error'];
     }
-    
+
     const assignText = await loadAssign(excPath);
     const jsml = await this.markdownProcessor.processString(assignText);
 
     const attrs = {
       num: this.entry.num,
       title: this.entry.title,
-      path: this.entry.path,
-      demand: this.entry.demand
+      path: this.access.accepts() ? this.entry.path : 'forbidden',
+      demand: this.entry.demand,
     };
 
     const firstNode = jsml[0];

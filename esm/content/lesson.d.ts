@@ -1,6 +1,6 @@
 import { FailedEntry, SuccessEntry } from "./entry.js";
 import { ResourceRef, Resource } from './resource.js';
-import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
+import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
 import type { ChapterProvider } from "./chapter.js";
 import { LessonSection, LessonSectionProvider, LessonSectionRef, LessonSectionResource } from "./lesson-section.js";
 export declare type LessonRef = ResourceRef<{
@@ -28,7 +28,7 @@ export declare class LessonProvider extends BaseResourceProvider<ChapterProvider
     fetch(expandSection?: 'first' | {
         link: string;
     }): Promise<LessonResource>;
-    find(link: string): LessonSectionProvider | NotFoundProvider;
+    find(link: string): LessonSectionProvider | NotFoundProvider | NoAccessProvider;
     getNextSection(pos: number): LessonSectionRef | null;
     getPrevSection(pos: number): LessonSectionRef | null;
     findRepo(repoUrl: string): null;

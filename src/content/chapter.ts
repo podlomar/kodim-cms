@@ -1,10 +1,10 @@
 import { ChapterIndex } from "../entries";
 import { createFailedEntry, createSuccessEntry, FailedEntry, SuccessEntry } from "./entry.js";
-import { Resource, createFailedResource, createSuccessResource } from './resource.js';
+import { Resource, createFailedResource, createSuccessResource, createForbiddenRef } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import type { CourseProvider } from "./course";
 import { createLessonRef, Lesson, LessonProvider, LessonRef, loadLesson } from "./lesson.js";
-import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
+import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
 
 export interface SuccessChapter extends SuccessEntry {
   lead: string,
@@ -51,17 +51,24 @@ export class ChapterProvider extends BaseResourceProvider<
     if (this.entry.type === 'failed') {
       return createFailedResource(this.entry, this.settings.baseUrl);
     }
-    
+
     return {
       ...createSuccessResource(this.entry, this.crumbs, this.settings.baseUrl),
       lead: this.entry.lead,
       lessons: this.entry.lessons.map(
-        (lesson) => createLessonRef(lesson, this.settings.baseUrl)
+        (lesson) => {
+          const lessonAccess = this.access.step(lesson.link);
+          if (lessonAccess.accepts()) {
+            return createLessonRef(lesson, this.settings.baseUrl);
+          }
+          
+          return createForbiddenRef(lesson, this.settings.baseUrl);
+        }
       ),
     }
   }
 
-  public find(link: string): LessonProvider | NotFoundProvider {
+  public find(link: string): LessonProvider | NotFoundProvider | NoAccessProvider {
     if (this.entry.type === 'failed') {
       return new NotFoundProvider();
     }
@@ -71,6 +78,11 @@ export class ChapterProvider extends BaseResourceProvider<
       return new NotFoundProvider();
     }
     
+    const childAccess = this.access.step(result.child.link);
+    if (!childAccess.accepts()) {
+      return new NoAccessProvider(result.child, this.settings);
+    }
+
     return new LessonProvider(
       this, 
       result.child, 
@@ -79,6 +91,7 @@ export class ChapterProvider extends BaseResourceProvider<
         title: this.entry.title, 
         path: this.entry.path
       }],
+      childAccess,
       this.settings
     );
   }
@@ -93,6 +106,11 @@ export class ChapterProvider extends BaseResourceProvider<
       return null;
     }
 
+    const childAccess = this.access.step(lesson.link);
+    if (!childAccess.accepts()) {
+      return createForbiddenRef(lesson, this.settings.baseUrl);
+    }
+
     return createLessonRef(lesson, this.settings.baseUrl);
   }
 
@@ -104,6 +122,11 @@ export class ChapterProvider extends BaseResourceProvider<
     const lesson = this.entry.lessons[pos - 1];
     if (lesson === undefined) {
       return null;
+    }
+
+    const childAccess = this.access.step(lesson.link);
+    if (!childAccess.accepts()) {
+      return createForbiddenRef(lesson, this.settings.baseUrl);
     }
 
     return createLessonRef(lesson, this.settings.baseUrl);

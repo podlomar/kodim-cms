@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from 'path';
 import { buildAssetPath, createFailedResource, createSuccessResource } from "./resource.js";
-import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
+import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
 import { unified } from "unified";
 import markdown from "remark-parse";
 import directive from "remark-directive";
@@ -47,8 +47,8 @@ export const loadLessonSection = async (parentEntry, folderName) => {
     return Object.assign(Object.assign({}, baseEntry), { exercises });
 };
 export class LessonSectionProvider extends BaseResourceProvider {
-    constructor(parent, entry, position, crumbs, settings) {
-        super(parent, entry, position, crumbs, settings);
+    constructor(parent, entry, position, crumbs, access, settings) {
+        super(parent, entry, position, crumbs, access, settings);
         this.buildAssetPath = (fileName) => buildAssetPath(fileName, path.join(this.entry.path, '..'), this.settings.baseUrl);
         this.markdownProcessor = new MarkdownProcessor(this.buildAssetPath).useTransform('exc', buildExcTransform(this));
         ;
@@ -72,10 +72,27 @@ export class LessonSectionProvider extends BaseResourceProvider {
         if (result === null) {
             return new NotFoundProvider();
         }
+        const childAccess = this.access.step(result.child.link);
+        if (!childAccess.accepts()) {
+            return new NoAccessProvider(result.child, this.settings);
+        }
         return new ExerciseProvider(this, result.child, result.pos, [...this.crumbs, {
                 title: this.entry.title,
                 path: this.entry.path
-            }], this.settings);
+            }], childAccess, this.settings);
+    }
+    findProvider(link) {
+        if (this.entry.type === 'failed') {
+            return null;
+        }
+        const result = findChild(this.entry.exercises, link);
+        if (result === null) {
+            return null;
+        }
+        return new ExerciseProvider(this, result.child, result.pos, [...this.crumbs, {
+                title: this.entry.title,
+                path: this.entry.path
+            }], this.access.step(result.child.link), this.settings);
     }
     findRepo(repoUrl) {
         return null;

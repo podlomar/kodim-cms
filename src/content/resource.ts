@@ -37,7 +37,7 @@ export type Resource<T = {}> = (
   | ForbiddenResource
 );
 
-const createResourceLocation = (entry: Entry, baseUrl: string) => ({
+const createBaseResource = (entry: Entry, baseUrl: string) => ({
   link: entry.link,
   path: entry.path,
   url: `${baseUrl}/content${entry.path}`,
@@ -47,7 +47,7 @@ export const createSuccessResource = (
   entry: SuccessEntry, crumbs: Crumbs, baseUrl: string
 ): SuccessResource => ({
   type: 'content',
-  ...createResourceLocation(entry, baseUrl),
+  ...createBaseResource(entry, baseUrl),
   crumbs,
   title: entry.title,
 });
@@ -56,8 +56,15 @@ export const createFailedResource = (
   entry: FailedEntry,
   baseUrl: string,
 ): FailedResource => ({
-  ...createResourceLocation(entry, baseUrl),
+  ...createBaseResource(entry, baseUrl),
   type: 'failed',
+});
+
+export const createForbiddenResource = (
+  entry: Entry, baseUrl: string,
+): ForbiddenResource => ({
+  ...createBaseResource(entry, baseUrl),
+  type: 'forbidden',
 });
 
 export const createNotFound = (): NotFound => ({
@@ -73,17 +80,26 @@ export interface FailedRef extends BaseResource {
   type: 'failed',
 }
 
-export type ResourceRef<T = {}> = (SuccessRef & T) | FailedRef;
+export interface ForbiddenRef extends BaseResource {
+  type: 'forbidden',
+}
+
+export type ResourceRef<T = {}> = (SuccessRef & T) | FailedRef | ForbiddenRef;
 
 export const createSuccessRef = (entry: SuccessEntry, baseUrl: string): SuccessRef => ({
   type: 'ref',
-  ...createResourceLocation(entry, baseUrl),
+  ...createBaseResource(entry, baseUrl),
   title: entry.title,
 })
 
 export const createFailedRef = (entry: FailedEntry, baseUrl: string): FailedRef => ({
   type: 'failed',
-  ...createResourceLocation(entry, baseUrl),
+  ...createBaseResource(entry, baseUrl),
+})
+
+export const createForbiddenRef = (entry: Entry, baseUrl: string): ForbiddenRef => ({
+  type: 'forbidden',
+  ...createBaseResource(entry, baseUrl),
 })
 
 export const createResourceRef = (

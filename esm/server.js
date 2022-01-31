@@ -1,6 +1,7 @@
 import express from 'express';
+import { AccessGranted } from "./content/access.js";
 export class CmsApp {
-    constructor(cms) {
+    constructor(cms, getAccess) {
         this.handleGetEntry = async (req, res) => {
             var _a;
             const provider = this.getProviderByPath((_a = req.params[0]) !== null && _a !== void 0 ? _a : '');
@@ -15,7 +16,8 @@ export class CmsApp {
         };
         this.handleHooks = async (req, res) => {
             const url = req.body.repository.clone_url;
-            const provider = this.cms.getRoot().findRepo(url);
+            const access = new AccessGranted();
+            const provider = this.cms.getRoot(access).findRepo(url);
             console.log(url);
             if (provider === null) {
                 res.sendStatus(400);
@@ -25,6 +27,7 @@ export class CmsApp {
             res.send(`reloaded ${url}`);
         };
         this.cms = cms;
+        this.getAccess = getAccess;
         this.router = express.Router();
         this.router.use(express.json());
         this.router.get(['/content/kurzy', '/content/kurzy/*'], this.handleGetEntry);
@@ -33,6 +36,7 @@ export class CmsApp {
     }
     getProviderByPath(path) {
         const links = path.split('/');
-        return this.cms.getRoot().search(...links);
+        const access = this.getAccess();
+        return this.cms.getRoot(access).search(...links);
     }
 }

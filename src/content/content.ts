@@ -1,9 +1,9 @@
 import { CoursesRootIndex, DivisionIndex } from "../entries";
-import { Resource, createFailedRef, createFailedResource, createSuccessResource } from "./resource.js";
+import { Resource, createFailedRef, createFailedResource, createSuccessResource, createForbiddenRef } from "./resource.js";
 import { readIndexFile } from "./content-node.js";
 import { Course, CourseProvider, CourseRef, createCourseRef, loadCourse } from "./course.js";
 import { FailedEntry, SuccessEntry } from "./entry.js";
-import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
+import { BaseResourceProvider, NoAccessProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
 
 export interface Division<T extends Course | CourseRef = Course> {
   readonly title: string;
@@ -84,6 +84,11 @@ export class CoursesRootProvider extends BaseResourceProvider<
               return createFailedRef(course, this.settings.baseUrl);
             }
 
+            const childAccess = this.access.step(course.link);
+            if (!childAccess.accepts()) {
+              return createForbiddenRef(course, this.settings.baseUrl);
+            }
+        
             return createCourseRef(course, this.settings.baseUrl);
           })
         })
@@ -91,7 +96,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
     }
   }
 
-  public find(link: string): CourseProvider | NotFoundProvider {
+  public find(link: string): CourseProvider | NotFoundProvider | NoAccessProvider {
     if (this.entry.type === 'failed') {
       return new NotFoundProvider();
     }
@@ -106,11 +111,17 @@ export class CoursesRootProvider extends BaseResourceProvider<
       return new NotFoundProvider();
     } 
 
+    const childAccess = this.access.step(courses[pos].link);
+    if (!childAccess.accepts()) {
+      return new NoAccessProvider(courses[pos], this.settings);
+    }
+
     return new CourseProvider(
       this,
       courses[pos], 
       pos, 
       [],
+      childAccess,
       this.settings
     );
   }
@@ -133,6 +144,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
             course,
             i,
             [],
+            this.access.step(course.link),
             this.settings
           );
         }

@@ -1,4 +1,4 @@
-import { createNotFound } from "./resource.js";
+import { createNotFound, createForbiddenResource } from "./resource.js";
 export class NotFoundProvider {
     async fetch() {
         return createNotFound();
@@ -23,12 +23,41 @@ export class NotFoundProvider {
         return;
     }
 }
+export class NoAccessProvider {
+    constructor(entry, settings) {
+        this.entry = entry;
+        this.settings = settings;
+    }
+    async fetch() {
+        return createForbiddenResource(this.entry, this.settings.baseUrl);
+    }
+    find(link) {
+        return this;
+    }
+    ;
+    search() {
+        return this;
+    }
+    findRepo(repoUrl) {
+        return null;
+    }
+    asset(fileName) {
+        return null;
+    }
+    success() {
+        return this;
+    }
+    async reload() {
+        return;
+    }
+}
 export class BaseResourceProvider {
-    constructor(parent, entry, position, crumbs, settings) {
+    constructor(parent, entry, position, crumbs, access, settings) {
         this.entry = entry;
         this.parent = parent;
         this.position = position;
         this.crumbs = crumbs;
+        this.access = access;
         this.settings = settings;
     }
     search(...[link, ...restLinks]) {
@@ -42,7 +71,6 @@ export class BaseResourceProvider {
         return child.search(...restLinks);
     }
     asset(fileName) {
-        console.log('asset', `${this.entry.fsPath}/assets/${fileName}`);
         return `${this.entry.fsPath}/assets/${fileName}`;
     }
     success() {

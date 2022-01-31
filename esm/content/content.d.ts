@@ -1,7 +1,7 @@
 import { Resource } from "./resource.js";
 import { Course, CourseProvider, CourseRef } from "./course.js";
 import { FailedEntry, SuccessEntry } from "./entry.js";
-import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
+import { BaseResourceProvider, NoAccessProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
 export interface Division<T extends Course | CourseRef = Course> {
     readonly title: string;
     readonly lead: string;
@@ -17,6 +17,6 @@ export declare type CoursesRootResource = Resource<{
 export declare const loadCoursesRoot: (contentFolder: string, coursesFolder: string) => Promise<CoursesRoot>;
 export declare class CoursesRootProvider extends BaseResourceProvider<null, CoursesRoot, CourseProvider> {
     fetch(): Promise<CoursesRootResource>;
-    find(link: string): CourseProvider | NotFoundProvider;
+    find(link: string): CourseProvider | NotFoundProvider | NoAccessProvider;
     findRepo(repoUrl: string): ResourceProvider | null;
 }

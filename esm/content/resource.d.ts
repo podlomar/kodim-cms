@@ -26,6 +26,7 @@ export interface NotFound {
 export declare type Resource<T = {}> = ((SuccessResource & T) | FailedResource | ForbiddenResource);
 export declare const createSuccessResource: (entry: SuccessEntry, crumbs: Crumbs, baseUrl: string) => SuccessResource;
 export declare const createFailedResource: (entry: FailedEntry, baseUrl: string) => FailedResource;
+export declare const createForbiddenResource: (entry: Entry, baseUrl: string) => ForbiddenResource;
 export declare const createNotFound: () => NotFound;
 export interface SuccessRef extends BaseResource {
     type: 'ref';
@@ -34,8 +35,12 @@ export interface SuccessRef extends BaseResource {
 export interface FailedRef extends BaseResource {
     type: 'failed';
 }
-export declare type ResourceRef<T = {}> = (SuccessRef & T) | FailedRef;
+export interface ForbiddenRef extends BaseResource {
+    type: 'forbidden';
+}
+export declare type ResourceRef<T = {}> = (SuccessRef & T) | FailedRef | ForbiddenRef;
 export declare const createSuccessRef: (entry: SuccessEntry, baseUrl: string) => SuccessRef;
 export declare const createFailedRef: (entry: FailedEntry, baseUrl: string) => FailedRef;
+export declare const createForbiddenRef: (entry: Entry, baseUrl: string) => ForbiddenRef;
 export declare const createResourceRef: (entry: Entry, baseUrl: string) => ResourceRef;
 export declare const buildAssetPath: (fileName: string, entryPath: string, baseUrl: string) => string;

@@ -1,4 +1,5 @@
 import { CoursesRoot, CoursesRootProvider, loadCoursesRoot } from "./content/content.js";
+import { Access } from "./content/access.js";
 
 export class KodimCms{
   public readonly baseUrl: string;
@@ -15,12 +16,13 @@ export class KodimCms{
     return cms;
   }
 
-  public getRoot(): CoursesRootProvider {
+  public getRoot(access: Access): CoursesRootProvider {
     return new CoursesRootProvider(
       null, 
       this.coursesRoot, 
       0,
       [],
+      access.step('kurzy'),
       { baseUrl: this.baseUrl }
     );
   }

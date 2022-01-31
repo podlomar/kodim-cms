@@ -2,7 +2,7 @@ import { FailedEntry, SuccessEntry } from "./entry.js";
 import { ResourceRef, Resource } from './resource.js';
 import { Chapter, ChapterProvider, ChapterResource } from "./chapter.js";
 import type { CoursesRootProvider } from "./content";
-import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
+import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
 export declare type CourseRef = ResourceRef<{
     image: string;
     lead: string;
@@ -28,6 +28,6 @@ export declare const createCourseRef: (course: Course, baseUrl: string) => Cours
 export declare class CourseProvider extends BaseResourceProvider<CoursesRootProvider, Course, ChapterProvider> {
     reload(): Promise<void>;
     fetch(): Promise<CourseResource>;
-    find(link: string): ChapterProvider | NotFoundProvider;
+    find(link: string): ChapterProvider | NotFoundProvider | NoAccessProvider;
     findRepo(repoUrl: string): null;
 }

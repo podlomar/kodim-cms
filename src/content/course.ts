@@ -2,13 +2,12 @@ import { existsSync } from "fs";
 import simpleGit from 'simple-git';
 import { CourseIndex } from "../entries";
 import { FailedEntry, SuccessEntry, createSuccessEntry, createFailedEntry } from "./entry.js";
-import { createSuccessResource, ResourceRef, createFailedResource, buildAssetPath, createFailedRef, createSuccessRef, Resource } from './resource.js';
+import { createSuccessResource, ResourceRef, createFailedResource, buildAssetPath, createFailedRef, createSuccessRef, Resource, createForbiddenResource, createForbiddenRef } from './resource.js';
 import { Chapter, ChapterProvider, ChapterResource, loadChapter } from "./chapter.js";
 import type { CoursesRootProvider } from "./content";
 import { findChild, readIndexFile, readYamlFile } from "./content-node.js";
-import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
+import { BaseResourceProvider, NoAccessProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
 import { createLessonRef } from "./lesson.js";
-import { stringify } from "querystring";
 
 export type CourseRef = ResourceRef<{
   image: string,
@@ -157,18 +156,30 @@ export class CourseProvider extends BaseResourceProvider<
           return createFailedResource(chapter, this.settings.baseUrl);
         }
 
+        const childAccess = this.access.step(chapter.link);
+        if (!childAccess.accepts()) {
+          return createForbiddenResource(chapter, this.settings.baseUrl);
+        }
+
         return {
           ...createSuccessResource(chapter, this.crumbs, this.settings.baseUrl),
           lead: chapter.lead,
           lessons: chapter.lessons.map(
-            (lesson) => createLessonRef(lesson, this.settings.baseUrl)
+            (lesson) => {
+              const lessonAccess = childAccess.step(lesson.link);
+              if (lessonAccess.accepts()) {
+                return createLessonRef(lesson, this.settings.baseUrl);
+              }
+              
+              return createForbiddenRef(lesson, this.settings.baseUrl);
+            }
           )
         }
       })
     }
   }
 
-  public find(link: string): ChapterProvider | NotFoundProvider {
+  public find(link: string): ChapterProvider | NotFoundProvider | NoAccessProvider {
     if (this.entry.type === 'failed') {
       return new NotFoundProvider();
     }
@@ -178,6 +189,11 @@ export class CourseProvider extends BaseResourceProvider<
       return new NotFoundProvider();
     }
     
+    const childAccess = this.access.step(result.child.link);
+    if (!childAccess.accepts()) {
+      return new NoAccessProvider(result.child, this.settings);
+    }
+
     return new ChapterProvider(
       this, 
       result.child, 
@@ -185,7 +201,8 @@ export class CourseProvider extends BaseResourceProvider<
       [...this.crumbs, { 
         title: this.entry.title, 
         path: this.entry.path
-      }], 
+      }],
+      childAccess,
       this.settings
     );
   }

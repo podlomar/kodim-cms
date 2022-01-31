@@ -1,7 +1,7 @@
-import { createFailedRef, createFailedResource, createSuccessResource } from "./resource.js";
+import { createFailedRef, createFailedResource, createSuccessResource, createForbiddenRef } from "./resource.js";
 import { readIndexFile } from "./content-node.js";
 import { CourseProvider, createCourseRef, loadCourse } from "./course.js";
-import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
+import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
 ;
 export const loadCoursesRoot = async (contentFolder, coursesFolder) => {
     const index = await readIndexFile(`${contentFolder}/${coursesFolder}`);
@@ -37,6 +37,10 @@ export class CoursesRootProvider extends BaseResourceProvider {
                     if (course.type === 'failed') {
                         return createFailedRef(course, this.settings.baseUrl);
                     }
+                    const childAccess = this.access.step(course.link);
+                    if (!childAccess.accepts()) {
+                        return createForbiddenRef(course, this.settings.baseUrl);
+                    }
                     return createCourseRef(course, this.settings.baseUrl);
                 }) }))) });
     }
@@ -49,7 +53,11 @@ export class CoursesRootProvider extends BaseResourceProvider {
         if (pos < 0) {
             return new NotFoundProvider();
         }
-        return new CourseProvider(this, courses[pos], pos, [], this.settings);
+        const childAccess = this.access.step(courses[pos].link);
+        if (!childAccess.accepts()) {
+            return new NoAccessProvider(courses[pos], this.settings);
+        }
+        return new CourseProvider(this, courses[pos], pos, [], childAccess, this.settings);
     }
     findRepo(repoUrl) {
         var _a;
@@ -61,7 +69,7 @@ export class CoursesRootProvider extends BaseResourceProvider {
             const course = courses[i];
             if (course.type === 'success') {
                 if (((_a = course.repo) === null || _a === void 0 ? void 0 : _a.url) === repoUrl) {
-                    return new CourseProvider(this, course, i, [], this.settings);
+                    return new CourseProvider(this, course, i, [], this.access.step(course.link), this.settings);
                 }
             }
         }

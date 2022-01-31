@@ -61,9 +61,8 @@ const getExcFilePath = (fsPath) => {
     }
     return null;
 };
-export const loadExercise = async (parentEntry, entryPath, pos) => {
-    const fsPath = path.join(parentEntry.fsPath, '..', entryPath);
-    const link = entryPath.replace('/', ':');
+export const loadExercise = async (parentEntry, link, pos) => {
+    const fsPath = path.join(parentEntry.fsPath, '..', link.replace('>', '/'));
     const assignPath = getExcFilePath(fsPath);
     if (assignPath === null) {
         return createFailedEntry(parentEntry, link, fsPath);
@@ -73,8 +72,8 @@ export const loadExercise = async (parentEntry, entryPath, pos) => {
     return Object.assign(Object.assign({}, baseEntry), { demand: frontMatter.demand, num: pos + 1 });
 };
 export class ExerciseProvider extends BaseResourceProvider {
-    constructor(parent, entry, position, crumbs, settings) {
-        super(parent, entry, position, crumbs, settings);
+    constructor(parent, entry, position, crumbs, access, settings) {
+        super(parent, entry, position, crumbs, access, settings);
         this.buildAssetPath = (fileName) => {
             const baseUrl = this.settings.baseUrl;
             return `${baseUrl}/assets${this.entry.path}/${fileName}`;
@@ -118,8 +117,8 @@ export class ExerciseProvider extends BaseResourceProvider {
         const attrs = {
             num: this.entry.num,
             title: this.entry.title,
-            path: this.entry.path,
-            demand: this.entry.demand
+            path: this.access.accepts() ? this.entry.path : 'forbidden',
+            demand: this.entry.demand,
         };
         const firstNode = jsml[0];
         const content = isElement(firstNode) && getTag(firstNode) === 'assign'

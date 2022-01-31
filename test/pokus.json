@@ -1,0 +1,27 @@
+[ 'kurzy/daweb' ]
+kurzy/daweb
+daweb
+[
+  {
+    "index": 0,
+    "next": [
+      {
+        "match": "kurzy",
+        "stateIdx": 1
+      }
+    ]
+  },
+  {
+    "index": 1,
+    "next": [
+      {
+        "match": "daweb",
+        "stateIdx": 2
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "next": []
+  }
+]
