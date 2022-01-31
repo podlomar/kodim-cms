@@ -122,3 +122,13 @@ export class AccessGranted implements Access {
     return this;
   }
 }
+
+export class AccessDenied implements Access {
+  public accepts(): boolean {
+    return false;
+  }
+
+  public step(token: string): this {
+    return this;
+  }
+}

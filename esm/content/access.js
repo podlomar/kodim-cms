@@ -82,3 +82,11 @@ export class AccessGranted {
         return this;
     }
 }
+export class AccessDenied {
+    accepts() {
+        return false;
+    }
+    step(token) {
+        return this;
+    }
+}

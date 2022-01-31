@@ -23,3 +23,7 @@ export declare class AccessGranted implements Access {
     accepts(): boolean;
     step(token: string): this;
 }
+export declare class AccessDenied implements Access {
+    accepts(): boolean;
+    step(token: string): this;
+}
