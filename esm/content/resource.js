@@ -14,11 +14,11 @@ export const createForbiddenResource = (entry, baseUrl) => (Object.assign({ stat
 export const createNotFound = () => ({
     status: 'not-found',
 });
-export const createOkRef = (entry, baseUrl) => (Object.assign(Object.assign({ status: 'ok' }, createBaseResource(entry, baseUrl)), { title: entry.title }));
+export const createOkRef = (entry, baseUrl) => (Object.assign({ status: 'ok' }, createBaseResource(entry, baseUrl)));
 export const createBrokenRef = (entry, baseUrl) => (Object.assign({ status: 'broken' }, createBaseResource(entry, baseUrl)));
-export const createForbiddenRef = (entry, baseUrl) => ({
+export const createForbiddenRef = (title) => ({
     status: 'forbidden',
-    title: entry.title,
+    title,
 });
 export const createResourceRef = (entry, baseUrl) => entry.type === 'broken'
     ? createBrokenRef(entry, baseUrl)

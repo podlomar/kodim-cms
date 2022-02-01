@@ -38,11 +38,18 @@ export const loadCourse = async (parentLocation, folderName) => {
     return Object.assign(Object.assign({}, baseEntry), { image: index.image, lead: index.lead, repo,
         chapters });
 };
-export const createCourseRef = (course, baseUrl) => {
+export const createCourseRef = (course, accessAllowed, baseUrl) => {
     if (course.type === 'broken') {
         return createBrokenRef(course, baseUrl);
     }
-    return Object.assign(Object.assign({}, createOkRef(course, baseUrl)), { image: buildAssetPath(course.image, course.location.path, baseUrl), lead: course.lead });
+    const image = buildAssetPath(course.image, course.location.path, baseUrl);
+    const lead = course.lead;
+    if (accessAllowed) {
+        return Object.assign(Object.assign({}, createOkRef(course, baseUrl)), { image,
+            lead });
+    }
+    return Object.assign(Object.assign({}, createForbiddenRef(course.title)), { image,
+        lead });
 };
 export class CourseProvider extends BaseResourceProvider {
     async reload() {
@@ -82,7 +89,7 @@ export class CourseProvider extends BaseResourceProvider {
                         if (lessonAccess.accepts()) {
                             return createLessonRef(lesson, this.settings.baseUrl);
                         }
-                        return createForbiddenRef(lesson, this.settings.baseUrl);
+                        return createForbiddenRef(lesson.title);
                     }) });
             }) });
     }
@@ -96,7 +103,7 @@ export class CourseProvider extends BaseResourceProvider {
         }
         const childAccess = this.access.step(result.child.link);
         if (!childAccess.accepts()) {
-            return new NoAccessProvider(result.child, this.settings);
+            return new NoAccessProvider(result.child, [], this.settings);
         }
         return new ChapterProvider(this, result.child, result.pos, [...this.crumbs, {
                 title: this.entry.title,

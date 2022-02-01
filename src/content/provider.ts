@@ -8,7 +8,7 @@ export interface ResourceProvider<
   fetch(): Promise<Resource | NotFound>;
   find(link: string): C | NotFoundProvider | NoAccessProvider;
   search(...links: string[]): ResourceProvider;
-  asset(fileName: string): string | null;
+  asset(fileName: string): string | 'forbidden' | 'not-found';
   findRepo(repoUrl: string): ResourceProvider | null;
   success(): this | null;
   reload(): Promise<void>;
@@ -31,8 +31,8 @@ export class NotFoundProvider implements ResourceProvider<never> {
     return null;
   }
 
-  public asset(fileName: string): null {
-    return null;
+  public asset(fileName: string): 'not-found' {
+    return 'not-found';
   }
 
   public success(): null {
@@ -46,13 +46,16 @@ export class NotFoundProvider implements ResourceProvider<never> {
 
 export class NoAccessProvider<E extends Entry = Entry> implements ResourceProvider<never> {
   protected readonly entry: E;
+  protected readonly allowedAssets: string[];
   protected readonly settings: ProviderSettings;
 
   public constructor(
-    entry: E, 
+    entry: E,
+    allowedAssets: string[],
     settings: ProviderSettings
   ) {
     this.entry = entry;
+    this.allowedAssets = allowedAssets;
     this.settings = settings;
   }
 
@@ -72,8 +75,12 @@ export class NoAccessProvider<E extends Entry = Entry> implements ResourceProvid
     return null;
   }
 
-  public asset(fileName: string): null {
-    return null;
+  public asset(fileName: string): string | 'forbidden' {
+    if (this.allowedAssets.includes(fileName)) {
+      return `${this.entry.location.fsPath}/assets/${fileName}`;
+    }
+
+    return 'forbidden';
   }
 
   public success(): this {

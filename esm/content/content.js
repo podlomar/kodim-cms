@@ -1,4 +1,4 @@
-import { createBrokenRef, createBrokenResource, createOkResource, createForbiddenRef } from "./resource.js";
+import { createBrokenRef, createBrokenResource, createOkResource } from "./resource.js";
 import { readIndexFile } from "./content-node.js";
 import { CourseProvider, createCourseRef, loadCourse } from "./course.js";
 import { createBaseEntry } from "./entry.js";
@@ -37,10 +37,7 @@ export class CoursesRootProvider extends BaseResourceProvider {
                         return createBrokenRef(course, this.settings.baseUrl);
                     }
                     const childAccess = this.access.step(course.link);
-                    if (!childAccess.accepts()) {
-                        return Object.assign(Object.assign({}, createForbiddenRef(course, this.settings.baseUrl)), { image: course.image, lead: course.lead });
-                    }
-                    return createCourseRef(course, this.settings.baseUrl);
+                    return createCourseRef(course, childAccess.accepts(), this.settings.baseUrl);
                 }) }))) });
     }
     find(link) {
@@ -52,9 +49,11 @@ export class CoursesRootProvider extends BaseResourceProvider {
         if (pos < 0) {
             return new NotFoundProvider();
         }
+        const course = courses[pos];
+        const allowedAssets = course.type === 'broken' ? [] : [course.image];
         const childAccess = this.access.step(courses[pos].link);
         if (!childAccess.accepts()) {
-            return new NoAccessProvider(courses[pos], this.settings);
+            return new NoAccessProvider(courses[pos], allowedAssets, this.settings);
         }
         return new CourseProvider(this, courses[pos], pos, [], childAccess, this.settings);
     }

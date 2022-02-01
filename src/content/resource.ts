@@ -97,7 +97,6 @@ export type ResourceRef<T = {}, B = {}, F = {}> = (
 export const createOkRef = (entry: SuccessEntry, baseUrl: string): OkRef => ({
   status: 'ok',
   ...createBaseResource(entry, baseUrl),
-  title: entry.title,
 })
 
 export const createBrokenRef = (entry: BrokenEntry, baseUrl: string): BrokenRef => ({
@@ -105,9 +104,9 @@ export const createBrokenRef = (entry: BrokenEntry, baseUrl: string): BrokenRef 
   ...createBaseResource(entry, baseUrl),
 })
 
-export const createForbiddenRef = (entry: Entry, baseUrl: string): ForbiddenRef => ({
+export const createForbiddenRef = (title: string): ForbiddenRef => ({
   status: 'forbidden',
-  title: entry.title,
+  title,
 })
 
 export const createResourceRef = (

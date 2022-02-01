@@ -83,15 +83,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
             }
 
             const childAccess = this.access.step(course.link);
-            if (!childAccess.accepts()) {
-              return {
-                ...createForbiddenRef(course, this.settings.baseUrl),
-                image: course.image,
-                lead: course.lead,
-              }
-            }
-        
-            return createCourseRef(course, this.settings.baseUrl);
+            return createCourseRef(course, childAccess.accepts(), this.settings.baseUrl);
           })
         })
       )
@@ -113,9 +105,12 @@ export class CoursesRootProvider extends BaseResourceProvider<
       return new NotFoundProvider();
     } 
 
+    const course = courses[pos];
+    const allowedAssets = course.type === 'broken' ? [] : [course.image];
+
     const childAccess = this.access.step(courses[pos].link);
     if (!childAccess.accepts()) {
-      return new NoAccessProvider(courses[pos], this.settings);
+      return new NoAccessProvider(courses[pos], allowedAssets, this.settings);
     }
 
     return new CourseProvider(

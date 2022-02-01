@@ -97,16 +97,31 @@ export const loadCourse = async (
   }
 }
 
-export const createCourseRef = (course: Course, baseUrl: string): CourseRef => {
+export const createCourseRef = (
+  course: Course,
+  accessAllowed: boolean,
+  baseUrl: string,
+): CourseRef => {
   if (course.type === 'broken') {
     return createBrokenRef(course, baseUrl);
   }
 
-  return {
-    ...createOkRef(course, baseUrl),
-    image: buildAssetPath(course.image, course.location.path, baseUrl),
-    lead: course.lead,
+  const image = buildAssetPath(course.image, course.location.path, baseUrl);
+  const lead = course.lead;
+  
+  if (accessAllowed) {
+    return {
+      ...createOkRef(course, baseUrl),
+      image,
+      lead,
+    }
   }
+
+  return {
+    ...createForbiddenRef(course.title),
+    image,
+    lead,
+  };
 }
 
 export class CourseProvider extends BaseResourceProvider<
@@ -174,7 +189,7 @@ export class CourseProvider extends BaseResourceProvider<
                 return createLessonRef(lesson, this.settings.baseUrl);
               }
               
-              return createForbiddenRef(lesson, this.settings.baseUrl);
+              return createForbiddenRef(lesson.title);
             }
           )
         }
@@ -194,7 +209,7 @@ export class CourseProvider extends BaseResourceProvider<
     
     const childAccess = this.access.step(result.child.link);
     if (!childAccess.accepts()) {
-      return new NoAccessProvider(result.child, this.settings);
+      return new NoAccessProvider(result.child, [], this.settings);
     }
 
     return new ChapterProvider(

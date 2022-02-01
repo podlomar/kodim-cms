@@ -95,7 +95,7 @@ export class LessonProvider extends BaseResourceProvider<
           return createResourceRef(section, this.settings.baseUrl);
         }
 
-        return createForbiddenRef(section, this.settings.baseUrl);
+        return createForbiddenRef(section.title);
       }
     );
 
@@ -148,7 +148,7 @@ export class LessonProvider extends BaseResourceProvider<
     
     const childAccess = this.access.step(result.child.link);
     if (!childAccess.accepts()) {
-      return new NoAccessProvider(result.child, this.settings);
+      return new NoAccessProvider(result.child, [], this.settings);
     }
 
     return new LessonSectionProvider(
@@ -176,7 +176,7 @@ export class LessonProvider extends BaseResourceProvider<
 
     const childAccess = this.access.step(section.link);
     if (!childAccess.accepts()) {
-      return createForbiddenRef(section, this.settings.baseUrl);
+      return createForbiddenRef(section.title);
     }
 
     return createResourceRef(section, this.settings.baseUrl);
@@ -194,7 +194,7 @@ export class LessonProvider extends BaseResourceProvider<
 
     const childAccess = this.access.step(section.link);
     if (!childAccess.accepts()) {
-      return createForbiddenRef(section, this.settings.baseUrl);
+      return createForbiddenRef(section.title);
     }
 
     return createResourceRef(section, this.settings.baseUrl);

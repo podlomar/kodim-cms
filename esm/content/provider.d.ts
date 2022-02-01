@@ -5,7 +5,7 @@ export interface ResourceProvider<C extends ResourceProvider<any> = any> {
     fetch(): Promise<Resource | NotFound>;
     find(link: string): C | NotFoundProvider | NoAccessProvider;
     search(...links: string[]): ResourceProvider;
-    asset(fileName: string): string | null;
+    asset(fileName: string): string | 'forbidden' | 'not-found';
     findRepo(repoUrl: string): ResourceProvider | null;
     success(): this | null;
     reload(): Promise<void>;
@@ -15,19 +15,20 @@ export declare class NotFoundProvider implements ResourceProvider<never> {
     find(link: string): this;
     search(): this;
     findRepo(repoUrl: string): null;
-    asset(fileName: string): null;
+    asset(fileName: string): 'not-found';
     success(): null;
     reload(): Promise<void>;
 }
 export declare class NoAccessProvider<E extends Entry = Entry> implements ResourceProvider<never> {
     protected readonly entry: E;
+    protected readonly allowedAssets: string[];
     protected readonly settings: ProviderSettings;
-    constructor(entry: E, settings: ProviderSettings);
+    constructor(entry: E, allowedAssets: string[], settings: ProviderSettings);
     fetch(): Promise<ForbiddenResource>;
     find(link: string): this;
     search(): this;
     findRepo(repoUrl: string): null;
-    asset(fileName: string): null;
+    asset(fileName: string): string | 'forbidden';
     success(): this;
     reload(): Promise<void>;
 }

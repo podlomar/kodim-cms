@@ -22,7 +22,7 @@ export class ChapterProvider extends BaseResourceProvider {
                 if (lessonAccess.accepts()) {
                     return createLessonRef(lesson, this.settings.baseUrl);
                 }
-                return createForbiddenRef(lesson, this.settings.baseUrl);
+                return createForbiddenRef(lesson.title);
             }) });
     }
     find(link) {
@@ -35,7 +35,7 @@ export class ChapterProvider extends BaseResourceProvider {
         }
         const childAccess = this.access.step(result.child.link);
         if (!childAccess.accepts()) {
-            return new NoAccessProvider(result.child, this.settings);
+            return new NoAccessProvider(result.child, [], this.settings);
         }
         return new LessonProvider(this, result.child, result.pos, [...this.crumbs, {
                 title: this.entry.title,
@@ -52,7 +52,7 @@ export class ChapterProvider extends BaseResourceProvider {
         }
         const childAccess = this.access.step(lesson.link);
         if (!childAccess.accepts()) {
-            return createForbiddenRef(lesson, this.settings.baseUrl);
+            return createForbiddenRef(lesson.title);
         }
         return createLessonRef(lesson, this.settings.baseUrl);
     }
@@ -66,7 +66,7 @@ export class ChapterProvider extends BaseResourceProvider {
         }
         const childAccess = this.access.step(lesson.link);
         if (!childAccess.accepts()) {
-            return createForbiddenRef(lesson, this.settings.baseUrl);
+            return createForbiddenRef(lesson.title);
         }
         return createLessonRef(lesson, this.settings.baseUrl);
     }

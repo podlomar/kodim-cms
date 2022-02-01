@@ -27,7 +27,7 @@ export declare type CourseResource = Resource<{
     chapters: ChapterResource[];
 }>;
 export declare const loadCourse: (parentLocation: EntryLocation, folderName: string) => Promise<Course>;
-export declare const createCourseRef: (course: Course, baseUrl: string) => CourseRef;
+export declare const createCourseRef: (course: Course, accessAllowed: boolean, baseUrl: string) => CourseRef;
 export declare class CourseProvider extends BaseResourceProvider<CoursesRootProvider, Course, ChapterProvider> {
     reload(): Promise<void>;
     fetch(): Promise<CourseResource>;

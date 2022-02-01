@@ -43,6 +43,6 @@ export interface ForbiddenRef {
 export declare type ResourceRef<T = {}, B = {}, F = {}> = ((OkRef & T) | (BrokenRef & B) | (ForbiddenRef & F));
 export declare const createOkRef: (entry: SuccessEntry, baseUrl: string) => OkRef;
 export declare const createBrokenRef: (entry: BrokenEntry, baseUrl: string) => BrokenRef;
-export declare const createForbiddenRef: (entry: Entry, baseUrl: string) => ForbiddenRef;
+export declare const createForbiddenRef: (title: string) => ForbiddenRef;
 export declare const createResourceRef: (entry: Entry, baseUrl: string) => ResourceRef;
 export declare const buildAssetPath: (fileName: string, entryPath: string, baseUrl: string) => string;

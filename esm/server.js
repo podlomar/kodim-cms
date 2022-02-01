@@ -12,7 +12,15 @@ export class CmsApp {
             const fileName = req.params[0].slice(lastSlashIndex + 1);
             const providerPath = req.params[0].slice(0, lastSlashIndex);
             const assetPath = this.getProviderByPath(providerPath).asset(fileName);
-            res.sendFile(assetPath);
+            if (assetPath === 'not-found') {
+                res.sendStatus(404);
+            }
+            else if (assetPath === 'forbidden') {
+                res.sendStatus(403);
+            }
+            else {
+                res.sendFile(assetPath);
+            }
         };
         this.handleHooks = async (req, res) => {
             const url = req.body.repository.clone_url;

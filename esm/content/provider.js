@@ -14,7 +14,7 @@ export class NotFoundProvider {
         return null;
     }
     asset(fileName) {
-        return null;
+        return 'not-found';
     }
     success() {
         return null;
@@ -24,8 +24,9 @@ export class NotFoundProvider {
     }
 }
 export class NoAccessProvider {
-    constructor(entry, settings) {
+    constructor(entry, allowedAssets, settings) {
         this.entry = entry;
+        this.allowedAssets = allowedAssets;
         this.settings = settings;
     }
     async fetch() {
@@ -42,7 +43,10 @@ export class NoAccessProvider {
         return null;
     }
     asset(fileName) {
-        return null;
+        if (this.allowedAssets.includes(fileName)) {
+            return `${this.entry.location.fsPath}/assets/${fileName}`;
+        }
+        return 'forbidden';
     }
     success() {
         return this;

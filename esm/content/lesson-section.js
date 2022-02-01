@@ -74,7 +74,7 @@ export class LessonSectionProvider extends BaseResourceProvider {
         }
         const childAccess = this.access.step(result.child.link);
         if (!childAccess.accepts()) {
-            return new NoAccessProvider(result.child, this.settings);
+            return new NoAccessProvider(result.child, [], this.settings);
         }
         return new ExerciseProvider(this, result.child, result.pos, [...this.crumbs, {
                 title: this.entry.title,
