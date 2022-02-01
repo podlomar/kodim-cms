@@ -1,8 +1,8 @@
 import { existsSync } from "fs";
 import simpleGit from 'simple-git';
 import { CourseIndex } from "../entries";
-import { FailedEntry, SuccessEntry, createSuccessEntry, createFailedEntry } from "./entry.js";
-import { createSuccessResource, ResourceRef, createFailedResource, buildAssetPath, createFailedRef, createSuccessRef, Resource, createForbiddenResource, createForbiddenRef } from './resource.js';
+import { BrokenEntry, SuccessEntry, createSuccessEntry, createBrokenEntry, EntryLocation } from "./entry.js";
+import { createOkResource, ResourceRef, createBrokenResource, buildAssetPath, createBrokenRef, createOkRef, Resource, createForbiddenResource, createForbiddenRef } from './resource.js';
 import { Chapter, ChapterProvider, ChapterResource, loadChapter } from "./chapter.js";
 import type { CoursesRootProvider } from "./content";
 import { findChild, readIndexFile, readYamlFile } from "./content-node.js";
@@ -25,7 +25,7 @@ export interface SuccessCourse extends SuccessEntry {
   chapters: Chapter[],
 }
 
-export type Course = SuccessCourse | FailedEntry;
+export type Course = SuccessCourse | BrokenEntry;
 
 export type CourseResource = Resource<{
   image: string,
@@ -35,29 +35,29 @@ export type CourseResource = Resource<{
 
 
 export const loadCourse = async (
-  parentEntry: SuccessEntry,
+  parentLocation: EntryLocation,
   folderName: string,
 ): Promise<Course> => {
   const index = await readIndexFile<CourseIndex>(
-    `${parentEntry.fsPath}/${folderName}`
+    `${parentLocation.fsPath}/${folderName}`
   );
 
   if (index === 'not-found') {
-    return createFailedEntry(parentEntry, folderName);
+    return createBrokenEntry(parentLocation, folderName);
   }
 
-  const isGitRepo = existsSync(`${parentEntry.fsPath}/${folderName}/.git`);
+  const isGitRepo = existsSync(`${parentLocation.fsPath}/${folderName}/.git`);
   let repo = null;
 
   if (isGitRepo) {
     const git = simpleGit({
-      baseDir: `${parentEntry.fsPath}/${folderName}`,
+      baseDir: `${parentLocation.fsPath}/${folderName}`,
       binary: 'git',
     });
     
     const url = await git.remote(['get-url', 'origin']) as string;
     const repoParams = await readYamlFile<{branch: string, secret: string}>(
-      `${parentEntry.fsPath}/${folderName}/repo.yml`
+      `${parentLocation.fsPath}/${folderName}/repo.yml`
     );
     
     if (repoParams === 'not-found') {
@@ -76,12 +76,12 @@ export const loadCourse = async (
     console.log('git repo', index.title, repo);
   }
 
-  const baseEntry = createSuccessEntry(parentEntry, folderName, index.title);
+  const baseEntry = createSuccessEntry(parentLocation, folderName, index.title);
 
   const chapters = await Promise.all(
     index.chapters === undefined ? [] : 
     index.chapters.map((chapterLink: string) => loadChapter(
-      baseEntry, chapterLink
+      baseEntry.location, chapterLink
     ))
   );
 
@@ -95,13 +95,13 @@ export const loadCourse = async (
 }
 
 export const createCourseRef = (course: Course, baseUrl: string): CourseRef => {
-  if (course.type === 'failed') {
-    return createFailedRef(course, baseUrl);
+  if (course.type === 'broken') {
+    return createBrokenRef(course, baseUrl);
   }
 
   return {
-    ...createSuccessRef(course, baseUrl),
-    image: buildAssetPath(course.image, course.path, baseUrl),
+    ...createOkRef(course, baseUrl),
+    image: buildAssetPath(course.image, course.location.path, baseUrl),
     lead: course.lead,
   }
 }
@@ -111,7 +111,7 @@ export class CourseProvider extends BaseResourceProvider<
 > {
   public async reload(): Promise<void> {
     const git = simpleGit({
-      baseDir: this.entry.fsPath,
+      baseDir: this.entry.location.fsPath,
       binary: 'git',
     });
     
@@ -119,21 +119,21 @@ export class CourseProvider extends BaseResourceProvider<
     console.log('pullResult', pullResult);
 
     const index = await readIndexFile<CourseIndex>(
-      this.entry.fsPath,
+      this.entry.location.fsPath,
     );
   
     if (index === 'not-found') {
       return;
     }
   
-    if (this.entry.type === 'failed') {
+    if (this.entry.type === 'broken') {
       return;
     }
 
     const chapters = await Promise.all(
       index.chapters === undefined ? [] : 
       index.chapters.map((chapterLink: string) => loadChapter(
-        this.entry as SuccessEntry, chapterLink
+        this.entry.location, chapterLink
       ))
     );
   
@@ -143,17 +143,17 @@ export class CourseProvider extends BaseResourceProvider<
   }
 
   public async fetch(): Promise<CourseResource> {
-    if (this.entry.type === 'failed') {
-      return createFailedResource(this.entry, this.settings.baseUrl);
+    if (this.entry.type === 'broken') {
+      return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
     }
     
     return {
-      ...createSuccessResource(this.entry, this.crumbs, this.settings.baseUrl),
-      image: buildAssetPath(this.entry.image, this.entry.path, this.settings.baseUrl),
+      ...createOkResource(this.entry, this.crumbs, this.settings.baseUrl),
+      image: buildAssetPath(this.entry.image, this.entry.location.path, this.settings.baseUrl),
       lead: this.entry.lead,
       chapters: this.entry.chapters.map((chapter) => {
-        if (chapter.type === 'failed') {
-          return createFailedResource(chapter, this.settings.baseUrl);
+        if (chapter.type === 'broken') {
+          return createBrokenResource(chapter, this.crumbs, this.settings.baseUrl);
         }
 
         const childAccess = this.access.step(chapter.link);
@@ -162,7 +162,7 @@ export class CourseProvider extends BaseResourceProvider<
         }
 
         return {
-          ...createSuccessResource(chapter, this.crumbs, this.settings.baseUrl),
+          ...createOkResource(chapter, this.crumbs, this.settings.baseUrl),
           lead: chapter.lead,
           lessons: chapter.lessons.map(
             (lesson) => {
@@ -180,7 +180,7 @@ export class CourseProvider extends BaseResourceProvider<
   }
 
   public find(link: string): ChapterProvider | NotFoundProvider | NoAccessProvider {
-    if (this.entry.type === 'failed') {
+    if (this.entry.type === 'broken') {
       return new NotFoundProvider();
     }
 
@@ -200,7 +200,7 @@ export class CourseProvider extends BaseResourceProvider<
       result.pos,
       [...this.crumbs, { 
         title: this.entry.title, 
-        path: this.entry.path
+        path: this.entry.location.path
       }],
       childAccess,
       this.settings

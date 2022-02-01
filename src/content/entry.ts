@@ -1,41 +1,54 @@
-export interface SuccessEntry {
+export interface EntryLocation {
+  path: string;
+  fsPath: string;
+}
+
+export interface BaseEntry {
+  link: string;
+  location: EntryLocation,
+  title: string;
+};
+
+export const createBaseEntry = (
+  parentLocation: EntryLocation,
+  link: string, 
+  title?: string,
+  fsPath?: string,
+): BaseEntry => ({
+  link,
+  location: {
+    path: `${parentLocation.path}/${link}`,
+    fsPath: fsPath ?? `${parentLocation.fsPath}/${link}`,
+  },
+  title: title ?? link,
+});
+
+export interface SuccessEntry extends BaseEntry {
   type: 'success',
-  link: string,
-  path: string,
-  fsPath: string,
-  title: string,
 }
-
-export interface FailedEntry {
-  type: 'failed',
-  link: string,
-  path: string,
-  fsPath: string,
-}
-
-export type Entry = SuccessEntry | FailedEntry;
 
 export const createSuccessEntry = (
-  parentEntry: SuccessEntry, 
+  parentLocation: EntryLocation, 
   link: string, 
-  title: string,
+  title?: string,
   fsPath?: string,
 ): SuccessEntry => ({
   type: 'success',
-  link,
-  title,
-  path: `${parentEntry.path}/${link}`,
-  fsPath: fsPath ?? `${parentEntry.fsPath}/${link}`,
+  ...createBaseEntry(parentLocation, link, title, fsPath),
 });
 
-export const createFailedEntry = (
-  parentEntry: SuccessEntry, 
+export interface BrokenEntry extends BaseEntry {
+  type: 'broken',
+}
+
+export const createBrokenEntry = (
+  parentLocation: EntryLocation, 
   link: string,
+  title?: string,
   fsPath?: string,
-): FailedEntry => ({
-  type: 'failed',
-  link,
-  path: `${parentEntry.path}/${link}`,
-  fsPath: fsPath ?? `${parentEntry.fsPath}/${link}`,
+): BrokenEntry => ({
+  type: 'broken',
+  ...createBaseEntry(parentLocation, link, title, fsPath),
 });
 
+export type Entry = SuccessEntry | BrokenEntry;

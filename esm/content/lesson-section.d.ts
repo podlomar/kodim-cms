@@ -1,7 +1,7 @@
 import { Resource, Crumbs, ResourceRef } from "./resource.js";
 import { BaseResourceProvider, NoAccessProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import type { LessonProvider } from "./lesson.js";
-import { FailedEntry, SuccessEntry } from "./entry.js";
+import { BrokenEntry, SuccessEntry, EntryLocation } from "./entry.js";
 import { Exercise, ExerciseProvider } from "./exercise.js";
 import { Jsml } from "../jsml.js";
 import { Access } from "./access.js";
@@ -9,7 +9,7 @@ export declare type LessonSectionRef = ResourceRef;
 export interface SuccessLessonSection extends SuccessEntry {
     exercises: Exercise[];
 }
-export declare type LessonSection = SuccessLessonSection | FailedEntry;
+export declare type LessonSection = SuccessLessonSection | BrokenEntry;
 export declare type LessonSectionResource = Resource<{
     jsml: Jsml;
     prev: LessonSectionRef | null;
@@ -21,7 +21,7 @@ interface SectionIndex {
     excs: string[];
 }
 export declare const parseSection: (file: string) => Promise<SectionIndex>;
-export declare const loadLessonSection: (parentEntry: SuccessEntry, folderName: string) => Promise<LessonSection>;
+export declare const loadLessonSection: (parentLocation: EntryLocation, folderName: string) => Promise<LessonSection>;
 export declare class LessonSectionProvider extends BaseResourceProvider<LessonProvider, LessonSection, ExerciseProvider> {
     private markdownProcessor;
     constructor(parent: LessonProvider, entry: LessonSection, position: number, crumbs: Crumbs, access: Access, settings: ProviderSettings);

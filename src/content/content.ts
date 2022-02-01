@@ -1,8 +1,8 @@
 import { CoursesRootIndex, DivisionIndex } from "../entries";
-import { Resource, createFailedRef, createFailedResource, createSuccessResource, createForbiddenRef } from "./resource.js";
+import { Resource, createBrokenRef, createBrokenResource, createOkResource, createForbiddenRef } from "./resource.js";
 import { readIndexFile } from "./content-node.js";
 import { Course, CourseProvider, CourseRef, createCourseRef, loadCourse } from "./course.js";
-import { FailedEntry, SuccessEntry } from "./entry.js";
+import { BrokenEntry, createBaseEntry, SuccessEntry } from "./entry.js";
 import { BaseResourceProvider, NoAccessProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
 
 export interface Division<T extends Course | CourseRef = Course> {
@@ -15,7 +15,7 @@ export interface SuccessCoursesRoot extends SuccessEntry {
   divisions: Division[];
 };
 
-export type CoursesRoot = SuccessCoursesRoot | FailedEntry;
+export type CoursesRoot = SuccessCoursesRoot | BrokenEntry;
 
 export type CoursesRootResource = Resource<{
   divisions: Division<CourseRef>[],
@@ -31,20 +31,15 @@ export const loadCoursesRoot = async (
 
   if (index === 'not-found') {
     return { 
-      type: 'failed', 
+      type: 'broken',
+      ...createBaseEntry({ path: '/', fsPath: contentFolder }, coursesFolder),
       link: coursesFolder,
-      path: '/kurzy',
-      fsPath: `${contentFolder}/kurzy`,
     };
   }
   
-
-  const baseEntry: SuccessEntry = {
-    type: 'success',
+  const location = {
     fsPath: `${contentFolder}/kurzy`,
     path: '/kurzy',
-    link: '',
-    title: '',
   };
 
   let pos = 0;
@@ -54,14 +49,17 @@ export const loadCoursesRoot = async (
       lead: divisionIndex.lead,
       courses: await Promise.all(
         divisionIndex.courses.map((courseFolder) => loadCourse(
-          baseEntry, courseFolder)
+          location, courseFolder)
         )
       )
     })
   ))
 
   return {
-    ...baseEntry,
+    type: 'success',
+    location,
+    link: '',
+    title: '',
     divisions,
   }
 }
@@ -70,18 +68,18 @@ export class CoursesRootProvider extends BaseResourceProvider<
   null, CoursesRoot, CourseProvider
 > {
   public async fetch(): Promise<CoursesRootResource> {
-    if (this.entry.type === 'failed') {
-      return createFailedResource(this.entry, this.settings.baseUrl);
+    if (this.entry.type === 'broken') {
+      return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
     }
 
     return {
-      ...createSuccessResource(this.entry, this.crumbs, this.settings.baseUrl),
+      ...createOkResource(this.entry, this.crumbs, this.settings.baseUrl),
       divisions: this.entry.divisions.map(
         (division): Division<CourseRef> => ({
           ...division,
           courses: division.courses.map((course): CourseRef => {
-            if (course.type === 'failed') {
-              return createFailedRef(course, this.settings.baseUrl);
+            if (course.type === 'broken') {
+              return createBrokenRef(course, this.settings.baseUrl);
             }
 
             const childAccess = this.access.step(course.link);
@@ -97,7 +95,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
   }
 
   public find(link: string): CourseProvider | NotFoundProvider | NoAccessProvider {
-    if (this.entry.type === 'failed') {
+    if (this.entry.type === 'broken') {
       return new NotFoundProvider();
     }
 
@@ -127,7 +125,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
   }
 
   public findRepo(repoUrl: string): ResourceProvider | null {
-    if (this.entry.type === 'failed') {
+    if (this.entry.type === 'broken') {
       return null;
     }
 

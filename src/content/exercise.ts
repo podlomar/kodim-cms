@@ -4,19 +4,19 @@ import yaml from "yaml";
 import lineReader from "line-reader";
 import { ExerciseFrontMatter } from "../entries.js";
 import { el, getChildren, getTag, isElement, Jsml, JsmlElement } from "../jsml.js";
-import { createFailedEntry, createSuccessEntry, FailedEntry, SuccessEntry } from "./entry.js";
+import { createBrokenEntry, createSuccessEntry, BrokenEntry, SuccessEntry, EntryLocation } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import { Access } from "./access.js";
 import { LessonSectionProvider } from "./lesson-section.js";
 import { MarkdownProcessor } from "../markdown.js";
-import { createFailedResource, createNotFound, createSuccessResource, Crumbs, NotFound, Resource } from "./resource.js";
+import { createBrokenResource, createNotFound, createOkResource, Crumbs, NotFound, Resource } from "./resource.js";
 
 export interface SuccessExercise extends SuccessEntry {
   demand: 1 | 2 | 3 | 4 | 5;
   num: number;
 };
 
-export type Exercise = SuccessExercise | FailedEntry;
+export type Exercise = SuccessExercise | BrokenEntry;
 
 export type ExerciseResource = Resource<{
   demand: 1 | 2 | 3 | 4 | 5;
@@ -102,20 +102,20 @@ const getExcFilePath = (fsPath: string): string | null => {
 }
 
 export const loadExercise = async (
-  parentEntry: SuccessEntry,
+  parentLocation: EntryLocation,
   link: string,
   pos: number,
 ): Promise<Exercise> => {
-  const fsPath = path.join(parentEntry.fsPath, '..', link.replace('>', '/'));
+  const fsPath = path.join(parentLocation.fsPath, '..', link.replace('>', '/'));
   const assignPath = getExcFilePath(fsPath);
   
   if (assignPath === null) {
-    return createFailedEntry(parentEntry, link, fsPath);
+    return createBrokenEntry(parentLocation, link, fsPath);
   }
   const frontMatter = await loadFrontMatter<ExerciseFrontMatter>(
     assignPath,
   );
-  const baseEntry = createSuccessEntry(parentEntry, link, frontMatter.title, fsPath);
+  const baseEntry = createSuccessEntry(parentLocation, link, frontMatter.title, fsPath);
 
   return {
     ...baseEntry,
@@ -149,15 +149,15 @@ export class ExerciseProvider extends BaseResourceProvider<
 
   private buildAssetPath = (fileName: string): string => {
     const baseUrl = this.settings.baseUrl;
-    return `${baseUrl}/assets${this.entry.path}/${fileName}`;
+    return `${baseUrl}/assets${this.entry.location.path}/${fileName}`;
   }
 
   public async fetch(): Promise<ExerciseResource> {
-    if (this.entry.type === 'failed') {
-      return createFailedResource(this.entry, this.settings.baseUrl);
+    if (this.entry.type === 'broken') {
+      return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
     }
     
-    const assignPath = getExcFilePath(this.entry.fsPath);
+    const assignPath = getExcFilePath(this.entry.location.fsPath);
     if (assignPath === null) {
       throw new Error('no assign file found');
     }
@@ -175,7 +175,7 @@ export class ExerciseProvider extends BaseResourceProvider<
       : [];
 
     return {
-      ...createSuccessResource(this.entry, this.crumbs, this.settings.baseUrl),
+      ...createOkResource(this.entry, this.crumbs, this.settings.baseUrl),
       demand: this.entry.demand,
       title: this.entry.title,
       num: this.entry.num,
@@ -185,11 +185,11 @@ export class ExerciseProvider extends BaseResourceProvider<
   }
 
   public async fetchAssign(): Promise<JsmlElement> {
-    const excPath = getExcFilePath(this.entry.fsPath);
+    const excPath = getExcFilePath(this.entry.location.fsPath);
     if (excPath === null) {
       throw new Error('no assign file found');
     }    
-    if (this.entry.type === 'failed') {
+    if (this.entry.type === 'broken') {
       return ['error'];
     }
 
@@ -199,7 +199,7 @@ export class ExerciseProvider extends BaseResourceProvider<
     const attrs = {
       num: this.entry.num,
       title: this.entry.title,
-      path: this.access.accepts() ? this.entry.path : 'forbidden',
+      path: this.access.accepts() ? this.entry.location.path : 'forbidden',
       demand: this.entry.demand,
     };
 

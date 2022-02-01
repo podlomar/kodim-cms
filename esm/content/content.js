@@ -1,41 +1,40 @@
-import { createFailedRef, createFailedResource, createSuccessResource, createForbiddenRef } from "./resource.js";
+import { createBrokenRef, createBrokenResource, createOkResource, createForbiddenRef } from "./resource.js";
 import { readIndexFile } from "./content-node.js";
 import { CourseProvider, createCourseRef, loadCourse } from "./course.js";
+import { createBaseEntry } from "./entry.js";
 import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
 ;
 export const loadCoursesRoot = async (contentFolder, coursesFolder) => {
     const index = await readIndexFile(`${contentFolder}/${coursesFolder}`);
     if (index === 'not-found') {
-        return {
-            type: 'failed',
-            link: coursesFolder,
-            path: '/kurzy',
-            fsPath: `${contentFolder}/kurzy`,
-        };
+        return Object.assign(Object.assign({ type: 'broken' }, createBaseEntry({ path: '/', fsPath: contentFolder }, coursesFolder)), { link: coursesFolder });
     }
-    const baseEntry = {
-        type: 'success',
+    const location = {
         fsPath: `${contentFolder}/kurzy`,
         path: '/kurzy',
-        link: '',
-        title: '',
     };
     let pos = 0;
     const divisions = await Promise.all(index.divisions.map(async (divisionIndex) => ({
         title: divisionIndex.title,
         lead: divisionIndex.lead,
-        courses: await Promise.all(divisionIndex.courses.map((courseFolder) => loadCourse(baseEntry, courseFolder)))
+        courses: await Promise.all(divisionIndex.courses.map((courseFolder) => loadCourse(location, courseFolder)))
     })));
-    return Object.assign(Object.assign({}, baseEntry), { divisions });
+    return {
+        type: 'success',
+        location,
+        link: '',
+        title: '',
+        divisions,
+    };
 };
 export class CoursesRootProvider extends BaseResourceProvider {
     async fetch() {
-        if (this.entry.type === 'failed') {
-            return createFailedResource(this.entry, this.settings.baseUrl);
+        if (this.entry.type === 'broken') {
+            return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
         }
-        return Object.assign(Object.assign({}, createSuccessResource(this.entry, this.crumbs, this.settings.baseUrl)), { divisions: this.entry.divisions.map((division) => (Object.assign(Object.assign({}, division), { courses: division.courses.map((course) => {
-                    if (course.type === 'failed') {
-                        return createFailedRef(course, this.settings.baseUrl);
+        return Object.assign(Object.assign({}, createOkResource(this.entry, this.crumbs, this.settings.baseUrl)), { divisions: this.entry.divisions.map((division) => (Object.assign(Object.assign({}, division), { courses: division.courses.map((course) => {
+                    if (course.type === 'broken') {
+                        return createBrokenRef(course, this.settings.baseUrl);
                     }
                     const childAccess = this.access.step(course.link);
                     if (!childAccess.accepts()) {
@@ -45,7 +44,7 @@ export class CoursesRootProvider extends BaseResourceProvider {
                 }) }))) });
     }
     find(link) {
-        if (this.entry.type === 'failed') {
+        if (this.entry.type === 'broken') {
             return new NotFoundProvider();
         }
         const courses = this.entry.divisions.flatMap((division) => division.courses);
@@ -61,7 +60,7 @@ export class CoursesRootProvider extends BaseResourceProvider {
     }
     findRepo(repoUrl) {
         var _a;
-        if (this.entry.type === 'failed') {
+        if (this.entry.type === 'broken') {
             return null;
         }
         const courses = this.entry.divisions.flatMap((division) => division.courses);

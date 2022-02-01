@@ -125,7 +125,7 @@ export abstract class BaseResourceProvider<
   }
 
   public asset(fileName: string): string {
-    return `${this.entry.fsPath}/assets/${fileName}`;
+    return `${this.entry.location.fsPath}/assets/${fileName}`;
   }
 
   public success(): this { 

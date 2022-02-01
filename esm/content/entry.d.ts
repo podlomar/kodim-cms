@@ -1,16 +1,19 @@
-export interface SuccessEntry {
-    type: 'success';
-    link: string;
+export interface EntryLocation {
     path: string;
     fsPath: string;
+}
+export interface BaseEntry {
+    link: string;
+    location: EntryLocation;
     title: string;
 }
-export interface FailedEntry {
-    type: 'failed';
-    link: string;
-    path: string;
-    fsPath: string;
+export declare const createBaseEntry: (parentLocation: EntryLocation, link: string, title?: string | undefined, fsPath?: string | undefined) => BaseEntry;
+export interface SuccessEntry extends BaseEntry {
+    type: 'success';
 }
-export declare type Entry = SuccessEntry | FailedEntry;
-export declare const createSuccessEntry: (parentEntry: SuccessEntry, link: string, title: string, fsPath?: string | undefined) => SuccessEntry;
-export declare const createFailedEntry: (parentEntry: SuccessEntry, link: string, fsPath?: string | undefined) => FailedEntry;
+export declare const createSuccessEntry: (parentLocation: EntryLocation, link: string, title?: string | undefined, fsPath?: string | undefined) => SuccessEntry;
+export interface BrokenEntry extends BaseEntry {
+    type: 'broken';
+}
+export declare const createBrokenEntry: (parentLocation: EntryLocation, link: string, title?: string | undefined, fsPath?: string | undefined) => BrokenEntry;
+export declare type Entry = SuccessEntry | BrokenEntry;

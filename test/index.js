@@ -11,7 +11,8 @@ const cms = await KodimCms.load(
 );
 
 const access = AccessMachine.create(
-  '/kurzy/daweb/*/*/*/cvlekce>*'
+  '/kurzy/daweb/*/*'
+  // '/kurzy/daweb/*/*/*/cvlekce>*'
   // 'kurzy/daweb/zaklady-js/*/cvdoma/*',
   // 'kurzy/daweb/*/*/cvlekce/*'
 );

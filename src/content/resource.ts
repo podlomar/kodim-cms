@@ -1,4 +1,4 @@
-import { Entry, FailedEntry, SuccessEntry } from "./entry";
+import { Entry, BrokenEntry, SuccessEntry } from "./entry";
 
 export interface CrumbStep {
   readonly path: string;
@@ -11,102 +11,110 @@ export interface BaseResource {
   readonly link: string,
   readonly path: string,
   readonly url: string,
+  readonly title: string,
 }
 
-export interface SuccessResource extends BaseResource {
-  readonly type: 'content',
-  readonly title: string,
+export interface OkResource extends BaseResource {
+  readonly status: 'ok',
   readonly crumbs: Crumbs,
 };
 
-export interface FailedResource extends BaseResource {
-  readonly type: 'failed';
+export interface BrokenResource extends BaseResource {
+  readonly status: 'broken';
+  readonly crumbs: Crumbs,
 };
 
 export interface ForbiddenResource extends BaseResource {
-  readonly type: 'forbidden',
+  readonly status: 'forbidden',
 };
 
 export interface NotFound {
-  readonly type: 'not-found',  
+  readonly status: 'not-found',  
 };
 
-export type Resource<T = {}> = (
-  | (SuccessResource & T)
-  | FailedResource
-  | ForbiddenResource
+export type Resource<T = {}, B = {}, F = {}> = (
+  | (OkResource & T)
+  | (BrokenResource & B)
+  | (ForbiddenResource & F)
 );
 
-const createBaseResource = (entry: Entry, baseUrl: string) => ({
+const createBaseResource = (entry: Entry, baseUrl: string): BaseResource => ({
   link: entry.link,
-  path: entry.path,
-  url: `${baseUrl}/content${entry.path}`,
+  title: entry.title,
+  path: entry.location.path,
+  url: `${baseUrl}/content${entry.location.path}`,
 })
 
-export const createSuccessResource = (
+export const createOkResource = (
   entry: SuccessEntry, crumbs: Crumbs, baseUrl: string
-): SuccessResource => ({
-  type: 'content',
+): OkResource => ({
+  status: 'ok',
   ...createBaseResource(entry, baseUrl),
   crumbs,
-  title: entry.title,
 });
 
-export const createFailedResource = (
-  entry: FailedEntry,
+export const createBrokenResource = (
+  entry: BrokenEntry,
+  crumbs: Crumbs, 
   baseUrl: string,
-): FailedResource => ({
+): BrokenResource => ({
+  status: 'broken',
   ...createBaseResource(entry, baseUrl),
-  type: 'failed',
+  crumbs,
 });
 
 export const createForbiddenResource = (
   entry: Entry, baseUrl: string,
 ): ForbiddenResource => ({
+  status: 'forbidden',
   ...createBaseResource(entry, baseUrl),
-  type: 'forbidden',
 });
 
 export const createNotFound = (): NotFound => ({
-  type: 'not-found',
+  status: 'not-found',
 });
 
-export interface SuccessRef extends BaseResource {
-  type: 'ref',
+export interface OkRef extends BaseResource {
+  status: 'ok',
   title: string,
 }
 
-export interface FailedRef extends BaseResource {
-  type: 'failed',
+export interface BrokenRef extends BaseResource {
+  status: 'broken',
 }
 
-export interface ForbiddenRef extends BaseResource {
-  type: 'forbidden',
+export interface ForbiddenRef {
+  status: 'forbidden';
+  title: string;
 }
 
-export type ResourceRef<T = {}> = (SuccessRef & T) | FailedRef | ForbiddenRef;
+export type ResourceRef<T = {}, B = {}, F = {}> = (
+  | (OkRef & T) 
+  | (BrokenRef & B)
+  | (ForbiddenRef & F)
+);
 
-export const createSuccessRef = (entry: SuccessEntry, baseUrl: string): SuccessRef => ({
-  type: 'ref',
+export const createOkRef = (entry: SuccessEntry, baseUrl: string): OkRef => ({
+  status: 'ok',
   ...createBaseResource(entry, baseUrl),
   title: entry.title,
 })
 
-export const createFailedRef = (entry: FailedEntry, baseUrl: string): FailedRef => ({
-  type: 'failed',
+export const createBrokenRef = (entry: BrokenEntry, baseUrl: string): BrokenRef => ({
+  status: 'broken',
   ...createBaseResource(entry, baseUrl),
 })
 
 export const createForbiddenRef = (entry: Entry, baseUrl: string): ForbiddenRef => ({
-  type: 'forbidden',
-  ...createBaseResource(entry, baseUrl),
+  status: 'forbidden',
+  title: entry.title,
 })
 
 export const createResourceRef = (
   entry: Entry, baseUrl: string,
-): ResourceRef => entry.type === 'failed'
-  ? createFailedRef(entry, baseUrl)
-  : createSuccessRef(entry, baseUrl);
+): ResourceRef => entry.type === 'broken'
+  ? createBrokenRef(entry, baseUrl)
+  : createOkRef(entry, baseUrl);
 
 export const buildAssetPath = (fileName: string, entryPath: string, baseUrl: string) => {
   return `${baseUrl}/assets${entryPath}/${fileName}`;

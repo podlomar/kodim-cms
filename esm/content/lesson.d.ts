@@ -1,4 +1,4 @@
-import { FailedEntry, SuccessEntry } from "./entry.js";
+import { BrokenEntry, SuccessEntry, EntryLocation } from "./entry.js";
 import { ResourceRef, Resource } from './resource.js';
 import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
 import type { ChapterProvider } from "./chapter.js";
@@ -12,7 +12,7 @@ export interface SuccessLesson extends SuccessEntry {
     lead: string;
     sections: LessonSection[];
 }
-export declare type Lesson = SuccessLesson | FailedEntry;
+export declare type Lesson = SuccessLesson | BrokenEntry;
 export declare type LessonResource = Resource<{
     num: number;
     lead: string;
@@ -21,7 +21,7 @@ export declare type LessonResource = Resource<{
     next: LessonRef | null;
     prev: LessonRef | null;
 }>;
-export declare const loadLesson: (parentEntry: SuccessEntry, folderName: string, position: number) => Promise<Lesson>;
+export declare const loadLesson: (parentLocation: EntryLocation, folderName: string, position: number) => Promise<Lesson>;
 export declare const createLessonRef: (lesson: Lesson, baseUrl: string) => LessonRef;
 export declare class LessonProvider extends BaseResourceProvider<ChapterProvider, Lesson, LessonSectionProvider> {
     getFirstSectionLink(): string | null;

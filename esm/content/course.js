@@ -1,25 +1,25 @@
 import { existsSync } from "fs";
 import simpleGit from 'simple-git';
-import { createSuccessEntry, createFailedEntry } from "./entry.js";
-import { createSuccessResource, createFailedResource, buildAssetPath, createFailedRef, createSuccessRef, createForbiddenResource, createForbiddenRef } from './resource.js';
+import { createSuccessEntry, createBrokenEntry } from "./entry.js";
+import { createOkResource, createBrokenResource, buildAssetPath, createBrokenRef, createOkRef, createForbiddenResource, createForbiddenRef } from './resource.js';
 import { ChapterProvider, loadChapter } from "./chapter.js";
 import { findChild, readIndexFile, readYamlFile } from "./content-node.js";
 import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
 import { createLessonRef } from "./lesson.js";
-export const loadCourse = async (parentEntry, folderName) => {
-    const index = await readIndexFile(`${parentEntry.fsPath}/${folderName}`);
+export const loadCourse = async (parentLocation, folderName) => {
+    const index = await readIndexFile(`${parentLocation.fsPath}/${folderName}`);
     if (index === 'not-found') {
-        return createFailedEntry(parentEntry, folderName);
+        return createBrokenEntry(parentLocation, folderName);
     }
-    const isGitRepo = existsSync(`${parentEntry.fsPath}/${folderName}/.git`);
+    const isGitRepo = existsSync(`${parentLocation.fsPath}/${folderName}/.git`);
     let repo = null;
     if (isGitRepo) {
         const git = simpleGit({
-            baseDir: `${parentEntry.fsPath}/${folderName}`,
+            baseDir: `${parentLocation.fsPath}/${folderName}`,
             binary: 'git',
         });
         const url = await git.remote(['get-url', 'origin']);
-        const repoParams = await readYamlFile(`${parentEntry.fsPath}/${folderName}/repo.yml`);
+        const repoParams = await readYamlFile(`${parentLocation.fsPath}/${folderName}/repo.yml`);
         if (repoParams === 'not-found') {
             repo = {
                 url: url.trim(),
@@ -32,52 +32,52 @@ export const loadCourse = async (parentEntry, folderName) => {
         }
         console.log('git repo', index.title, repo);
     }
-    const baseEntry = createSuccessEntry(parentEntry, folderName, index.title);
+    const baseEntry = createSuccessEntry(parentLocation, folderName, index.title);
     const chapters = await Promise.all(index.chapters === undefined ? [] :
-        index.chapters.map((chapterLink) => loadChapter(baseEntry, chapterLink)));
+        index.chapters.map((chapterLink) => loadChapter(baseEntry.location, chapterLink)));
     return Object.assign(Object.assign({}, baseEntry), { image: index.image, lead: index.lead, repo,
         chapters });
 };
 export const createCourseRef = (course, baseUrl) => {
-    if (course.type === 'failed') {
-        return createFailedRef(course, baseUrl);
+    if (course.type === 'broken') {
+        return createBrokenRef(course, baseUrl);
     }
-    return Object.assign(Object.assign({}, createSuccessRef(course, baseUrl)), { image: buildAssetPath(course.image, course.path, baseUrl), lead: course.lead });
+    return Object.assign(Object.assign({}, createOkRef(course, baseUrl)), { image: buildAssetPath(course.image, course.location.path, baseUrl), lead: course.lead });
 };
 export class CourseProvider extends BaseResourceProvider {
     async reload() {
         const git = simpleGit({
-            baseDir: this.entry.fsPath,
+            baseDir: this.entry.location.fsPath,
             binary: 'git',
         });
         const pullResult = await git.pull();
         console.log('pullResult', pullResult);
-        const index = await readIndexFile(this.entry.fsPath);
+        const index = await readIndexFile(this.entry.location.fsPath);
         if (index === 'not-found') {
             return;
         }
-        if (this.entry.type === 'failed') {
+        if (this.entry.type === 'broken') {
             return;
         }
         const chapters = await Promise.all(index.chapters === undefined ? [] :
-            index.chapters.map((chapterLink) => loadChapter(this.entry, chapterLink)));
+            index.chapters.map((chapterLink) => loadChapter(this.entry.location, chapterLink)));
         this.entry.image = index.image;
         this.entry.lead = index.lead;
         this.entry.chapters = chapters;
     }
     async fetch() {
-        if (this.entry.type === 'failed') {
-            return createFailedResource(this.entry, this.settings.baseUrl);
+        if (this.entry.type === 'broken') {
+            return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
         }
-        return Object.assign(Object.assign({}, createSuccessResource(this.entry, this.crumbs, this.settings.baseUrl)), { image: buildAssetPath(this.entry.image, this.entry.path, this.settings.baseUrl), lead: this.entry.lead, chapters: this.entry.chapters.map((chapter) => {
-                if (chapter.type === 'failed') {
-                    return createFailedResource(chapter, this.settings.baseUrl);
+        return Object.assign(Object.assign({}, createOkResource(this.entry, this.crumbs, this.settings.baseUrl)), { image: buildAssetPath(this.entry.image, this.entry.location.path, this.settings.baseUrl), lead: this.entry.lead, chapters: this.entry.chapters.map((chapter) => {
+                if (chapter.type === 'broken') {
+                    return createBrokenResource(chapter, this.crumbs, this.settings.baseUrl);
                 }
                 const childAccess = this.access.step(chapter.link);
                 if (!childAccess.accepts()) {
                     return createForbiddenResource(chapter, this.settings.baseUrl);
                 }
-                return Object.assign(Object.assign({}, createSuccessResource(chapter, this.crumbs, this.settings.baseUrl)), { lead: chapter.lead, lessons: chapter.lessons.map((lesson) => {
+                return Object.assign(Object.assign({}, createOkResource(chapter, this.crumbs, this.settings.baseUrl)), { lead: chapter.lead, lessons: chapter.lessons.map((lesson) => {
                         const lessonAccess = childAccess.step(lesson.link);
                         if (lessonAccess.accepts()) {
                             return createLessonRef(lesson, this.settings.baseUrl);
@@ -87,7 +87,7 @@ export class CourseProvider extends BaseResourceProvider {
             }) });
     }
     find(link) {
-        if (this.entry.type === 'failed') {
+        if (this.entry.type === 'broken') {
             return new NotFoundProvider();
         }
         const result = findChild(this.entry.chapters, link);
@@ -100,7 +100,7 @@ export class CourseProvider extends BaseResourceProvider {
         }
         return new ChapterProvider(this, result.child, result.pos, [...this.crumbs, {
                 title: this.entry.title,
-                path: this.entry.path
+                path: this.entry.location.path
             }], childAccess, this.settings);
     }
     findRepo(repoUrl) {

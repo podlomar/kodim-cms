@@ -3,10 +3,10 @@ import { existsSync } from "fs";
 import yaml from "yaml";
 import lineReader from "line-reader";
 import { el, getChildren, getTag, isElement } from "../jsml.js";
-import { createFailedEntry, createSuccessEntry } from "./entry.js";
+import { createBrokenEntry, createSuccessEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { MarkdownProcessor } from "../markdown.js";
-import { createFailedResource, createSuccessResource } from "./resource.js";
+import { createBrokenResource, createOkResource } from "./resource.js";
 ;
 ;
 const loadFrontMatter = async (filePath) => new Promise((resolve, reject) => {
@@ -61,14 +61,14 @@ const getExcFilePath = (fsPath) => {
     }
     return null;
 };
-export const loadExercise = async (parentEntry, link, pos) => {
-    const fsPath = path.join(parentEntry.fsPath, '..', link.replace('>', '/'));
+export const loadExercise = async (parentLocation, link, pos) => {
+    const fsPath = path.join(parentLocation.fsPath, '..', link.replace('>', '/'));
     const assignPath = getExcFilePath(fsPath);
     if (assignPath === null) {
-        return createFailedEntry(parentEntry, link, fsPath);
+        return createBrokenEntry(parentLocation, link, fsPath);
     }
     const frontMatter = await loadFrontMatter(assignPath);
-    const baseEntry = createSuccessEntry(parentEntry, link, frontMatter.title, fsPath);
+    const baseEntry = createSuccessEntry(parentLocation, link, frontMatter.title, fsPath);
     return Object.assign(Object.assign({}, baseEntry), { demand: frontMatter.demand, num: pos + 1 });
 };
 export class ExerciseProvider extends BaseResourceProvider {
@@ -76,7 +76,7 @@ export class ExerciseProvider extends BaseResourceProvider {
         super(parent, entry, position, crumbs, access, settings);
         this.buildAssetPath = (fileName) => {
             const baseUrl = this.settings.baseUrl;
-            return `${baseUrl}/assets${this.entry.path}/${fileName}`;
+            return `${baseUrl}/assets${this.entry.location.path}/${fileName}`;
         };
         this.markdownProcessor = new MarkdownProcessor(this.buildAssetPath);
     }
@@ -85,10 +85,10 @@ export class ExerciseProvider extends BaseResourceProvider {
     }
     async fetch() {
         var _a;
-        if (this.entry.type === 'failed') {
-            return createFailedResource(this.entry, this.settings.baseUrl);
+        if (this.entry.type === 'broken') {
+            return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
         }
-        const assignPath = getExcFilePath(this.entry.fsPath);
+        const assignPath = getExcFilePath(this.entry.location.fsPath);
         if (assignPath === null) {
             throw new Error('no assign file found');
         }
@@ -101,15 +101,15 @@ export class ExerciseProvider extends BaseResourceProvider {
         const solutionJsml = isElement(secondNode) && getTag(secondNode) === 'solution'
             ? getChildren(secondNode)
             : [];
-        return Object.assign(Object.assign({}, createSuccessResource(this.entry, this.crumbs, this.settings.baseUrl)), { demand: this.entry.demand, title: this.entry.title, num: this.entry.num, assignJsml,
+        return Object.assign(Object.assign({}, createOkResource(this.entry, this.crumbs, this.settings.baseUrl)), { demand: this.entry.demand, title: this.entry.title, num: this.entry.num, assignJsml,
             solutionJsml });
     }
     async fetchAssign() {
-        const excPath = getExcFilePath(this.entry.fsPath);
+        const excPath = getExcFilePath(this.entry.location.fsPath);
         if (excPath === null) {
             throw new Error('no assign file found');
         }
-        if (this.entry.type === 'failed') {
+        if (this.entry.type === 'broken') {
             return ['error'];
         }
         const assignText = await loadAssign(excPath);
@@ -117,7 +117,7 @@ export class ExerciseProvider extends BaseResourceProvider {
         const attrs = {
             num: this.entry.num,
             title: this.entry.title,
-            path: this.access.accepts() ? this.entry.path : 'forbidden',
+            path: this.access.accepts() ? this.entry.location.path : 'forbidden',
             demand: this.entry.demand,
         };
         const firstNode = jsml[0];

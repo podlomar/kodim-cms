@@ -1,6 +1,6 @@
 import { ChapterIndex } from "../entries";
-import { createFailedEntry, createSuccessEntry, FailedEntry, SuccessEntry } from "./entry.js";
-import { Resource, createFailedResource, createSuccessResource, createForbiddenRef } from './resource.js';
+import { createBrokenEntry, createSuccessEntry, BrokenEntry, SuccessEntry, EntryLocation } from "./entry.js";
+import { Resource, createBrokenResource, createOkResource, createForbiddenRef } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import type { CourseProvider } from "./course";
 import { createLessonRef, Lesson, LessonProvider, LessonRef, loadLesson } from "./lesson.js";
@@ -11,7 +11,7 @@ export interface SuccessChapter extends SuccessEntry {
   lessons: Lesson[],
 }
 
-export type Chapter = SuccessChapter | FailedEntry;
+export type Chapter = SuccessChapter | BrokenEntry;
 
 export type ChapterResource = Resource<{
   lead: string,
@@ -19,21 +19,21 @@ export type ChapterResource = Resource<{
 }>;
 
 export const loadChapter = async (
-  parentEntry: SuccessEntry,
+  parentLocation: EntryLocation,
   folderName: string,
 ): Promise<Chapter> => {
   const index = await readIndexFile<ChapterIndex>(
-    `${parentEntry.fsPath}/${folderName}`
+    `${parentLocation.fsPath}/${folderName}`
   );
   
   if (index === 'not-found') {
-    return createFailedEntry(parentEntry, folderName);
+    return createBrokenEntry(parentLocation, folderName);
   }
   
-  const baseEntry = createSuccessEntry(parentEntry, folderName, index.title);
+  const baseEntry = createSuccessEntry(parentLocation, folderName, index.title);
   const lessons = await Promise.all(
     index.lessons.map((lessonLink: string, idx: number) => loadLesson(
-      baseEntry, lessonLink, idx,
+      baseEntry.location, lessonLink, idx,
     ))
   );
 
@@ -48,12 +48,12 @@ export class ChapterProvider extends BaseResourceProvider<
   CourseProvider, Chapter, LessonProvider
 > {
   public async fetch(): Promise<ChapterResource> {
-    if (this.entry.type === 'failed') {
-      return createFailedResource(this.entry, this.settings.baseUrl);
+    if (this.entry.type === 'broken') {
+      return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
     }
 
     return {
-      ...createSuccessResource(this.entry, this.crumbs, this.settings.baseUrl),
+      ...createOkResource(this.entry, this.crumbs, this.settings.baseUrl),
       lead: this.entry.lead,
       lessons: this.entry.lessons.map(
         (lesson) => {
@@ -69,7 +69,7 @@ export class ChapterProvider extends BaseResourceProvider<
   }
 
   public find(link: string): LessonProvider | NotFoundProvider | NoAccessProvider {
-    if (this.entry.type === 'failed') {
+    if (this.entry.type === 'broken') {
       return new NotFoundProvider();
     }
 
@@ -89,7 +89,7 @@ export class ChapterProvider extends BaseResourceProvider<
       result.pos, 
       [...this.crumbs, { 
         title: this.entry.title, 
-        path: this.entry.path
+        path: this.entry.location.path
       }],
       childAccess,
       this.settings
@@ -97,7 +97,7 @@ export class ChapterProvider extends BaseResourceProvider<
   }
 
   public getNextLesson(pos: number): LessonRef | null {
-    if (this.entry.type === 'failed') {
+    if (this.entry.type === 'broken') {
       return null;
     }
 
@@ -115,7 +115,7 @@ export class ChapterProvider extends BaseResourceProvider<
   }
 
   public getPrevLesson(pos: number): LessonRef | null {
-    if (this.entry.type === 'failed') {
+    if (this.entry.type === 'broken') {
       return null;
     }
 

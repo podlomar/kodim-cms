@@ -71,7 +71,7 @@ export class BaseResourceProvider {
         return child.search(...restLinks);
     }
     asset(fileName) {
-        return `${this.entry.fsPath}/assets/${fileName}`;
+        return `${this.entry.location.fsPath}/assets/${fileName}`;
     }
     success() {
         return this;

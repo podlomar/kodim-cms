@@ -1,6 +1,6 @@
 import { Resource } from "./resource.js";
 import { Course, CourseProvider, CourseRef } from "./course.js";
-import { FailedEntry, SuccessEntry } from "./entry.js";
+import { BrokenEntry, SuccessEntry } from "./entry.js";
 import { BaseResourceProvider, NoAccessProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
 export interface Division<T extends Course | CourseRef = Course> {
     readonly title: string;
@@ -10,7 +10,7 @@ export interface Division<T extends Course | CourseRef = Course> {
 export interface SuccessCoursesRoot extends SuccessEntry {
     divisions: Division[];
 }
-export declare type CoursesRoot = SuccessCoursesRoot | FailedEntry;
+export declare type CoursesRoot = SuccessCoursesRoot | BrokenEntry;
 export declare type CoursesRootResource = Resource<{
     divisions: Division<CourseRef>[];
 }>;

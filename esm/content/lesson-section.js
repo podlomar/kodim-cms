@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from 'path';
-import { buildAssetPath, createFailedResource, createSuccessResource } from "./resource.js";
+import { buildAssetPath, createBrokenResource, createOkResource } from "./resource.js";
 import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
 import { unified } from "unified";
 import markdown from "remark-parse";
@@ -39,33 +39,33 @@ export const parseSection = async (file) => {
     }
     return { title, excs };
 };
-export const loadLessonSection = async (parentEntry, folderName) => {
-    const index = await parseSection(`${parentEntry.fsPath}/${folderName}.md`);
-    const baseEntry = createSuccessEntry(parentEntry, folderName, index.title);
+export const loadLessonSection = async (parentLocation, folderName) => {
+    const index = await parseSection(`${parentLocation.fsPath}/${folderName}.md`);
+    const baseEntry = createSuccessEntry(parentLocation, folderName, index.title);
     let excsCount = 0;
-    const exercises = await Promise.all(index.excs.map((link, idx) => loadExercise(baseEntry, link, excsCount + idx)));
+    const exercises = await Promise.all(index.excs.map((link, idx) => loadExercise(baseEntry.location, link, excsCount + idx)));
     return Object.assign(Object.assign({}, baseEntry), { exercises });
 };
 export class LessonSectionProvider extends BaseResourceProvider {
     constructor(parent, entry, position, crumbs, access, settings) {
         super(parent, entry, position, crumbs, access, settings);
-        this.buildAssetPath = (fileName) => buildAssetPath(fileName, path.join(this.entry.path, '..'), this.settings.baseUrl);
+        this.buildAssetPath = (fileName) => buildAssetPath(fileName, path.join(this.entry.location.path, '..'), this.settings.baseUrl);
         this.markdownProcessor = new MarkdownProcessor(this.buildAssetPath).useTransform('exc', buildExcTransform(this));
         ;
     }
     async fetch() {
-        if (this.entry.type === 'failed') {
-            return createFailedResource(this.entry, this.settings.baseUrl);
+        if (this.entry.type === 'broken') {
+            return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
         }
         const next = this.parent.getNextSection(this.position);
         const prev = this.parent.getPrevSection(this.position);
-        const jsml = await this.markdownProcessor.process(`${this.entry.fsPath}.md`);
-        return Object.assign(Object.assign({}, createSuccessResource(this.entry, this.crumbs, this.settings.baseUrl)), { jsml,
+        const jsml = await this.markdownProcessor.process(`${this.entry.location.fsPath}.md`);
+        return Object.assign(Object.assign({}, createOkResource(this.entry, this.crumbs, this.settings.baseUrl)), { jsml,
             next,
             prev });
     }
     find(link) {
-        if (this.entry.type === 'failed') {
+        if (this.entry.type === 'broken') {
             return new NotFoundProvider();
         }
         const result = findChild(this.entry.exercises, link);
@@ -78,11 +78,11 @@ export class LessonSectionProvider extends BaseResourceProvider {
         }
         return new ExerciseProvider(this, result.child, result.pos, [...this.crumbs, {
                 title: this.entry.title,
-                path: this.entry.path
+                path: this.entry.location.path
             }], childAccess, this.settings);
     }
     findProvider(link) {
-        if (this.entry.type === 'failed') {
+        if (this.entry.type === 'broken') {
             return null;
         }
         const result = findChild(this.entry.exercises, link);
@@ -91,7 +91,7 @@ export class LessonSectionProvider extends BaseResourceProvider {
         }
         return new ExerciseProvider(this, result.child, result.pos, [...this.crumbs, {
                 title: this.entry.title,
-                path: this.entry.path
+                path: this.entry.location.path
             }], this.access.step(result.child.link), this.settings);
     }
     findRepo(repoUrl) {
