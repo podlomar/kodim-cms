@@ -86,10 +86,7 @@ export class CourseProvider extends BaseResourceProvider {
                 }
                 return Object.assign(Object.assign({}, createOkResource(chapter, this.crumbs, this.settings.baseUrl)), { lead: chapter.lead, lessons: chapter.lessons.map((lesson) => {
                         const lessonAccess = childAccess.step(lesson.link);
-                        if (lessonAccess.accepts()) {
-                            return createLessonRef(lesson, this.settings.baseUrl);
-                        }
-                        return createForbiddenRef(lesson.title);
+                        return createLessonRef(lesson, lessonAccess.accepts(), this.settings.baseUrl);
                     }) });
             }) });
     }

@@ -9,6 +9,9 @@ import { LessonSection, LessonSectionProvider, LessonSectionRef, LessonSectionRe
 export type LessonRef = ResourceRef<{
   num: number, 
   lead: string,
+}, {}, {
+  num: number, 
+  lead: string,
 }>;
 
 export interface SuccessLesson extends SuccessEntry { 
@@ -56,13 +59,25 @@ export const loadLesson = async (
   }
 }
 
-export const createLessonRef = (lesson: Lesson, baseUrl: string): LessonRef => {
+export const createLessonRef = (
+  lesson: Lesson,
+  accessAllowed: boolean,
+  baseUrl: string
+): LessonRef => {
   if (lesson.type === 'broken') {
     return createBrokenRef(lesson, baseUrl);
   }
 
+  if (accessAllowed) {
+    return {
+      ...createOkRef(lesson, baseUrl),
+      num: lesson.num,
+      lead: lesson.lead,
+    }
+  }
+
   return {
-    ...createOkRef(lesson, baseUrl),
+    ...createForbiddenRef(lesson.title),
     num: lesson.num,
     lead: lesson.lead,
   }
@@ -152,7 +167,7 @@ export class LessonProvider extends BaseResourceProvider<
     }
 
     return new LessonSectionProvider(
-      this, 
+      this,
       result.child, 
       result.pos, 
       [...this.crumbs, { 

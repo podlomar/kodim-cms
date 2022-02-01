@@ -6,6 +6,9 @@ import { LessonSection, LessonSectionProvider, LessonSectionRef, LessonSectionRe
 export declare type LessonRef = ResourceRef<{
     num: number;
     lead: string;
+}, {}, {
+    num: number;
+    lead: string;
 }>;
 export interface SuccessLesson extends SuccessEntry {
     num: number;
@@ -22,7 +25,7 @@ export declare type LessonResource = Resource<{
     prev: LessonRef | null;
 }>;
 export declare const loadLesson: (parentLocation: EntryLocation, folderName: string, position: number) => Promise<Lesson>;
-export declare const createLessonRef: (lesson: Lesson, baseUrl: string) => LessonRef;
+export declare const createLessonRef: (lesson: Lesson, accessAllowed: boolean, baseUrl: string) => LessonRef;
 export declare class LessonProvider extends BaseResourceProvider<ChapterProvider, Lesson, LessonSectionProvider> {
     getFirstSectionLink(): string | null;
     fetch(expandSection?: 'first' | {

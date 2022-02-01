@@ -1,5 +1,5 @@
 import { createBrokenEntry, createSuccessEntry } from "./entry.js";
-import { createBrokenResource, createOkResource, createForbiddenRef } from './resource.js';
+import { createBrokenResource, createOkResource } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import { createLessonRef, LessonProvider, loadLesson } from "./lesson.js";
 import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
@@ -19,10 +19,7 @@ export class ChapterProvider extends BaseResourceProvider {
         }
         return Object.assign(Object.assign({}, createOkResource(this.entry, this.crumbs, this.settings.baseUrl)), { lead: this.entry.lead, lessons: this.entry.lessons.map((lesson) => {
                 const lessonAccess = this.access.step(lesson.link);
-                if (lessonAccess.accepts()) {
-                    return createLessonRef(lesson, this.settings.baseUrl);
-                }
-                return createForbiddenRef(lesson.title);
+                return createLessonRef(lesson, lessonAccess.accepts(), this.settings.baseUrl);
             }) });
     }
     find(link) {
@@ -51,10 +48,7 @@ export class ChapterProvider extends BaseResourceProvider {
             return null;
         }
         const childAccess = this.access.step(lesson.link);
-        if (!childAccess.accepts()) {
-            return createForbiddenRef(lesson.title);
-        }
-        return createLessonRef(lesson, this.settings.baseUrl);
+        return createLessonRef(lesson, childAccess.accepts(), this.settings.baseUrl);
     }
     getPrevLesson(pos) {
         if (this.entry.type === 'broken') {
@@ -65,10 +59,7 @@ export class ChapterProvider extends BaseResourceProvider {
             return null;
         }
         const childAccess = this.access.step(lesson.link);
-        if (!childAccess.accepts()) {
-            return createForbiddenRef(lesson.title);
-        }
-        return createLessonRef(lesson, this.settings.baseUrl);
+        return createLessonRef(lesson, childAccess.accepts(), this.settings.baseUrl);
     }
     findRepo(repoUrl) {
         return null;

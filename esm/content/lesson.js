@@ -12,11 +12,14 @@ export const loadLesson = async (parentLocation, folderName, position) => {
     const sections = await Promise.all(index.sections.map((sectionLink) => loadLessonSection(baseEntry.location, sectionLink)));
     return Object.assign(Object.assign({}, baseEntry), { num: position + 1, lead: index.lead, sections });
 };
-export const createLessonRef = (lesson, baseUrl) => {
+export const createLessonRef = (lesson, accessAllowed, baseUrl) => {
     if (lesson.type === 'broken') {
         return createBrokenRef(lesson, baseUrl);
     }
-    return Object.assign(Object.assign({}, createOkRef(lesson, baseUrl)), { num: lesson.num, lead: lesson.lead });
+    if (accessAllowed) {
+        return Object.assign(Object.assign({}, createOkRef(lesson, baseUrl)), { num: lesson.num, lead: lesson.lead });
+    }
+    return Object.assign(Object.assign({}, createForbiddenRef(lesson.title)), { num: lesson.num, lead: lesson.lead });
 };
 export class LessonProvider extends BaseResourceProvider {
     getFirstSectionLink() {

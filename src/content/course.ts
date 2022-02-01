@@ -185,11 +185,7 @@ export class CourseProvider extends BaseResourceProvider<
           lessons: chapter.lessons.map(
             (lesson) => {
               const lessonAccess = childAccess.step(lesson.link);
-              if (lessonAccess.accepts()) {
-                return createLessonRef(lesson, this.settings.baseUrl);
-              }
-              
-              return createForbiddenRef(lesson.title);
+              return createLessonRef(lesson, lessonAccess.accepts(), this.settings.baseUrl);
             }
           )
         }
@@ -213,7 +209,7 @@ export class CourseProvider extends BaseResourceProvider<
     }
 
     return new ChapterProvider(
-      this, 
+      this,
       result.child, 
       result.pos,
       [...this.crumbs, { 

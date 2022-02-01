@@ -58,11 +58,7 @@ export class ChapterProvider extends BaseResourceProvider<
       lessons: this.entry.lessons.map(
         (lesson) => {
           const lessonAccess = this.access.step(lesson.link);
-          if (lessonAccess.accepts()) {
-            return createLessonRef(lesson, this.settings.baseUrl);
-          }
-          
-          return createForbiddenRef(lesson.title);
+          return createLessonRef(lesson, lessonAccess.accepts(), this.settings.baseUrl);
         }
       ),
     }
@@ -107,11 +103,7 @@ export class ChapterProvider extends BaseResourceProvider<
     }
 
     const childAccess = this.access.step(lesson.link);
-    if (!childAccess.accepts()) {
-      return createForbiddenRef(lesson.title);
-    }
-
-    return createLessonRef(lesson, this.settings.baseUrl);
+    return createLessonRef(lesson, childAccess.accepts(), this.settings.baseUrl);
   }
 
   public getPrevLesson(pos: number): LessonRef | null {
@@ -125,11 +117,7 @@ export class ChapterProvider extends BaseResourceProvider<
     }
 
     const childAccess = this.access.step(lesson.link);
-    if (!childAccess.accepts()) {
-      return createForbiddenRef(lesson.title);
-    }
-
-    return createLessonRef(lesson, this.settings.baseUrl);
+    return createLessonRef(lesson, childAccess.accepts(), this.settings.baseUrl);
   }
 
   public findRepo(repoUrl: string): null {
