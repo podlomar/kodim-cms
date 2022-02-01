@@ -12,6 +12,9 @@ import { createLessonRef } from "./lesson.js";
 export type CourseRef = ResourceRef<{
   image: string,
   lead: string,
+}, {}, {
+  image: string,
+  lead: string,
 }>;
 
 export interface SuccessCourse extends SuccessEntry {

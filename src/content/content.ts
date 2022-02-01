@@ -84,7 +84,11 @@ export class CoursesRootProvider extends BaseResourceProvider<
 
             const childAccess = this.access.step(course.link);
             if (!childAccess.accepts()) {
-              return createForbiddenRef(course, this.settings.baseUrl);
+              return {
+                ...createForbiddenRef(course, this.settings.baseUrl),
+                image: course.image,
+                lead: course.lead,
+              }
             }
         
             return createCourseRef(course, this.settings.baseUrl);

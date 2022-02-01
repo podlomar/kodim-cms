@@ -6,6 +6,9 @@ import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./prov
 export declare type CourseRef = ResourceRef<{
     image: string;
     lead: string;
+}, {}, {
+    image: string;
+    lead: string;
 }>;
 export interface SuccessCourse extends SuccessEntry {
     image: string;
