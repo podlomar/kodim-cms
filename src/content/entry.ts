@@ -51,4 +51,4 @@ export const createBrokenEntry = (
   ...createBaseEntry(parentLocation, link, title, fsPath),
 });
 
-export type Entry = SuccessEntry | BrokenEntry;
+export type Entry<T extends {} = {}> = SuccessEntry & T | BrokenEntry;

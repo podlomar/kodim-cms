@@ -1,25 +1,21 @@
 import { LessonIndex } from "../entries";
-import { createBrokenEntry, createSuccessEntry, BrokenEntry, SuccessEntry, EntryLocation } from "./entry.js";
-import { ResourceRef, createOkResource, createBrokenResource, createOkRef, createResourceRef, createBrokenRef, Resource, createForbiddenRef } from './resource.js';
+import { createBrokenEntry, createSuccessEntry, Entry, EntryLocation } from "./entry.js";
+import { ResourceRef, createBaseResource, createBaseRef, Resource } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
-import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
+import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import type { ChapterProvider } from "./chapter.js";
-import { LessonSection, LessonSectionProvider, LessonSectionRef, LessonSectionResource, loadLessonSection } from "./lesson-section.js";
+import { LessonSectionEntry, LessonSectionProvider, LessonSectionRef, LessonSectionResource, loadLessonSection } from "./lesson-section.js";
 
 export type LessonRef = ResourceRef<{
   num: number, 
   lead: string,
-}, {}, {
-  num: number, 
-  lead: string,
 }>;
 
-export interface SuccessLesson extends SuccessEntry { 
+export type LessonEntry = Entry<{ 
   num: number,
   lead: string,
-  sections: LessonSection[],
-}
-export type Lesson = SuccessLesson | BrokenEntry;
+  sections: LessonSectionEntry[],
+}>;
 
 export type LessonResource = Resource<{
   num: number,
@@ -28,13 +24,16 @@ export type LessonResource = Resource<{
   sections: LessonSectionRef[],
   next: LessonRef | null,
   prev: LessonRef | null,
+}, {
+  num: number,
+  lead: string,
 }>;
 
 export const loadLesson = async (
   parentLocation: EntryLocation,
   folderName: string,
   position: number,
-): Promise<Lesson> => {
+): Promise<LessonEntry> => {
   const index = await readIndexFile<LessonIndex>(
     `${parentLocation.fsPath}/${folderName}`
   );
@@ -60,31 +59,25 @@ export const loadLesson = async (
 }
 
 export const createLessonRef = (
-  lesson: Lesson,
+  lesson: LessonEntry,
   accessAllowed: boolean,
   baseUrl: string
-): LessonRef => {
-  if (lesson.type === 'broken') {
-    return createBrokenRef(lesson, baseUrl);
-  }
-
-  if (accessAllowed) {
-    return {
-      ...createOkRef(lesson, baseUrl),
+): LessonRef => ({
+  ...createBaseRef(
+    accessAllowed ? 'ok' : 'forbidden', 
+    lesson,
+    baseUrl
+  ),
+  publicContent: lesson.type === 'broken'
+    ? 'broken'
+    : {
       num: lesson.num,
       lead: lesson.lead,
     }
-  }
-
-  return {
-    ...createForbiddenRef(lesson.title),
-    num: lesson.num,
-    lead: lesson.lead,
-  }
-}
+});
 
 export class LessonProvider extends BaseResourceProvider<
-  ChapterProvider, Lesson, LessonSectionProvider
+  ChapterProvider, LessonEntry, LessonSectionProvider
 > {
   public getFirstSectionLink(): string | null {
     if (this.entry.type === 'broken') {
@@ -99,26 +92,55 @@ export class LessonProvider extends BaseResourceProvider<
   }
 
   public async fetch(expandSection?: 'first' | { link: string }): Promise<LessonResource> {
+    const baseResource = createBaseResource(this.entry,
+      this.crumbs,
+      this.settings.baseUrl
+    );
+    
+    if (!this.access.accepts()) {
+      return {
+        ...baseResource,
+        status: 'forbidden',
+        content: this.entry.type === 'broken' 
+          ? {
+            type:  'broken',
+          } : {
+            type: 'public',
+            num: this.entry.num,
+            lead: this.entry.lead,
+          }
+      };
+    }
+    
     if (this.entry.type === 'broken') {
-      return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
+      return {
+        ...baseResource,
+        status: 'ok',
+        content: {
+          type: 'broken',
+        }
+      };
     }
     
     const sections = this.entry.sections.map(
       (section) => {
         const sectionAccess = this.access.step(section.link);
-        if (sectionAccess.accepts()) {
-          return createResourceRef(section, this.settings.baseUrl);
+        return {
+          ...createBaseRef(
+            sectionAccess.accepts() ? 'ok' : 'forbidden',
+            section,
+            this.settings.baseUrl,
+          ),
+          publicContent: section.type === 'broken' ? 'broken' : {},
         }
-
-        return createForbiddenRef(section.title);
       }
     );
 
     const next = this.parent.getNextLesson(this.position);
     const prev = this.parent.getPrevLesson(this.position);
     
-    const result: LessonResource = {
-      ...createOkResource(this.entry, this.crumbs, this.settings.baseUrl),
+    const content = {
+      type: 'full',
       num: this.entry.num,
       lead: this.entry.lead,
       sections,
@@ -127,7 +149,11 @@ export class LessonProvider extends BaseResourceProvider<
     };
 
     if (expandSection === undefined) {
-      return result;
+      return <LessonResource>{
+        ...baseResource,
+        status: 'ok',
+        content,
+      };
     }
 
     const fullSectionLink = expandSection === 'first' 
@@ -135,35 +161,53 @@ export class LessonProvider extends BaseResourceProvider<
       : expandSection.link;
 
     if (fullSectionLink === null) {
-      return result;
+      return <LessonResource>{
+        ...baseResource,
+        status: 'ok',
+        content,
+      };
     }
     
     const fullSectionProvider = this.find(fullSectionLink);
     if (fullSectionProvider === null) {
-      return result;
+      return <LessonResource>{
+        ...baseResource,
+        status: 'ok',
+        content,
+      };
     }
 
     const fullSection = await fullSectionProvider.fetch();
     if (fullSection.status === 'not-found') {
-      return result;
+      return <LessonResource>{
+        ...baseResource,
+        status: 'ok',
+        content,
+      };
     }
-    
-    return { ...result, fullSection }; 
+
+    return <LessonResource>{
+      ...baseResource,
+      status: 'ok',
+      content: {
+        ...content,
+        fullSection,
+      }
+    };
   }
 
-  public find(link: string): LessonSectionProvider | NotFoundProvider | NoAccessProvider {
+  public find(link: string): LessonSectionProvider | NotFoundProvider {
+    if (!this.access.accepts()) {
+      return new NotFoundProvider();
+    }
+    
     if (this.entry.type === 'broken') {
-      return new NotFoundProvider;
+      return new NotFoundProvider();
     }
 
     const result = findChild(this.entry.sections, link);
     if (result === null) {
-      return new NotFoundProvider;
-    }
-    
-    const childAccess = this.access.step(result.child.link);
-    if (!childAccess.accepts()) {
-      return new NoAccessProvider(result.child, [], this.settings);
+      return new NotFoundProvider();
     }
 
     return new LessonSectionProvider(
@@ -174,7 +218,7 @@ export class LessonProvider extends BaseResourceProvider<
         title: this.entry.title, 
         path: this.entry.location.path
       }],
-      childAccess,
+      this.access.step(result.child.link),
       this.settings
     );
   }
@@ -188,13 +232,16 @@ export class LessonProvider extends BaseResourceProvider<
     if (section === undefined) {
       return null;
     }
-
+    
     const childAccess = this.access.step(section.link);
-    if (!childAccess.accepts()) {
-      return createForbiddenRef(section.title);
+    return {
+      ...createBaseRef(
+        childAccess.accepts() ? 'ok' : 'forbidden',
+        section,
+        this.settings.baseUrl,
+      ),
+      publicContent: section.type === 'broken' ? 'broken' : {},
     }
-
-    return createResourceRef(section, this.settings.baseUrl);
   }
 
   public getPrevSection(pos: number): LessonSectionRef | null {
@@ -208,11 +255,14 @@ export class LessonProvider extends BaseResourceProvider<
     }
 
     const childAccess = this.access.step(section.link);
-    if (!childAccess.accepts()) {
-      return createForbiddenRef(section.title);
+    return {
+      ...createBaseRef(
+        childAccess.accepts() ? 'ok' : 'forbidden',
+        section,
+        this.settings.baseUrl,
+      ),
+      publicContent: section.type === 'broken' ? 'broken' : {},
     }
-
-    return createResourceRef(section, this.settings.baseUrl);
   }
 
   public findRepo(repoUrl: string): null {

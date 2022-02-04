@@ -1,10 +1,10 @@
 import { existsSync } from "fs";
 import simpleGit from 'simple-git';
 import { createSuccessEntry, createBrokenEntry } from "./entry.js";
-import { createOkResource, createBrokenResource, buildAssetPath, createBrokenRef, createOkRef, createForbiddenResource, createForbiddenRef } from './resource.js';
+import { createBaseResource, buildAssetPath, createBaseRef } from './resource.js';
 import { ChapterProvider, loadChapter } from "./chapter.js";
 import { findChild, readIndexFile, readYamlFile } from "./content-node.js";
-import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
+import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { createLessonRef } from "./lesson.js";
 export const loadCourse = async (parentLocation, folderName) => {
     const index = await readIndexFile(`${parentLocation.fsPath}/${folderName}`);
@@ -38,19 +38,12 @@ export const loadCourse = async (parentLocation, folderName) => {
     return Object.assign(Object.assign({}, baseEntry), { image: index.image, lead: index.lead, repo,
         chapters });
 };
-export const createCourseRef = (course, accessAllowed, baseUrl) => {
-    if (course.type === 'broken') {
-        return createBrokenRef(course, baseUrl);
-    }
-    const image = buildAssetPath(course.image, course.location.path, baseUrl);
-    const lead = course.lead;
-    if (accessAllowed) {
-        return Object.assign(Object.assign({}, createOkRef(course, baseUrl)), { image,
-            lead });
-    }
-    return Object.assign(Object.assign({}, createForbiddenRef(course.title)), { image,
-        lead });
-};
+export const createCourseRef = (courseEntry, accessAllowed, baseUrl) => (Object.assign(Object.assign({}, createBaseRef(accessAllowed ? 'ok' : 'forbidden', courseEntry, baseUrl)), { publicContent: courseEntry.type === 'broken'
+        ? 'broken'
+        : {
+            image: buildAssetPath(courseEntry.image, courseEntry.location.path, baseUrl),
+            lead: courseEntry.lead,
+        } }));
 export class CourseProvider extends BaseResourceProvider {
     async reload() {
         const git = simpleGit({
@@ -73,24 +66,58 @@ export class CourseProvider extends BaseResourceProvider {
         this.entry.chapters = chapters;
     }
     async fetch() {
-        if (this.entry.type === 'broken') {
-            return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
+        const baseResource = createBaseResource(this.entry, this.crumbs, this.settings.baseUrl);
+        if (!this.access.accepts()) {
+            return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: this.entry.type === 'broken'
+                    ? {
+                        type: 'broken',
+                    } : {
+                    type: 'public',
+                    image: buildAssetPath(this.entry.image, this.entry.location.path, this.settings.baseUrl),
+                    lead: this.entry.lead,
+                } });
         }
-        return Object.assign(Object.assign({}, createOkResource(this.entry, this.crumbs, this.settings.baseUrl)), { image: buildAssetPath(this.entry.image, this.entry.location.path, this.settings.baseUrl), lead: this.entry.lead, chapters: this.entry.chapters.map((chapter) => {
-                if (chapter.type === 'broken') {
-                    return createBrokenResource(chapter, this.crumbs, this.settings.baseUrl);
-                }
-                const childAccess = this.access.step(chapter.link);
-                if (!childAccess.accepts()) {
-                    return createForbiddenResource(chapter, this.settings.baseUrl);
-                }
-                return Object.assign(Object.assign({}, createOkResource(chapter, this.crumbs, this.settings.baseUrl)), { lead: chapter.lead, lessons: chapter.lessons.map((lesson) => {
-                        const lessonAccess = childAccess.step(lesson.link);
-                        return createLessonRef(lesson, lessonAccess.accepts(), this.settings.baseUrl);
-                    }) });
-            }) });
+        if (this.entry.type === 'broken') {
+            return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
+                    type: 'broken',
+                } });
+        }
+        const chapters = this.entry.chapters.map((chapter) => {
+            const baseResource = createBaseResource(chapter, this.crumbs, this.settings.baseUrl);
+            const access = this.access.step(chapter.link);
+            if (!access.accepts()) {
+                return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: chapter.type === 'broken'
+                        ? {
+                            type: 'broken',
+                        } : {
+                        type: 'public',
+                        lead: chapter.lead,
+                    } });
+            }
+            if (chapter.type === 'broken') {
+                return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: { type: 'broken' } });
+            }
+            const lessons = chapter.lessons.map((lesson) => {
+                const lessonAccess = access.step(lesson.link);
+                return createLessonRef(lesson, lessonAccess.accepts(), this.settings.baseUrl);
+            });
+            return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
+                    type: 'full',
+                    lead: chapter.lead,
+                    lessons,
+                } });
+        });
+        return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
+                type: 'full',
+                image: buildAssetPath(this.entry.image, this.entry.location.path, this.settings.baseUrl),
+                lead: this.entry.lead,
+                chapters,
+            } });
     }
     find(link) {
+        if (!this.access.accepts()) {
+            return new NotFoundProvider();
+        }
         if (this.entry.type === 'broken') {
             return new NotFoundProvider();
         }
@@ -98,14 +125,10 @@ export class CourseProvider extends BaseResourceProvider {
         if (result === null) {
             return new NotFoundProvider();
         }
-        const childAccess = this.access.step(result.child.link);
-        if (!childAccess.accepts()) {
-            return new NoAccessProvider(result.child, [], this.settings);
-        }
         return new ChapterProvider(this, result.child, result.pos, [...this.crumbs, {
                 title: this.entry.title,
                 path: this.entry.location.path
-            }], childAccess, this.settings);
+            }], this.access.step(result.child.link), this.settings);
     }
     findRepo(repoUrl) {
         return null;

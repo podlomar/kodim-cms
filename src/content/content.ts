@@ -1,21 +1,19 @@
-import { CoursesRootIndex, DivisionIndex } from "../entries";
-import { Resource, createBrokenRef, createBrokenResource, createOkResource, createForbiddenRef } from "./resource.js";
+import { CoursesRootIndex, DivisionIndex } from "../entries.js";
+import { Resource, createBaseResource, createBaseRef } from "./resource.js";
 import { readIndexFile } from "./content-node.js";
-import { Course, CourseProvider, CourseRef, createCourseRef, loadCourse } from "./course.js";
-import { BrokenEntry, createBaseEntry, SuccessEntry } from "./entry.js";
-import { BaseResourceProvider, NoAccessProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
+import { CourseEntry, CourseProvider, CourseRef, createCourseRef, loadCourse } from "./course.js";
+import { createBaseEntry, Entry } from "./entry.js";
+import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
 
-export interface Division<T extends Course | CourseRef = Course> {
+export interface Division<T extends CourseEntry | CourseRef = CourseEntry> {
   readonly title: string;
   readonly lead: string;
   readonly courses: T[],
 }
 
-export interface SuccessCoursesRoot extends SuccessEntry {
+export type CoursesRootEntry = Entry<{
   divisions: Division[];
-};
-
-export type CoursesRoot = SuccessCoursesRoot | BrokenEntry;
+}>;
 
 export type CoursesRootResource = Resource<{
   divisions: Division<CourseRef>[],
@@ -24,7 +22,7 @@ export type CoursesRootResource = Resource<{
 export const loadCoursesRoot = async (
   contentFolder: string,
   coursesFolder: string
-): Promise<CoursesRoot> => {
+): Promise<CoursesRootEntry> => {
   const index = await readIndexFile<CoursesRootIndex>(
     `${contentFolder}/${coursesFolder}`
   );
@@ -65,32 +63,57 @@ export const loadCoursesRoot = async (
 }
 
 export class CoursesRootProvider extends BaseResourceProvider<
-  null, CoursesRoot, CourseProvider
+  null, CoursesRootEntry, CourseProvider
 > {
   public async fetch(): Promise<CoursesRootResource> {
+    const baseResource = createBaseResource(this.entry,
+      this.crumbs,
+      this.settings.baseUrl
+    );
+    
+    if (!this.access.accepts()) {
+      return {
+        ...baseResource,
+        status: 'forbidden',
+        content: this.entry.type === 'broken' 
+          ? { type: 'broken' } 
+          : { type: 'public' }
+      };
+    }
+    
     if (this.entry.type === 'broken') {
-      return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
+      return {
+        ...baseResource,
+        status: 'ok',
+        content: {
+          type: 'broken',
+        }
+      };
     }
 
     return {
-      ...createOkResource(this.entry, this.crumbs, this.settings.baseUrl),
-      divisions: this.entry.divisions.map(
-        (division): Division<CourseRef> => ({
-          ...division,
-          courses: division.courses.map((course): CourseRef => {
-            if (course.type === 'broken') {
-              return createBrokenRef(course, this.settings.baseUrl);
-            }
-
-            const childAccess = this.access.step(course.link);
-            return createCourseRef(course, childAccess.accepts(), this.settings.baseUrl);
+      ...baseResource,
+      status: 'ok',
+      content: {
+        type: 'full',
+        divisions: this.entry.divisions.map(
+          (division): Division<CourseRef> => ({
+            ...division,
+            courses: division.courses.map((course): CourseRef => {
+              const childAccess = this.access.step(course.link);
+              return createCourseRef(course, childAccess.accepts(), this.settings.baseUrl);
+            })
           })
-        })
-      )
+        )
+      }
     }
   }
 
-  public find(link: string): CourseProvider | NotFoundProvider | NoAccessProvider {
+  public find(link: string): CourseProvider | NotFoundProvider {
+    if (!this.access.accepts()) {
+      return new NotFoundProvider();
+    }
+    
     if (this.entry.type === 'broken') {
       return new NotFoundProvider();
     }
@@ -108,17 +131,12 @@ export class CoursesRootProvider extends BaseResourceProvider<
     const course = courses[pos];
     const allowedAssets = course.type === 'broken' ? [] : [course.image];
 
-    const childAccess = this.access.step(courses[pos].link);
-    if (!childAccess.accepts()) {
-      return new NoAccessProvider(courses[pos], allowedAssets, this.settings);
-    }
-
     return new CourseProvider(
       this,
       courses[pos], 
       pos, 
       [],
-      childAccess,
+      this.access.step(courses[pos].link),
       this.settings
     );
   }

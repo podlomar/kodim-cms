@@ -4,19 +4,17 @@ import yaml from "yaml";
 import lineReader from "line-reader";
 import { ExerciseFrontMatter } from "../entries.js";
 import { el, getChildren, getTag, isElement, Jsml, JsmlElement } from "../jsml.js";
-import { createBrokenEntry, createSuccessEntry, BrokenEntry, SuccessEntry, EntryLocation } from "./entry.js";
+import { createBrokenEntry, createSuccessEntry, EntryLocation, Entry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import { Access } from "./access.js";
 import { LessonSectionProvider } from "./lesson-section.js";
 import { MarkdownProcessor } from "../markdown.js";
-import { createBrokenResource, createNotFound, createOkResource, Crumbs, NotFound, Resource } from "./resource.js";
+import { createBaseResource, Crumbs, Resource } from "./resource.js";
 
-export interface SuccessExercise extends SuccessEntry {
+export type ExerciseEntry = Entry<{
   demand: 1 | 2 | 3 | 4 | 5;
   num: number;
-};
-
-export type Exercise = SuccessExercise | BrokenEntry;
+}>;
 
 export type ExerciseResource = Resource<{
   demand: 1 | 2 | 3 | 4 | 5;
@@ -105,7 +103,7 @@ export const loadExercise = async (
   parentLocation: EntryLocation,
   link: string,
   pos: number,
-): Promise<Exercise> => {
+): Promise<ExerciseEntry> => {
   const fsPath = path.join(parentLocation.fsPath, '..', link.replace('>', '/'));
   const assignPath = getExcFilePath(fsPath);
   
@@ -125,13 +123,13 @@ export const loadExercise = async (
 }
 
 export class ExerciseProvider extends BaseResourceProvider<
-  LessonSectionProvider, Exercise, never
+  LessonSectionProvider, ExerciseEntry, never
 > {
   private markdownProcessor: MarkdownProcessor;
 
   constructor(
     parent: LessonSectionProvider, 
-    entry: Exercise, 
+    entry: ExerciseEntry, 
     position: number, 
     crumbs: Crumbs,
     access: Access,
@@ -153,8 +151,29 @@ export class ExerciseProvider extends BaseResourceProvider<
   }
 
   public async fetch(): Promise<ExerciseResource> {
+    const baseResource = createBaseResource(this.entry,
+      this.crumbs,
+      this.settings.baseUrl
+    );
+    
+    if (!this.access.accepts()) {
+      return {
+        ...baseResource,
+        status: 'forbidden',
+        content: {
+          type: this.entry.type === 'broken' ? 'broken' : 'public',
+        }
+      };
+    }
+    
     if (this.entry.type === 'broken') {
-      return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
+      return {
+        ...baseResource,
+        status: 'ok',
+        content: {
+          type: 'broken',
+        }
+      };
     }
     
     const assignPath = getExcFilePath(this.entry.location.fsPath);
@@ -175,12 +194,15 @@ export class ExerciseProvider extends BaseResourceProvider<
       : [];
 
     return {
-      ...createOkResource(this.entry, this.crumbs, this.settings.baseUrl),
-      demand: this.entry.demand,
-      title: this.entry.title,
-      num: this.entry.num,
-      assignJsml,
-      solutionJsml,
+      ...baseResource,
+      status: 'ok',
+      content: {
+        type: 'full',
+        demand: this.entry.demand,
+        num: this.entry.num,
+        assignJsml,
+        solutionJsml,
+      },
     };
   }
 

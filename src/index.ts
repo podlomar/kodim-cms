@@ -1,11 +1,11 @@
-import { CoursesRoot, CoursesRootProvider, loadCoursesRoot } from "./content/content.js";
+import { CoursesRootEntry, CoursesRootProvider, loadCoursesRoot } from "./content/content.js";
 import { Access } from "./content/access.js";
 
 export class KodimCms{
   public readonly baseUrl: string;
-  private readonly coursesRoot: CoursesRoot;
+  private readonly coursesRoot: CoursesRootEntry;
   
-  private constructor(baseUrl: string, coursesRoot: CoursesRoot) {
+  private constructor(baseUrl: string, coursesRoot: CoursesRootEntry) {
     this.baseUrl = baseUrl;
     this.coursesRoot = coursesRoot;
   }

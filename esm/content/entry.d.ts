@@ -16,4 +16,4 @@ export interface BrokenEntry extends BaseEntry {
     type: 'broken';
 }
 export declare const createBrokenEntry: (parentLocation: EntryLocation, link: string, title?: string | undefined, fsPath?: string | undefined) => BrokenEntry;
-export declare type Entry = SuccessEntry | BrokenEntry;
+export declare type Entry<T extends {} = {}> = SuccessEntry & T | BrokenEntry;

@@ -1,15 +1,14 @@
 import { Resource, Crumbs, ResourceRef } from "./resource.js";
-import { BaseResourceProvider, NoAccessProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
+import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import type { LessonProvider } from "./lesson.js";
-import { BrokenEntry, SuccessEntry, EntryLocation } from "./entry.js";
-import { Exercise, ExerciseProvider } from "./exercise.js";
+import { EntryLocation, Entry } from "./entry.js";
+import { ExerciseEntry, ExerciseProvider } from "./exercise.js";
 import { Jsml } from "../jsml.js";
 import { Access } from "./access.js";
-export declare type LessonSectionRef = ResourceRef;
-export interface SuccessLessonSection extends SuccessEntry {
-    exercises: Exercise[];
-}
-export declare type LessonSection = SuccessLessonSection | BrokenEntry;
+export declare type LessonSectionRef = ResourceRef<{}>;
+export declare type LessonSectionEntry = Entry<{
+    exercises: ExerciseEntry[];
+}>;
 export declare type LessonSectionResource = Resource<{
     jsml: Jsml;
     prev: LessonSectionRef | null;
@@ -21,13 +20,13 @@ interface SectionIndex {
     excs: string[];
 }
 export declare const parseSection: (file: string) => Promise<SectionIndex>;
-export declare const loadLessonSection: (parentLocation: EntryLocation, folderName: string) => Promise<LessonSection>;
-export declare class LessonSectionProvider extends BaseResourceProvider<LessonProvider, LessonSection, ExerciseProvider> {
+export declare const loadLessonSection: (parentLocation: EntryLocation, folderName: string) => Promise<LessonSectionEntry>;
+export declare class LessonSectionProvider extends BaseResourceProvider<LessonProvider, LessonSectionEntry, ExerciseProvider> {
     private markdownProcessor;
-    constructor(parent: LessonProvider, entry: LessonSection, position: number, crumbs: Crumbs, access: Access, settings: ProviderSettings);
+    constructor(parent: LessonProvider, entry: LessonSectionEntry, position: number, crumbs: Crumbs, access: Access, settings: ProviderSettings);
     private buildAssetPath;
     fetch(): Promise<LessonSectionResource>;
-    find(link: string): ExerciseProvider | NotFoundProvider | NoAccessProvider;
+    find(link: string): ExerciseProvider | NotFoundProvider;
     findProvider(link: string): ExerciseProvider | null;
     findRepo(repoUrl: string): null;
 }

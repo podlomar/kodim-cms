@@ -1,48 +1,52 @@
-import { Entry, BrokenEntry, SuccessEntry } from "./entry";
+import { Entry } from "./entry";
 export interface CrumbStep {
     readonly path: string;
     readonly title: string;
 }
 export declare type Crumbs = CrumbStep[];
+export declare type PublicContent<Pub extends {}> = {
+    type: 'public';
+} & Pub;
+export declare type FullContent<Full extends {}> = {
+    type: 'full';
+} & Full;
+export declare type BrokenContent<Bro extends {}> = {
+    type: 'broken';
+} & Bro;
 export interface BaseResource {
     readonly link: string;
     readonly path: string;
     readonly url: string;
     readonly title: string;
+    readonly crumbs: Crumbs;
 }
-export interface OkResource extends BaseResource {
+export interface OkResource<Full extends {}, Bro extends {}> extends BaseResource {
     readonly status: 'ok';
-    readonly crumbs: Crumbs;
+    readonly content: FullContent<Full> | BrokenContent<Bro>;
 }
-export interface BrokenResource extends BaseResource {
-    readonly status: 'broken';
-    readonly crumbs: Crumbs;
-}
-export interface ForbiddenResource extends BaseResource {
+export interface ForbiddenResource<Pub extends {}, Bro extends {}> extends BaseResource {
     readonly status: 'forbidden';
+    readonly content: PublicContent<Pub> | BrokenContent<Bro>;
 }
+export declare type Resource<Full extends {} = {}, Pub extends {} = {}, Bro extends {} = {}> = (OkResource<Full, Bro> | ForbiddenResource<Pub, Bro>);
 export interface NotFound {
     readonly status: 'not-found';
 }
-export declare type Resource<T = {}, B = {}, F = {}> = ((OkResource & T) | (BrokenResource & B) | (ForbiddenResource & F));
-export declare const createOkResource: (entry: SuccessEntry, crumbs: Crumbs, baseUrl: string) => OkResource;
-export declare const createBrokenResource: (entry: BrokenEntry, crumbs: Crumbs, baseUrl: string) => BrokenResource;
-export declare const createForbiddenResource: (entry: Entry, baseUrl: string) => ForbiddenResource;
+export declare const createBaseResource: (entry: Entry, crumbs: Crumbs, baseUrl: string) => BaseResource;
 export declare const createNotFound: () => NotFound;
-export interface OkRef extends BaseResource {
-    status: 'ok';
-    title: string;
+export interface BaseRef {
+    readonly status: 'ok' | 'forbidden';
+    readonly link: string;
+    readonly path: string;
+    readonly url: string;
+    readonly title: string;
 }
-export interface BrokenRef extends BaseResource {
-    status: 'broken';
+export interface PublicRef<Pub extends {}> extends BaseRef {
+    publicContent: Pub;
 }
-export interface ForbiddenRef {
-    status: 'forbidden';
-    title: string;
+export interface BrokenRef extends BaseRef {
+    publicContent: 'broken';
 }
-export declare type ResourceRef<T = {}, B = {}, F = {}> = ((OkRef & T) | (BrokenRef & B) | (ForbiddenRef & F));
-export declare const createOkRef: (entry: SuccessEntry, baseUrl: string) => OkRef;
-export declare const createBrokenRef: (entry: BrokenEntry, baseUrl: string) => BrokenRef;
-export declare const createForbiddenRef: (title: string) => ForbiddenRef;
-export declare const createResourceRef: (entry: Entry, baseUrl: string) => ResourceRef;
+export declare type ResourceRef<Pub extends {}> = (PublicRef<Pub> | BrokenRef);
+export declare const createBaseRef: (status: 'ok' | 'forbidden', entry: Entry, baseUrl: string) => BaseRef;
 export declare const buildAssetPath: (fileName: string, entryPath: string, baseUrl: string) => string;

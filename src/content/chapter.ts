@@ -1,27 +1,27 @@
 import { ChapterIndex } from "../entries";
-import { createBrokenEntry, createSuccessEntry, BrokenEntry, SuccessEntry, EntryLocation } from "./entry.js";
-import { Resource, createBrokenResource, createOkResource, createForbiddenRef } from './resource.js';
+import { createBrokenEntry, createSuccessEntry, EntryLocation, Entry } from "./entry.js";
+import { Resource, createBaseResource, createBaseRef } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import type { CourseProvider } from "./course";
-import { createLessonRef, Lesson, LessonProvider, LessonRef, loadLesson } from "./lesson.js";
-import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
+import { createLessonRef, LessonEntry, LessonProvider, LessonRef, loadLesson } from "./lesson.js";
+import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 
-export interface SuccessChapter extends SuccessEntry {
+export type ChapterEntry = Entry<{
   lead: string,
-  lessons: Lesson[],
-}
-
-export type Chapter = SuccessChapter | BrokenEntry;
+  lessons: LessonEntry[],
+}>;
 
 export type ChapterResource = Resource<{
   lead: string,
   lessons: LessonRef[],
+}, {
+  lead: string,
 }>;
 
 export const loadChapter = async (
   parentLocation: EntryLocation,
   folderName: string,
-): Promise<Chapter> => {
+): Promise<ChapterEntry> => {
   const index = await readIndexFile<ChapterIndex>(
     `${parentLocation.fsPath}/${folderName}`
   );
@@ -45,26 +45,61 @@ export const loadChapter = async (
 }
 
 export class ChapterProvider extends BaseResourceProvider<
-  CourseProvider, Chapter, LessonProvider
+  CourseProvider, ChapterEntry, LessonProvider
 > {
   public async fetch(): Promise<ChapterResource> {
+    const baseResource = createBaseResource(this.entry,
+      this.crumbs,
+      this.settings.baseUrl
+    );
+    
+    if (!this.access.accepts()) {
+      return {
+        ...baseResource,
+        status: 'forbidden',
+        content: this.entry.type === 'broken' 
+          ? {
+            type:  'broken',
+          } : {
+            type: 'public',
+            lead: this.entry.lead,
+          }
+      };
+    }
+    
     if (this.entry.type === 'broken') {
-      return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
+      return {
+        ...baseResource,
+        status: 'ok',
+        content: {
+          type: 'broken',
+        }
+      };
     }
 
+    const lessons = this.entry.lessons.map(
+      (lesson) => {
+        const lessonAccess = this.access.step(lesson.link);
+        return createLessonRef(lesson, lessonAccess.accepts(), this.settings.baseUrl);
+      }
+    );
+
     return {
-      ...createOkResource(this.entry, this.crumbs, this.settings.baseUrl),
-      lead: this.entry.lead,
-      lessons: this.entry.lessons.map(
-        (lesson) => {
-          const lessonAccess = this.access.step(lesson.link);
-          return createLessonRef(lesson, lessonAccess.accepts(), this.settings.baseUrl);
-        }
-      ),
+      ...baseResource,
+      status: 'ok',
+      content: {
+        type: 'full',
+        lead: this.entry.lead,
+        lessons,  
+      }
     }
   }
 
-  public find(link: string): LessonProvider | NotFoundProvider | NoAccessProvider {
+  public find(link: string): LessonProvider | NotFoundProvider {
+    if (!this.access.accepts()) {
+      return new NotFoundProvider();
+    }
+    
     if (this.entry.type === 'broken') {
       return new NotFoundProvider();
     }
@@ -72,11 +107,6 @@ export class ChapterProvider extends BaseResourceProvider<
     const result = findChild(this.entry.lessons, link);
     if (result === null) {
       return new NotFoundProvider();
-    }
-    
-    const childAccess = this.access.step(result.child.link);
-    if (!childAccess.accepts()) {
-      return new NoAccessProvider(result.child, [], this.settings);
     }
 
     return new LessonProvider(
@@ -87,7 +117,7 @@ export class ChapterProvider extends BaseResourceProvider<
         title: this.entry.title, 
         path: this.entry.location.path
       }],
-      childAccess,
+      this.access.step(result.child.link),
       this.settings
     );
   }

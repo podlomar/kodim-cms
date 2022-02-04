@@ -1,28 +1,26 @@
 import { promises as fs } from "fs";
 import path from 'path';
-import { buildAssetPath, Resource, createBrokenResource, createOkResource, Crumbs, ResourceRef } from "./resource.js";
-import { BaseResourceProvider, NoAccessProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
+import { buildAssetPath, Resource, createBaseResource, Crumbs, ResourceRef } from "./resource.js";
+import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import type { LessonProvider } from "./lesson.js";
 import { unified } from "unified";
 import markdown from "remark-parse";
 import directive from "remark-directive";
 import rehype from "remark-rehype";
 import stringify from "rehype-stringify";
-import { createSuccessEntry, BrokenEntry, SuccessEntry, EntryLocation } from "./entry.js";
-import { Exercise, ExerciseProvider, loadExercise } from "./exercise.js";
+import { createSuccessEntry, BrokenEntry, SuccessEntry, EntryLocation, Entry } from "./entry.js";
+import { ExerciseEntry, ExerciseProvider, loadExercise } from "./exercise.js";
 import { findChild } from "./content-node.js";
 import { MarkdownProcessor } from "../markdown.js";
 import { buildExcTransform } from "../markdown-transforms.js";
 import { Jsml } from "../jsml.js";
 import { Access } from "./access.js";
 
-export type LessonSectionRef = ResourceRef;
+export type LessonSectionRef = ResourceRef<{}>;
 
-export interface SuccessLessonSection extends SuccessEntry {
-  exercises: Exercise[],
-};
-
-export type LessonSection = SuccessLessonSection | BrokenEntry;
+export type LessonSectionEntry = Entry<{
+  exercises: ExerciseEntry[],
+}>;
 
 export type LessonSectionResource = Resource<{
   jsml: Jsml;
@@ -70,7 +68,7 @@ export const parseSection = async (file: string): Promise<SectionIndex> => {
 export const loadLessonSection = async (
   parentLocation: EntryLocation,
   folderName: string,
-): Promise<LessonSection> => {
+): Promise<LessonSectionEntry> => {
   const index = await parseSection(
     `${parentLocation.fsPath}/${folderName}.md`
   );
@@ -91,13 +89,13 @@ export const loadLessonSection = async (
 }
 
 export class LessonSectionProvider extends BaseResourceProvider<
-  LessonProvider, LessonSection, ExerciseProvider
+  LessonProvider, LessonSectionEntry, ExerciseProvider
 > {
   private markdownProcessor: MarkdownProcessor;
 
   constructor(
     parent: LessonProvider, 
-    entry: LessonSection, 
+    entry: LessonSectionEntry, 
     position: number, 
     crumbs: Crumbs,
     access: Access,
@@ -116,8 +114,33 @@ export class LessonSectionProvider extends BaseResourceProvider<
   )
 
   public async fetch(): Promise<LessonSectionResource> {
+    const baseResource = createBaseResource(this.entry,
+      this.crumbs,
+      this.settings.baseUrl
+    );
+    
+    if (!this.access.accepts()) {
+      return {
+        ...baseResource,
+        status: 'forbidden',
+        content: {
+          type: this.entry.type === 'broken' ? 'broken' : 'public',
+        }
+      };
+    }
+    
     if (this.entry.type === 'broken') {
-      return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
+      return {
+        ...createBaseResource(
+          this.entry,
+          this.crumbs,
+          this.settings.baseUrl
+        ),
+        status: 'ok',
+        content: {
+          type: 'broken',
+        }
+      }
     }
     
     const next = this.parent.getNextSection(this.position);
@@ -125,14 +148,26 @@ export class LessonSectionProvider extends BaseResourceProvider<
     const jsml = await this.markdownProcessor.process(`${this.entry.location.fsPath}.md`);
     
     return {
-      ...createOkResource(this.entry, this.crumbs, this.settings.baseUrl),
-      jsml,
-      next,
-      prev,
+      ...createBaseResource(
+        this.entry,
+        this.crumbs,
+        this.settings.baseUrl
+      ),
+      status: 'ok',
+      content: {
+        type: 'full',
+        jsml,
+        next,
+        prev,
+      }
     }
   }
 
-  public find(link: string): ExerciseProvider | NotFoundProvider | NoAccessProvider {
+  public find(link: string): ExerciseProvider | NotFoundProvider {
+    if (!this.access.accepts()) {
+      return new NotFoundProvider();
+    }
+    
     if (this.entry.type === 'broken') {
       return new NotFoundProvider();
     }
@@ -142,11 +177,6 @@ export class LessonSectionProvider extends BaseResourceProvider<
       return new NotFoundProvider();
     }
     
-    const childAccess = this.access.step(result.child.link);
-    if (!childAccess.accepts()) {
-      return new NoAccessProvider(result.child, [], this.settings);
-    }
-
     return new ExerciseProvider(
       this, 
       result.child,
@@ -155,7 +185,7 @@ export class LessonSectionProvider extends BaseResourceProvider<
         title: this.entry.title, 
         path: this.entry.location.path
       }],
-      childAccess,
+      this.access.step(result.child.link),
       this.settings
     );
   }

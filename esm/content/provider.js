@@ -1,4 +1,4 @@
-import { createNotFound, createForbiddenResource } from "./resource.js";
+import { createNotFound } from "./resource.js";
 export class NotFoundProvider {
     async fetch() {
         return createNotFound();
@@ -18,38 +18,6 @@ export class NotFoundProvider {
     }
     success() {
         return null;
-    }
-    async reload() {
-        return;
-    }
-}
-export class NoAccessProvider {
-    constructor(entry, allowedAssets, settings) {
-        this.entry = entry;
-        this.allowedAssets = allowedAssets;
-        this.settings = settings;
-    }
-    async fetch() {
-        return createForbiddenResource(this.entry, this.settings.baseUrl);
-    }
-    find(link) {
-        return this;
-    }
-    ;
-    search() {
-        return this;
-    }
-    findRepo(repoUrl) {
-        return null;
-    }
-    asset(fileName) {
-        if (this.allowedAssets.includes(fileName)) {
-            return `${this.entry.location.fsPath}/assets/${fileName}`;
-        }
-        return 'forbidden';
-    }
-    success() {
-        return this;
     }
     async reload() {
         return;

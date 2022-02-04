@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from 'path';
-import { buildAssetPath, createBrokenResource, createOkResource } from "./resource.js";
-import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
+import { buildAssetPath, createBaseResource } from "./resource.js";
+import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { unified } from "unified";
 import markdown from "remark-parse";
 import directive from "remark-directive";
@@ -12,7 +12,6 @@ import { ExerciseProvider, loadExercise } from "./exercise.js";
 import { findChild } from "./content-node.js";
 import { MarkdownProcessor } from "../markdown.js";
 import { buildExcTransform } from "../markdown-transforms.js";
-;
 export const processor = unified()
     .use(markdown)
     .use(directive)
@@ -54,17 +53,31 @@ export class LessonSectionProvider extends BaseResourceProvider {
         ;
     }
     async fetch() {
+        const baseResource = createBaseResource(this.entry, this.crumbs, this.settings.baseUrl);
+        if (!this.access.accepts()) {
+            return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: {
+                    type: this.entry.type === 'broken' ? 'broken' : 'public',
+                } });
+        }
         if (this.entry.type === 'broken') {
-            return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
+            return Object.assign(Object.assign({}, createBaseResource(this.entry, this.crumbs, this.settings.baseUrl)), { status: 'ok', content: {
+                    type: 'broken',
+                } });
         }
         const next = this.parent.getNextSection(this.position);
         const prev = this.parent.getPrevSection(this.position);
         const jsml = await this.markdownProcessor.process(`${this.entry.location.fsPath}.md`);
-        return Object.assign(Object.assign({}, createOkResource(this.entry, this.crumbs, this.settings.baseUrl)), { jsml,
-            next,
-            prev });
+        return Object.assign(Object.assign({}, createBaseResource(this.entry, this.crumbs, this.settings.baseUrl)), { status: 'ok', content: {
+                type: 'full',
+                jsml,
+                next,
+                prev,
+            } });
     }
     find(link) {
+        if (!this.access.accepts()) {
+            return new NotFoundProvider();
+        }
         if (this.entry.type === 'broken') {
             return new NotFoundProvider();
         }
@@ -72,14 +85,10 @@ export class LessonSectionProvider extends BaseResourceProvider {
         if (result === null) {
             return new NotFoundProvider();
         }
-        const childAccess = this.access.step(result.child.link);
-        if (!childAccess.accepts()) {
-            return new NoAccessProvider(result.child, [], this.settings);
-        }
         return new ExerciseProvider(this, result.child, result.pos, [...this.crumbs, {
                 title: this.entry.title,
                 path: this.entry.location.path
-            }], childAccess, this.settings);
+            }], this.access.step(result.child.link), this.settings);
     }
     findProvider(link) {
         if (this.entry.type === 'broken') {

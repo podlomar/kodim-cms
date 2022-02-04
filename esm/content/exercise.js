@@ -6,8 +6,7 @@ import { el, getChildren, getTag, isElement } from "../jsml.js";
 import { createBrokenEntry, createSuccessEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { MarkdownProcessor } from "../markdown.js";
-import { createBrokenResource, createOkResource } from "./resource.js";
-;
+import { createBaseResource } from "./resource.js";
 ;
 const loadFrontMatter = async (filePath) => new Promise((resolve, reject) => {
     let inside = false;
@@ -85,8 +84,16 @@ export class ExerciseProvider extends BaseResourceProvider {
     }
     async fetch() {
         var _a;
+        const baseResource = createBaseResource(this.entry, this.crumbs, this.settings.baseUrl);
+        if (!this.access.accepts()) {
+            return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: {
+                    type: this.entry.type === 'broken' ? 'broken' : 'public',
+                } });
+        }
         if (this.entry.type === 'broken') {
-            return createBrokenResource(this.entry, this.crumbs, this.settings.baseUrl);
+            return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
+                    type: 'broken',
+                } });
         }
         const assignPath = getExcFilePath(this.entry.location.fsPath);
         if (assignPath === null) {
@@ -101,8 +108,13 @@ export class ExerciseProvider extends BaseResourceProvider {
         const solutionJsml = isElement(secondNode) && getTag(secondNode) === 'solution'
             ? getChildren(secondNode)
             : [];
-        return Object.assign(Object.assign({}, createOkResource(this.entry, this.crumbs, this.settings.baseUrl)), { demand: this.entry.demand, title: this.entry.title, num: this.entry.num, assignJsml,
-            solutionJsml });
+        return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
+                type: 'full',
+                demand: this.entry.demand,
+                num: this.entry.num,
+                assignJsml,
+                solutionJsml,
+            } });
     }
     async fetchAssign() {
         const excPath = getExcFilePath(this.entry.location.fsPath);

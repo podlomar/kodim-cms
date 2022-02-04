@@ -1,9 +1,9 @@
 import { Access } from "./access.js";
 import { Entry } from "./entry.js";
-import { Resource, Crumbs, NotFound, ForbiddenResource } from "./resource.js";
+import { Crumbs, NotFound, Resource } from "./resource.js";
 export interface ResourceProvider<C extends ResourceProvider<any> = any> {
     fetch(): Promise<Resource | NotFound>;
-    find(link: string): C | NotFoundProvider | NoAccessProvider;
+    find(link: string): C | NotFoundProvider;
     search(...links: string[]): ResourceProvider;
     asset(fileName: string): string | 'forbidden' | 'not-found';
     findRepo(repoUrl: string): ResourceProvider | null;
@@ -17,19 +17,6 @@ export declare class NotFoundProvider implements ResourceProvider<never> {
     findRepo(repoUrl: string): null;
     asset(fileName: string): 'not-found';
     success(): null;
-    reload(): Promise<void>;
-}
-export declare class NoAccessProvider<E extends Entry = Entry> implements ResourceProvider<never> {
-    protected readonly entry: E;
-    protected readonly allowedAssets: string[];
-    protected readonly settings: ProviderSettings;
-    constructor(entry: E, allowedAssets: string[], settings: ProviderSettings);
-    fetch(): Promise<ForbiddenResource>;
-    find(link: string): this;
-    search(): this;
-    findRepo(repoUrl: string): null;
-    asset(fileName: string): string | 'forbidden';
-    success(): this;
     reload(): Promise<void>;
 }
 export declare abstract class BaseResourceProvider<P extends ResourceProvider | null, E extends Entry, C extends ResourceProvider> implements ResourceProvider<C> {
@@ -47,7 +34,7 @@ export declare abstract class BaseResourceProvider<P extends ResourceProvider | 
     reload(): Promise<void>;
     abstract fetch(): Promise<Resource | NotFound>;
     abstract findRepo(repoUrl: string): ResourceProvider | null;
-    abstract find(link: string): C | NotFoundProvider | NoAccessProvider;
+    abstract find(link: string): C | NotFoundProvider;
 }
 export interface ProviderSettings {
     baseUrl: string;

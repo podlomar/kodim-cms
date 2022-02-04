@@ -1,21 +1,22 @@
-import { BrokenEntry, SuccessEntry, EntryLocation } from "./entry.js";
+import { EntryLocation, Entry } from "./entry.js";
 import { Resource } from './resource.js';
 import type { CourseProvider } from "./course";
-import { Lesson, LessonProvider, LessonRef } from "./lesson.js";
-import { BaseResourceProvider, NoAccessProvider, NotFoundProvider } from "./provider.js";
-export interface SuccessChapter extends SuccessEntry {
+import { LessonEntry, LessonProvider, LessonRef } from "./lesson.js";
+import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
+export declare type ChapterEntry = Entry<{
     lead: string;
-    lessons: Lesson[];
-}
-export declare type Chapter = SuccessChapter | BrokenEntry;
+    lessons: LessonEntry[];
+}>;
 export declare type ChapterResource = Resource<{
     lead: string;
     lessons: LessonRef[];
+}, {
+    lead: string;
 }>;
-export declare const loadChapter: (parentLocation: EntryLocation, folderName: string) => Promise<Chapter>;
-export declare class ChapterProvider extends BaseResourceProvider<CourseProvider, Chapter, LessonProvider> {
+export declare const loadChapter: (parentLocation: EntryLocation, folderName: string) => Promise<ChapterEntry>;
+export declare class ChapterProvider extends BaseResourceProvider<CourseProvider, ChapterEntry, LessonProvider> {
     fetch(): Promise<ChapterResource>;
-    find(link: string): LessonProvider | NotFoundProvider | NoAccessProvider;
+    find(link: string): LessonProvider | NotFoundProvider;
     getNextLesson(pos: number): LessonRef | null;
     getPrevLesson(pos: number): LessonRef | null;
     findRepo(repoUrl: string): null;
