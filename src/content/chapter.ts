@@ -1,6 +1,6 @@
 import { ChapterIndex } from "../entries";
 import { createBrokenEntry, createSuccessEntry, EntryLocation, Entry } from "./entry.js";
-import { Resource, createBaseResource, createBaseRef } from './resource.js';
+import { Resource, createBaseResource, createBaseRef, ResourceRef } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import type { CourseProvider } from "./course";
 import { createLessonRef, LessonEntry, LessonProvider, LessonRef, loadLesson } from "./lesson.js";
@@ -15,6 +15,10 @@ export type ChapterResource = Resource<{
   lead: string,
   lessons: LessonRef[],
 }, {
+  lead: string,
+}>;
+
+export type ChapterRef = ResourceRef<{
   lead: string,
 }>;
 
@@ -43,6 +47,23 @@ export const loadChapter = async (
     lessons,
   }
 }
+
+export const createChapterRef = (
+  chapter: ChapterEntry,
+  accessAllowed: boolean,
+  baseUrl: string
+): ChapterRef => ({
+  ...createBaseRef(
+    accessAllowed ? 'ok' : 'forbidden', 
+    chapter,
+    baseUrl
+  ),
+  publicContent: chapter.type === 'broken'
+    ? 'broken'
+    : {
+      lead: chapter.lead,
+    }
+});
 
 export class ChapterProvider extends BaseResourceProvider<
   CourseProvider, ChapterEntry, LessonProvider

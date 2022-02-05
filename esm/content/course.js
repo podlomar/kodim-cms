@@ -2,10 +2,9 @@ import { existsSync } from "fs";
 import simpleGit from 'simple-git';
 import { createSuccessEntry, createBrokenEntry } from "./entry.js";
 import { createBaseResource, buildAssetPath, createBaseRef } from './resource.js';
-import { ChapterProvider, loadChapter } from "./chapter.js";
+import { ChapterProvider, createChapterRef, loadChapter } from "./chapter.js";
 import { findChild, readIndexFile, readYamlFile } from "./content-node.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
-import { createLessonRef } from "./lesson.js";
 export const loadCourse = async (parentLocation, folderName) => {
     const index = await readIndexFile(`${parentLocation.fsPath}/${folderName}`);
     if (index === 'not-found') {
@@ -83,29 +82,8 @@ export class CourseProvider extends BaseResourceProvider {
                 } });
         }
         const chapters = this.entry.chapters.map((chapter) => {
-            const baseResource = createBaseResource(chapter, this.crumbs, this.settings.baseUrl);
             const access = this.access.step(chapter.link);
-            if (!access.accepts()) {
-                return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: chapter.type === 'broken'
-                        ? {
-                            type: 'broken',
-                        } : {
-                        type: 'public',
-                        lead: chapter.lead,
-                    } });
-            }
-            if (chapter.type === 'broken') {
-                return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: { type: 'broken' } });
-            }
-            const lessons = chapter.lessons.map((lesson) => {
-                const lessonAccess = access.step(lesson.link);
-                return createLessonRef(lesson, lessonAccess.accepts(), this.settings.baseUrl);
-            });
-            return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
-                    type: 'full',
-                    lead: chapter.lead,
-                    lessons,
-                } });
+            return createChapterRef(chapter, access.accepts(), this.settings.baseUrl);
         });
         return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
                 type: 'full',

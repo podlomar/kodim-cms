@@ -1,6 +1,6 @@
 import { Entry, EntryLocation } from "./entry.js";
 import { ResourceRef, Resource } from './resource.js';
-import { ChapterEntry, ChapterProvider, ChapterResource } from "./chapter.js";
+import { ChapterEntry, ChapterProvider, ChapterRef } from "./chapter.js";
 import type { CoursesRootProvider } from "./content";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 export declare type CourseEntry = Entry<{
@@ -16,7 +16,7 @@ export declare type CourseEntry = Entry<{
 export declare type CourseResource = Resource<{
     image: string;
     lead: string;
-    chapters: ChapterResource[];
+    chapters: ChapterRef[];
 }, {
     image: string;
     lead: string;

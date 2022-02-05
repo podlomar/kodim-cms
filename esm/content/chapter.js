@@ -1,5 +1,5 @@
 import { createBrokenEntry, createSuccessEntry } from "./entry.js";
-import { createBaseResource } from './resource.js';
+import { createBaseResource, createBaseRef } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import { createLessonRef, LessonProvider, loadLesson } from "./lesson.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
@@ -12,6 +12,11 @@ export const loadChapter = async (parentLocation, folderName) => {
     const lessons = await Promise.all(index.lessons.map((lessonLink, idx) => loadLesson(baseEntry.location, lessonLink, idx)));
     return Object.assign(Object.assign({}, baseEntry), { lead: index.lead, lessons });
 };
+export const createChapterRef = (chapter, accessAllowed, baseUrl) => (Object.assign(Object.assign({}, createBaseRef(accessAllowed ? 'ok' : 'forbidden', chapter, baseUrl)), { publicContent: chapter.type === 'broken'
+        ? 'broken'
+        : {
+            lead: chapter.lead,
+        } }));
 export class ChapterProvider extends BaseResourceProvider {
     async fetch() {
         const baseResource = createBaseResource(this.entry, this.crumbs, this.settings.baseUrl);

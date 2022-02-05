@@ -3,11 +3,10 @@ import simpleGit from 'simple-git';
 import { CourseIndex } from "../entries";
 import { Entry, createSuccessEntry, createBrokenEntry, EntryLocation } from "./entry.js";
 import { createBaseResource, ResourceRef, buildAssetPath, Resource, createBaseRef } from './resource.js';
-import { ChapterEntry, ChapterProvider, ChapterResource, loadChapter } from "./chapter.js";
+import { ChapterEntry, ChapterProvider, ChapterRef, createChapterRef, loadChapter } from "./chapter.js";
 import type { CoursesRootProvider } from "./content";
 import { findChild, readIndexFile, readYamlFile } from "./content-node.js";
 import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
-import { createLessonRef } from "./lesson.js";
 
 export type CourseEntry = Entry<{
   image: string,
@@ -23,7 +22,7 @@ export type CourseEntry = Entry<{
 export type CourseResource = Resource<{
   image: string,
   lead: string,
-  chapters: ChapterResource[]
+  chapters: ChapterRef[]
 }, {
   image: string,
   lead: string,
@@ -181,52 +180,12 @@ export class CourseProvider extends BaseResourceProvider<
       };
     }
   
-    const chapters: ChapterResource[] = this.entry.chapters.map((chapter) => {
-      const baseResource = createBaseResource(chapter,
-        this.crumbs,
-        this.settings.baseUrl
-      );
-      
-      const access = this.access.step(chapter.link);
-      if (!access.accepts()) {
-        return {
-          ...baseResource,
-          status: 'forbidden',
-          content: chapter.type === 'broken' 
-            ? {
-              type:  'broken',
-            } : {
-              type: 'public',
-              lead: chapter.lead,
-            }
-        };
+    const chapters = this.entry.chapters.map(
+      (chapter) => {
+        const access = this.access.step(chapter.link);
+        return createChapterRef(chapter, access.accepts(), this.settings.baseUrl);
       }
-      
-      if (chapter.type === 'broken') {
-        return {
-          ...baseResource,
-          status: 'ok',
-          content: { type: 'broken' },
-        };
-      }
-
-      const lessons = chapter.lessons.map(
-        (lesson) => {
-          const lessonAccess = access.step(lesson.link);
-          return createLessonRef(lesson, lessonAccess.accepts(), this.settings.baseUrl);
-        }
-      )
-
-      return {
-        ...baseResource,
-        status: 'ok',
-        content: {
-          type: 'full',
-          lead: chapter.lead,
-          lessons,
-        }
-      };
-    })
+    );
 
     return {
       ...baseResource,
