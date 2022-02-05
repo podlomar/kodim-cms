@@ -31,7 +31,7 @@ export class LessonProvider extends BaseResourceProvider {
         }
         return this.entry.subEntries[0].link;
     }
-    async fetch(expandSection) {
+    async fetch() {
         const baseResource = createBaseResource(this.entry, this.crumbs, this.settings.baseUrl);
         if (!this.access.accepts()) {
             return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: this.entry.nodeType === 'broken'
@@ -54,32 +54,14 @@ export class LessonProvider extends BaseResourceProvider {
         });
         const next = this.parent.getNextLesson(this.position);
         const prev = this.parent.getPrevLesson(this.position);
-        const content = {
-            type: 'full',
-            num: this.entry.props.num,
-            lead: this.entry.props.lead,
-            sections,
-            next,
-            prev,
-        };
-        if (expandSection === undefined) {
-            return Object.assign(Object.assign({}, baseResource), { status: 'ok', content });
-        }
-        const fullSectionLink = expandSection === 'first'
-            ? this.getFirstSectionLink()
-            : expandSection.link;
-        if (fullSectionLink === null) {
-            return Object.assign(Object.assign({}, baseResource), { status: 'ok', content });
-        }
-        const fullSectionProvider = this.find(fullSectionLink);
-        if (fullSectionProvider === null) {
-            return Object.assign(Object.assign({}, baseResource), { status: 'ok', content });
-        }
-        const fullSection = await fullSectionProvider.fetch();
-        if (fullSection.status === 'not-found') {
-            return Object.assign(Object.assign({}, baseResource), { status: 'ok', content });
-        }
-        return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: Object.assign(Object.assign({}, content), { fullSection }) });
+        return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
+                type: 'full',
+                num: this.entry.props.num,
+                lead: this.entry.props.lead,
+                sections,
+                next,
+                prev,
+            } });
     }
     find(link) {
         if (!this.access.accepts()) {

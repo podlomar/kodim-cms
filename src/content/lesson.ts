@@ -14,7 +14,6 @@ export type LessonEntry = InnerEntry<{
 export type LessonResource = Resource<{
   num: number,
   lead: string,
-  fullSection?: LessonSectionResource,
   sections: LessonSectionRef[],
   next: LessonRef | null,
   prev: LessonRef | null,
@@ -100,7 +99,7 @@ export class LessonProvider extends BaseResourceProvider<
     return this.entry.subEntries[0].link;
   }
 
-  public async fetch(expandSection?: 'first' | { link: string }): Promise<LessonResource> {
+  public async fetch(): Promise<LessonResource> {
     const baseResource = createBaseResource(this.entry,
       this.crumbs,
       this.settings.baseUrl
@@ -148,59 +147,16 @@ export class LessonProvider extends BaseResourceProvider<
     const next = this.parent.getNextLesson(this.position);
     const prev = this.parent.getPrevLesson(this.position);
     
-    const content = {
-      type: 'full',
-      num: this.entry.props.num,
-      lead: this.entry.props.lead,
-      sections,
-      next,
-      prev,
-    };
-
-    if (expandSection === undefined) {
-      return <LessonResource>{
-        ...baseResource,
-        status: 'ok',
-        content,
-      };
-    }
-
-    const fullSectionLink = expandSection === 'first' 
-      ? this.getFirstSectionLink()
-      : expandSection.link;
-
-    if (fullSectionLink === null) {
-      return <LessonResource>{
-        ...baseResource,
-        status: 'ok',
-        content,
-      };
-    }
-    
-    const fullSectionProvider = this.find(fullSectionLink);
-    if (fullSectionProvider === null) {
-      return <LessonResource>{
-        ...baseResource,
-        status: 'ok',
-        content,
-      };
-    }
-
-    const fullSection = await fullSectionProvider.fetch();
-    if (fullSection.status === 'not-found') {
-      return <LessonResource>{
-        ...baseResource,
-        status: 'ok',
-        content,
-      };
-    }
-
-    return <LessonResource>{
+    return {
       ...baseResource,
       status: 'ok',
       content: {
-        ...content,
-        fullSection,
+        type: 'full',
+        num: this.entry.props.num,
+        lead: this.entry.props.lead,
+        sections,
+        next,
+        prev,
       }
     };
   }
