@@ -1,21 +1,15 @@
 import { LessonIndex } from "../entries";
-import { createBrokenEntry, createSuccessEntry, Entry, EntryLocation } from "./entry.js";
+import { createBaseEntry, createChildLocation, InnerEntry, EntryLocation } from "./entry.js";
 import { ResourceRef, createBaseResource, createBaseRef, Resource } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import type { ChapterProvider } from "./chapter.js";
 import { LessonSectionEntry, LessonSectionProvider, LessonSectionRef, LessonSectionResource, loadLessonSection } from "./lesson-section.js";
 
-export type LessonRef = ResourceRef<{
-  num: number, 
-  lead: string,
-}>;
-
-export type LessonEntry = Entry<{ 
+export type LessonEntry = InnerEntry<{ 
   num: number,
   lead: string,
-  sections: LessonSectionEntry[],
-}>;
+}, LessonSectionEntry>;
 
 export type LessonResource = Resource<{
   num: number,
@@ -29,6 +23,11 @@ export type LessonResource = Resource<{
   lead: string,
 }>;
 
+export type LessonRef = ResourceRef<{
+  num: number, 
+  lead: string,
+}>;
+
 export const loadLesson = async (
   parentLocation: EntryLocation,
   folderName: string,
@@ -38,24 +37,34 @@ export const loadLesson = async (
     `${parentLocation.fsPath}/${folderName}`
   );
   
-  if (index === 'not-found') {
-    return createBrokenEntry(parentLocation, folderName);
-  }
+  const location = createChildLocation(parentLocation, folderName);
 
-  const baseEntry = createSuccessEntry(parentLocation, folderName, index.title);
+  if (index === 'not-found') {
+    return {
+      nodeType: 'broken',
+      ...createBaseEntry(location, folderName, {}),
+    }
+  }
 
   const sections = await Promise.all(
     index.sections.map((sectionLink: string) => loadLessonSection(
-      baseEntry.location, sectionLink,
+      location, sectionLink,
     ))
   );
 
   return {
-    ...baseEntry,
-    num: position + 1,
-    lead: index.lead,
-    sections,
-  }
+    nodeType: 'inner',
+    ...createBaseEntry(
+      location,
+      folderName,
+      {
+        num: position + 1,
+        lead: index.lead,
+      },
+      index.title,
+    ),    
+    subEntries: sections,
+  };
 }
 
 export const createLessonRef = (
@@ -68,11 +77,11 @@ export const createLessonRef = (
     lesson,
     baseUrl
   ),
-  publicContent: lesson.type === 'broken'
+  publicContent: lesson.nodeType === 'broken'
     ? 'broken'
     : {
-      num: lesson.num,
-      lead: lesson.lead,
+      num: lesson.props.num,
+      lead: lesson.props.lead,
     }
 });
 
@@ -80,15 +89,15 @@ export class LessonProvider extends BaseResourceProvider<
   ChapterProvider, LessonEntry, LessonSectionProvider
 > {
   public getFirstSectionLink(): string | null {
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return null;
     }
 
-    if (this.entry.sections.length === 0) {
+    if (this.entry.subEntries.length === 0) {
       return null;
     }
 
-    return this.entry.sections[0].link;
+    return this.entry.subEntries[0].link;
   }
 
   public async fetch(expandSection?: 'first' | { link: string }): Promise<LessonResource> {
@@ -101,18 +110,18 @@ export class LessonProvider extends BaseResourceProvider<
       return {
         ...baseResource,
         status: 'forbidden',
-        content: this.entry.type === 'broken' 
+        content: this.entry.nodeType === 'broken' 
           ? {
             type:  'broken',
           } : {
             type: 'public',
-            num: this.entry.num,
-            lead: this.entry.lead,
+            num: this.entry.props.num,
+            lead: this.entry.props.lead,
           }
       };
     }
     
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return {
         ...baseResource,
         status: 'ok',
@@ -122,7 +131,7 @@ export class LessonProvider extends BaseResourceProvider<
       };
     }
     
-    const sections = this.entry.sections.map(
+    const sections = this.entry.subEntries.map(
       (section) => {
         const sectionAccess = this.access.step(section.link);
         return {
@@ -131,7 +140,7 @@ export class LessonProvider extends BaseResourceProvider<
             section,
             this.settings.baseUrl,
           ),
-          publicContent: section.type === 'broken' ? 'broken' : {},
+          publicContent: section.nodeType === 'broken' ? 'broken' : {},
         }
       }
     );
@@ -141,8 +150,8 @@ export class LessonProvider extends BaseResourceProvider<
     
     const content = {
       type: 'full',
-      num: this.entry.num,
-      lead: this.entry.lead,
+      num: this.entry.props.num,
+      lead: this.entry.props.lead,
       sections,
       next,
       prev,
@@ -201,11 +210,11 @@ export class LessonProvider extends BaseResourceProvider<
       return new NotFoundProvider();
     }
     
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return new NotFoundProvider();
     }
 
-    const result = findChild(this.entry.sections, link);
+    const result = findChild(this.entry.subEntries, link);
     if (result === null) {
       return new NotFoundProvider();
     }
@@ -224,11 +233,11 @@ export class LessonProvider extends BaseResourceProvider<
   }
 
   public getNextSection(pos: number): LessonSectionRef | null {
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return null;
     }
 
-    const section = this.entry.sections[pos + 1];
+    const section = this.entry.subEntries[pos + 1];
     if (section === undefined) {
       return null;
     }
@@ -240,16 +249,16 @@ export class LessonProvider extends BaseResourceProvider<
         section,
         this.settings.baseUrl,
       ),
-      publicContent: section.type === 'broken' ? 'broken' : {},
+      publicContent: section.nodeType === 'broken' ? 'broken' : {},
     }
   }
 
   public getPrevSection(pos: number): LessonSectionRef | null {
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return null;
     }
 
-    const section = this.entry.sections[pos - 1];
+    const section = this.entry.subEntries[pos - 1];
     if (section === undefined) {
       return null;
     }
@@ -261,7 +270,7 @@ export class LessonProvider extends BaseResourceProvider<
         section,
         this.settings.baseUrl,
       ),
-      publicContent: section.type === 'broken' ? 'broken' : {},
+      publicContent: section.nodeType === 'broken' ? 'broken' : {},
     }
   }
 

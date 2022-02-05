@@ -1,13 +1,13 @@
 import { Resource } from "./resource.js";
 import { CourseEntry, CourseProvider, CourseRef } from "./course.js";
-import { Entry } from "./entry.js";
+import { InnerEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
 export interface Division<T extends CourseEntry | CourseRef = CourseEntry> {
     readonly title: string;
     readonly lead: string;
     readonly courses: T[];
 }
-export declare type CoursesRootEntry = Entry<{
+export declare type CoursesRootEntry = InnerEntry<{
     divisions: Division[];
 }>;
 export declare type CoursesRootResource = Resource<{

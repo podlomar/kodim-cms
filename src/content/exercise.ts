@@ -4,14 +4,14 @@ import yaml from "yaml";
 import lineReader from "line-reader";
 import { ExerciseFrontMatter } from "../entries.js";
 import { el, getChildren, getTag, isElement, Jsml, JsmlElement } from "../jsml.js";
-import { createBrokenEntry, createSuccessEntry, EntryLocation, Entry } from "./entry.js";
+import { createBaseEntry, createChildLocation, EntryLocation, LeafEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import { Access } from "./access.js";
 import { LessonSectionProvider } from "./lesson-section.js";
 import { MarkdownProcessor } from "../markdown.js";
 import { createBaseResource, Crumbs, Resource } from "./resource.js";
 
-export type ExerciseEntry = Entry<{
+export type ExerciseEntry = LeafEntry<{
   demand: 1 | 2 | 3 | 4 | 5;
   num: number;
 }>;
@@ -106,20 +106,31 @@ export const loadExercise = async (
 ): Promise<ExerciseEntry> => {
   const fsPath = path.join(parentLocation.fsPath, '..', link.replace('>', '/'));
   const assignPath = getExcFilePath(fsPath);
-  
+  const location = createChildLocation(parentLocation, link, fsPath);
+
   if (assignPath === null) {
-    return createBrokenEntry(parentLocation, link, fsPath);
+    return {
+      nodeType: 'broken',
+      ...createBaseEntry(location, link, {})
+    }
   }
+
   const frontMatter = await loadFrontMatter<ExerciseFrontMatter>(
     assignPath,
   );
-  const baseEntry = createSuccessEntry(parentLocation, link, frontMatter.title, fsPath);
-
+  
   return {
-    ...baseEntry,
-    demand: frontMatter.demand,
-    num: pos + 1,
-  }
+    nodeType: 'leaf',
+    ...createBaseEntry(
+      location,
+      link,
+      {
+        demand: frontMatter.demand,
+        num: pos + 1,
+      },
+      frontMatter.title
+    )
+  };
 }
 
 export class ExerciseProvider extends BaseResourceProvider<
@@ -161,12 +172,12 @@ export class ExerciseProvider extends BaseResourceProvider<
         ...baseResource,
         status: 'forbidden',
         content: {
-          type: this.entry.type === 'broken' ? 'broken' : 'public',
+          type: this.entry.nodeType === 'broken' ? 'broken' : 'public',
         }
       };
     }
     
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return {
         ...baseResource,
         status: 'ok',
@@ -198,8 +209,8 @@ export class ExerciseProvider extends BaseResourceProvider<
       status: 'ok',
       content: {
         type: 'full',
-        demand: this.entry.demand,
-        num: this.entry.num,
+        demand: this.entry.props.demand,
+        num: this.entry.props.num,
         assignJsml,
         solutionJsml,
       },
@@ -211,7 +222,7 @@ export class ExerciseProvider extends BaseResourceProvider<
     if (excPath === null) {
       throw new Error('no assign file found');
     }    
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return ['error'];
     }
 
@@ -219,10 +230,10 @@ export class ExerciseProvider extends BaseResourceProvider<
     const jsml = await this.markdownProcessor.processString(assignText);
 
     const attrs = {
-      num: this.entry.num,
+      num: this.entry.props.num,
       title: this.entry.title,
       path: this.access.accepts() ? this.entry.location.path : 'forbidden',
-      demand: this.entry.demand,
+      demand: this.entry.props.demand,
     };
 
     const firstNode = jsml[0];

@@ -1,4 +1,4 @@
-import { Entry, BrokenEntry, SuccessEntry } from "./entry";
+import { Entry } from "./entry";
 
 export interface CrumbStep {
   readonly path: string;

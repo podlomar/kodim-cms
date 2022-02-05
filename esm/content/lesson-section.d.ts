@@ -1,19 +1,17 @@
 import { Resource, Crumbs, ResourceRef } from "./resource.js";
 import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import type { LessonProvider } from "./lesson.js";
-import { EntryLocation, Entry } from "./entry.js";
+import { InnerEntry, EntryLocation } from "./entry.js";
 import { ExerciseEntry, ExerciseProvider } from "./exercise.js";
 import { Jsml } from "../jsml.js";
 import { Access } from "./access.js";
-export declare type LessonSectionRef = ResourceRef<{}>;
-export declare type LessonSectionEntry = Entry<{
-    exercises: ExerciseEntry[];
-}>;
+export declare type LessonSectionEntry = InnerEntry<{}, ExerciseEntry>;
 export declare type LessonSectionResource = Resource<{
     jsml: Jsml;
     prev: LessonSectionRef | null;
     next: LessonSectionRef | null;
 }>;
+export declare type LessonSectionRef = ResourceRef<{}>;
 export declare const processor: import("unified").Processor<import("mdast").Root, import("mdast").Root, import("hast").Root, string>;
 interface SectionIndex {
     title: string;

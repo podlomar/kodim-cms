@@ -7,7 +7,7 @@ import markdown from "remark-parse";
 import directive from "remark-directive";
 import rehype from "remark-rehype";
 import stringify from "rehype-stringify";
-import { createSuccessEntry } from "./entry.js";
+import { createChildLocation, createBaseEntry } from "./entry.js";
 import { ExerciseProvider, loadExercise } from "./exercise.js";
 import { findChild } from "./content-node.js";
 import { MarkdownProcessor } from "../markdown.js";
@@ -40,10 +40,10 @@ export const parseSection = async (file) => {
 };
 export const loadLessonSection = async (parentLocation, folderName) => {
     const index = await parseSection(`${parentLocation.fsPath}/${folderName}.md`);
-    const baseEntry = createSuccessEntry(parentLocation, folderName, index.title);
+    const location = createChildLocation(parentLocation, folderName);
     let excsCount = 0;
-    const exercises = await Promise.all(index.excs.map((link, idx) => loadExercise(baseEntry.location, link, excsCount + idx)));
-    return Object.assign(Object.assign({}, baseEntry), { exercises });
+    const exercises = await Promise.all(index.excs.map((link, idx) => loadExercise(location, link, excsCount + idx)));
+    return Object.assign(Object.assign({ nodeType: 'inner' }, createBaseEntry(location, folderName, {})), { subEntries: exercises });
 };
 export class LessonSectionProvider extends BaseResourceProvider {
     constructor(parent, entry, position, crumbs, access, settings) {
@@ -56,10 +56,10 @@ export class LessonSectionProvider extends BaseResourceProvider {
         const baseResource = createBaseResource(this.entry, this.crumbs, this.settings.baseUrl);
         if (!this.access.accepts()) {
             return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: {
-                    type: this.entry.type === 'broken' ? 'broken' : 'public',
+                    type: this.entry.nodeType === 'broken' ? 'broken' : 'public',
                 } });
         }
-        if (this.entry.type === 'broken') {
+        if (this.entry.nodeType === 'broken') {
             return Object.assign(Object.assign({}, createBaseResource(this.entry, this.crumbs, this.settings.baseUrl)), { status: 'ok', content: {
                     type: 'broken',
                 } });
@@ -78,10 +78,10 @@ export class LessonSectionProvider extends BaseResourceProvider {
         if (!this.access.accepts()) {
             return new NotFoundProvider();
         }
-        if (this.entry.type === 'broken') {
+        if (this.entry.nodeType === 'broken') {
             return new NotFoundProvider();
         }
-        const result = findChild(this.entry.exercises, link);
+        const result = findChild(this.entry.subEntries, link);
         if (result === null) {
             return new NotFoundProvider();
         }
@@ -91,10 +91,10 @@ export class LessonSectionProvider extends BaseResourceProvider {
             }], this.access.step(result.child.link), this.settings);
     }
     findProvider(link) {
-        if (this.entry.type === 'broken') {
+        if (this.entry.nodeType === 'broken') {
             return null;
         }
-        const result = findChild(this.entry.exercises, link);
+        const result = findChild(this.entry.subEntries, link);
         if (result === null) {
             return null;
         }

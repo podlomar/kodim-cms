@@ -2,7 +2,7 @@ import { CoursesRootIndex, DivisionIndex } from "../entries.js";
 import { Resource, createBaseResource, createBaseRef } from "./resource.js";
 import { readIndexFile } from "./content-node.js";
 import { CourseEntry, CourseProvider, CourseRef, createCourseRef, loadCourse } from "./course.js";
-import { createBaseEntry, Entry } from "./entry.js";
+import { createBaseEntry, createChildLocation, InnerEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
 
 export interface Division<T extends CourseEntry | CourseRef = CourseEntry> {
@@ -11,7 +11,7 @@ export interface Division<T extends CourseEntry | CourseRef = CourseEntry> {
   readonly courses: T[],
 }
 
-export type CoursesRootEntry = Entry<{
+export type CoursesRootEntry = InnerEntry<{ 
   divisions: Division[];
 }>;
 
@@ -27,18 +27,14 @@ export const loadCoursesRoot = async (
     `${contentFolder}/${coursesFolder}`
   );
 
+  const location = createChildLocation({ path: '', fsPath: contentFolder }, coursesFolder);
+
   if (index === 'not-found') {
     return { 
-      type: 'broken',
-      ...createBaseEntry({ path: '/', fsPath: contentFolder }, coursesFolder),
-      link: coursesFolder,
+      nodeType: 'broken',
+      ...createBaseEntry(location, coursesFolder, {}),
     };
   }
-  
-  const location = {
-    fsPath: `${contentFolder}/kurzy`,
-    path: '/kurzy',
-  };
 
   let pos = 0;
   const divisions: (Division)[] = await Promise.all(
@@ -54,11 +50,16 @@ export const loadCoursesRoot = async (
   ))
 
   return {
-    type: 'success',
-    location,
-    link: '',
-    title: '',
-    divisions,
+    nodeType: 'inner',
+    ...createBaseEntry(
+      location,
+      '',
+      {
+        divisions,
+      },
+      '',
+    ),
+    subEntries: [],
   }
 }
 
@@ -75,13 +76,13 @@ export class CoursesRootProvider extends BaseResourceProvider<
       return {
         ...baseResource,
         status: 'forbidden',
-        content: this.entry.type === 'broken' 
+        content: this.entry.nodeType === 'broken' 
           ? { type: 'broken' } 
           : { type: 'public' }
       };
     }
     
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return {
         ...baseResource,
         status: 'ok',
@@ -96,7 +97,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
       status: 'ok',
       content: {
         type: 'full',
-        divisions: this.entry.divisions.map(
+        divisions: this.entry.props.divisions.map(
           (division): Division<CourseRef> => ({
             ...division,
             courses: division.courses.map((course): CourseRef => {
@@ -114,11 +115,11 @@ export class CoursesRootProvider extends BaseResourceProvider<
       return new NotFoundProvider();
     }
     
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return new NotFoundProvider();
     }
 
-    const courses = this.entry.divisions.flatMap(
+    const courses = this.entry.props.divisions.flatMap(
       (division) => division.courses
     );
   
@@ -126,10 +127,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
     
     if (pos < 0) {
       return new NotFoundProvider();
-    } 
-
-    const course = courses[pos];
-    const allowedAssets = course.type === 'broken' ? [] : [course.image];
+    }
 
     return new CourseProvider(
       this,
@@ -142,18 +140,18 @@ export class CoursesRootProvider extends BaseResourceProvider<
   }
 
   public findRepo(repoUrl: string): ResourceProvider | null {
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return null;
     }
 
-    const courses = this.entry.divisions.flatMap(
+    const courses = this.entry.props.divisions.flatMap(
       (division) => division.courses
     );
 
     for(let i = 0; i < courses.length; i += 1) {
       const course = courses[i];
-      if (course.type === 'success') {
-        if (course.repo?.url === repoUrl) {
+      if (course.nodeType === 'inner') {
+        if (course.props.repo?.url === repoUrl) {
           return new CourseProvider(
             this,
             course,

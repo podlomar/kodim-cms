@@ -1,46 +1,48 @@
-import { createBrokenEntry, createSuccessEntry } from "./entry.js";
+import { createBaseEntry, createChildLocation } from "./entry.js";
 import { createBaseResource, createBaseRef } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import { createLessonRef, LessonProvider, loadLesson } from "./lesson.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 export const loadChapter = async (parentLocation, folderName) => {
     const index = await readIndexFile(`${parentLocation.fsPath}/${folderName}`);
+    const location = createChildLocation(parentLocation, folderName);
     if (index === 'not-found') {
-        return createBrokenEntry(parentLocation, folderName);
+        return Object.assign({ nodeType: 'broken' }, createBaseEntry(location, folderName, {}));
     }
-    const baseEntry = createSuccessEntry(parentLocation, folderName, index.title);
-    const lessons = await Promise.all(index.lessons.map((lessonLink, idx) => loadLesson(baseEntry.location, lessonLink, idx)));
-    return Object.assign(Object.assign({}, baseEntry), { lead: index.lead, lessons });
+    const lessons = await Promise.all(index.lessons.map((lessonLink, idx) => loadLesson(location, lessonLink, idx)));
+    return Object.assign(Object.assign({ nodeType: 'inner' }, createBaseEntry(location, folderName, {
+        lead: index.lead,
+    })), { subEntries: lessons });
 };
-export const createChapterRef = (chapter, accessAllowed, baseUrl) => (Object.assign(Object.assign({}, createBaseRef(accessAllowed ? 'ok' : 'forbidden', chapter, baseUrl)), { publicContent: chapter.type === 'broken'
+export const createChapterRef = (chapter, accessAllowed, baseUrl) => (Object.assign(Object.assign({}, createBaseRef(accessAllowed ? 'ok' : 'forbidden', chapter, baseUrl)), { publicContent: chapter.nodeType === 'broken'
         ? 'broken'
         : {
-            lead: chapter.lead,
+            lead: chapter.props.lead,
         } }));
 export class ChapterProvider extends BaseResourceProvider {
     async fetch() {
         const baseResource = createBaseResource(this.entry, this.crumbs, this.settings.baseUrl);
         if (!this.access.accepts()) {
-            return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: this.entry.type === 'broken'
+            return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: this.entry.nodeType === 'broken'
                     ? {
                         type: 'broken',
                     } : {
                     type: 'public',
-                    lead: this.entry.lead,
+                    lead: this.entry.props.lead,
                 } });
         }
-        if (this.entry.type === 'broken') {
+        if (this.entry.nodeType === 'broken') {
             return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
                     type: 'broken',
                 } });
         }
-        const lessons = this.entry.lessons.map((lesson) => {
-            const lessonAccess = this.access.step(lesson.link);
-            return createLessonRef(lesson, lessonAccess.accepts(), this.settings.baseUrl);
+        const lessons = this.entry.subEntries.map((lesson) => {
+            const access = this.access.step(lesson.link);
+            return createLessonRef(lesson, access.accepts(), this.settings.baseUrl);
         });
         return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
                 type: 'full',
-                lead: this.entry.lead,
+                lead: this.entry.props.lead,
                 lessons,
             } });
     }
@@ -48,10 +50,10 @@ export class ChapterProvider extends BaseResourceProvider {
         if (!this.access.accepts()) {
             return new NotFoundProvider();
         }
-        if (this.entry.type === 'broken') {
+        if (this.entry.nodeType === 'broken') {
             return new NotFoundProvider();
         }
-        const result = findChild(this.entry.lessons, link);
+        const result = findChild(this.entry.subEntries, link);
         if (result === null) {
             return new NotFoundProvider();
         }
@@ -61,10 +63,10 @@ export class ChapterProvider extends BaseResourceProvider {
             }], this.access.step(result.child.link), this.settings);
     }
     getNextLesson(pos) {
-        if (this.entry.type === 'broken') {
+        if (this.entry.nodeType === 'broken') {
             return null;
         }
-        const lesson = this.entry.lessons[pos + 1];
+        const lesson = this.entry.subEntries[pos + 1];
         if (lesson === undefined) {
             return null;
         }
@@ -72,10 +74,10 @@ export class ChapterProvider extends BaseResourceProvider {
         return createLessonRef(lesson, childAccess.accepts(), this.settings.baseUrl);
     }
     getPrevLesson(pos) {
-        if (this.entry.type === 'broken') {
+        if (this.entry.nodeType === 'broken') {
             return null;
         }
-        const lesson = this.entry.lessons[pos - 1];
+        const lesson = this.entry.subEntries[pos - 1];
         if (lesson === undefined) {
             return null;
         }

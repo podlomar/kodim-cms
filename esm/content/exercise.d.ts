@@ -1,10 +1,10 @@
 import { Jsml, JsmlElement } from "../jsml.js";
-import { EntryLocation, Entry } from "./entry.js";
+import { EntryLocation, LeafEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
 import { Access } from "./access.js";
 import { LessonSectionProvider } from "./lesson-section.js";
 import { Crumbs, Resource } from "./resource.js";
-export declare type ExerciseEntry = Entry<{
+export declare type ExerciseEntry = LeafEntry<{
     demand: 1 | 2 | 3 | 4 | 5;
     num: number;
 }>;

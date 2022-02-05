@@ -3,52 +3,55 @@ export interface EntryLocation {
   fsPath: string;
 }
 
-export interface BaseEntry {
+export const createChildLocation = (
+  parentLocation: EntryLocation,
+  link: string,
+  fsPath?: string,
+) => ({
+  path: `${parentLocation.path}/${link}`,
+  fsPath: fsPath ?? `${parentLocation.fsPath}/${link}`,
+});
+
+export interface BaseEntry<Props extends {} = any> {
   link: string;
-  location: EntryLocation,
   title: string;
+  location: EntryLocation;
+  props: Props;
 };
 
-export const createBaseEntry = (
-  parentLocation: EntryLocation,
-  link: string, 
+export const createBaseEntry = <Props>(
+  location: EntryLocation,
+  link: string,
+  props: Props,
   title?: string,
-  fsPath?: string,
-): BaseEntry => ({
+): BaseEntry<Props> => ({
   link,
-  location: {
-    path: `${parentLocation.path}/${link}`,
-    fsPath: fsPath ?? `${parentLocation.fsPath}/${link}`,
-  },
   title: title ?? link,
+  location,
+  props,
 });
 
-export interface SuccessEntry extends BaseEntry {
-  type: 'success',
+export interface OkLeafEntry<Props extends {}> extends BaseEntry<Props> {
+  nodeType: 'leaf',
 }
 
-export const createSuccessEntry = (
-  parentLocation: EntryLocation, 
-  link: string, 
-  title?: string,
-  fsPath?: string,
-): SuccessEntry => ({
-  type: 'success',
-  ...createBaseEntry(parentLocation, link, title, fsPath),
-});
+export interface OkInnerEntry<
+  Props extends {},
+  SubEntry extends Entry = any
+> extends BaseEntry<Props> {
+  nodeType: 'inner',
+  subEntries: SubEntry[],
+}
 
 export interface BrokenEntry extends BaseEntry {
-  type: 'broken',
+  nodeType: 'broken',
 }
 
-export const createBrokenEntry = (
-  parentLocation: EntryLocation, 
-  link: string,
-  title?: string,
-  fsPath?: string,
-): BrokenEntry => ({
-  type: 'broken',
-  ...createBaseEntry(parentLocation, link, title, fsPath),
-});
+export type LeafEntry<Props extends {} = {}> = OkLeafEntry<Props> | BrokenEntry;
 
-export type Entry<T extends {} = {}> = SuccessEntry & T | BrokenEntry;
+export type InnerEntry<Props extends {} = {}, SubEntry extends Entry = any> = (
+  | OkInnerEntry<Props, SubEntry>
+  | BrokenEntry
+);
+
+export type Entry = OkLeafEntry<any> | OkInnerEntry<any> | BrokenEntry;

@@ -1,9 +1,9 @@
-import { Entry, EntryLocation } from "./entry.js";
+import { InnerEntry, EntryLocation } from "./entry.js";
 import { ResourceRef, Resource } from './resource.js';
 import { ChapterEntry, ChapterProvider, ChapterRef } from "./chapter.js";
 import type { CoursesRootProvider } from "./content";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
-export declare type CourseEntry = Entry<{
+export declare type CourseEntry = InnerEntry<{
     image: string;
     lead: string;
     repo: {
@@ -11,8 +11,7 @@ export declare type CourseEntry = Entry<{
         branch: string;
         secret: string;
     } | null;
-    chapters: ChapterEntry[];
-}>;
+}, ChapterEntry>;
 export declare type CourseResource = Resource<{
     image: string;
     lead: string;

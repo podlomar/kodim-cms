@@ -1,12 +1,11 @@
-import { EntryLocation, Entry } from "./entry.js";
+import { EntryLocation, InnerEntry } from "./entry.js";
 import { Resource, ResourceRef } from './resource.js';
 import type { CourseProvider } from "./course";
 import { LessonEntry, LessonProvider, LessonRef } from "./lesson.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
-export declare type ChapterEntry = Entry<{
+export declare type ChapterEntry = InnerEntry<{
     lead: string;
-    lessons: LessonEntry[];
-}>;
+}, LessonEntry>;
 export declare type ChapterResource = Resource<{
     lead: string;
     lessons: LessonRef[];

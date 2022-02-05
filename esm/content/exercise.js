@@ -3,7 +3,7 @@ import { existsSync } from "fs";
 import yaml from "yaml";
 import lineReader from "line-reader";
 import { el, getChildren, getTag, isElement } from "../jsml.js";
-import { createBrokenEntry, createSuccessEntry } from "./entry.js";
+import { createBaseEntry, createChildLocation } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { MarkdownProcessor } from "../markdown.js";
 import { createBaseResource } from "./resource.js";
@@ -63,12 +63,15 @@ const getExcFilePath = (fsPath) => {
 export const loadExercise = async (parentLocation, link, pos) => {
     const fsPath = path.join(parentLocation.fsPath, '..', link.replace('>', '/'));
     const assignPath = getExcFilePath(fsPath);
+    const location = createChildLocation(parentLocation, link, fsPath);
     if (assignPath === null) {
-        return createBrokenEntry(parentLocation, link, fsPath);
+        return Object.assign({ nodeType: 'broken' }, createBaseEntry(location, link, {}));
     }
     const frontMatter = await loadFrontMatter(assignPath);
-    const baseEntry = createSuccessEntry(parentLocation, link, frontMatter.title, fsPath);
-    return Object.assign(Object.assign({}, baseEntry), { demand: frontMatter.demand, num: pos + 1 });
+    return Object.assign({ nodeType: 'leaf' }, createBaseEntry(location, link, {
+        demand: frontMatter.demand,
+        num: pos + 1,
+    }, frontMatter.title));
 };
 export class ExerciseProvider extends BaseResourceProvider {
     constructor(parent, entry, position, crumbs, access, settings) {
@@ -87,10 +90,10 @@ export class ExerciseProvider extends BaseResourceProvider {
         const baseResource = createBaseResource(this.entry, this.crumbs, this.settings.baseUrl);
         if (!this.access.accepts()) {
             return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: {
-                    type: this.entry.type === 'broken' ? 'broken' : 'public',
+                    type: this.entry.nodeType === 'broken' ? 'broken' : 'public',
                 } });
         }
-        if (this.entry.type === 'broken') {
+        if (this.entry.nodeType === 'broken') {
             return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
                     type: 'broken',
                 } });
@@ -110,8 +113,8 @@ export class ExerciseProvider extends BaseResourceProvider {
             : [];
         return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
                 type: 'full',
-                demand: this.entry.demand,
-                num: this.entry.num,
+                demand: this.entry.props.demand,
+                num: this.entry.props.num,
                 assignJsml,
                 solutionJsml,
             } });
@@ -121,16 +124,16 @@ export class ExerciseProvider extends BaseResourceProvider {
         if (excPath === null) {
             throw new Error('no assign file found');
         }
-        if (this.entry.type === 'broken') {
+        if (this.entry.nodeType === 'broken') {
             return ['error'];
         }
         const assignText = await loadAssign(excPath);
         const jsml = await this.markdownProcessor.processString(assignText);
         const attrs = {
-            num: this.entry.num,
+            num: this.entry.props.num,
             title: this.entry.title,
             path: this.access.accepts() ? this.entry.location.path : 'forbidden',
-            demand: this.entry.demand,
+            demand: this.entry.props.demand,
         };
         const firstNode = jsml[0];
         const content = isElement(firstNode) && getTag(firstNode) === 'assign'

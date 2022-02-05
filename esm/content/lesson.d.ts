@@ -1,17 +1,12 @@
-import { Entry, EntryLocation } from "./entry.js";
+import { InnerEntry, EntryLocation } from "./entry.js";
 import { ResourceRef, Resource } from './resource.js';
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import type { ChapterProvider } from "./chapter.js";
 import { LessonSectionEntry, LessonSectionProvider, LessonSectionRef, LessonSectionResource } from "./lesson-section.js";
-export declare type LessonRef = ResourceRef<{
+export declare type LessonEntry = InnerEntry<{
     num: number;
     lead: string;
-}>;
-export declare type LessonEntry = Entry<{
-    num: number;
-    lead: string;
-    sections: LessonSectionEntry[];
-}>;
+}, LessonSectionEntry>;
 export declare type LessonResource = Resource<{
     num: number;
     lead: string;
@@ -20,6 +15,10 @@ export declare type LessonResource = Resource<{
     next: LessonRef | null;
     prev: LessonRef | null;
 }, {
+    num: number;
+    lead: string;
+}>;
+export declare type LessonRef = ResourceRef<{
     num: number;
     lead: string;
 }>;

@@ -8,7 +8,7 @@ import markdown from "remark-parse";
 import directive from "remark-directive";
 import rehype from "remark-rehype";
 import stringify from "rehype-stringify";
-import { createSuccessEntry, BrokenEntry, SuccessEntry, EntryLocation, Entry } from "./entry.js";
+import { InnerEntry, EntryLocation, createChildLocation, createBaseEntry } from "./entry.js";
 import { ExerciseEntry, ExerciseProvider, loadExercise } from "./exercise.js";
 import { findChild } from "./content-node.js";
 import { MarkdownProcessor } from "../markdown.js";
@@ -16,17 +16,15 @@ import { buildExcTransform } from "../markdown-transforms.js";
 import { Jsml } from "../jsml.js";
 import { Access } from "./access.js";
 
-export type LessonSectionRef = ResourceRef<{}>;
-
-export type LessonSectionEntry = Entry<{
-  exercises: ExerciseEntry[],
-}>;
+export type LessonSectionEntry = InnerEntry<{}, ExerciseEntry>;
 
 export type LessonSectionResource = Resource<{
   jsml: Jsml;
   prev: LessonSectionRef | null,
   next: LessonSectionRef | null,
 }>;
+
+export type LessonSectionRef = ResourceRef<{}>;
 
 export const processor = unified()
   .use(markdown)
@@ -73,18 +71,23 @@ export const loadLessonSection = async (
     `${parentLocation.fsPath}/${folderName}.md`
   );
 
-  const baseEntry = createSuccessEntry(parentLocation, folderName, index.title)
+  const location = createChildLocation(parentLocation, folderName);
 
   let excsCount = 0; 
   const exercises = await Promise.all(
     index.excs.map((link: string, idx: number) => loadExercise(
-      baseEntry.location, link, excsCount + idx
+      location, link, excsCount + idx
     ))
   );
 
   return {
-    ...baseEntry,
-    exercises,
+    nodeType: 'inner',
+    ...createBaseEntry(
+      location,
+      folderName,
+      {}
+    ),
+    subEntries: exercises,
   };
 }
 
@@ -124,12 +127,12 @@ export class LessonSectionProvider extends BaseResourceProvider<
         ...baseResource,
         status: 'forbidden',
         content: {
-          type: this.entry.type === 'broken' ? 'broken' : 'public',
+          type: this.entry.nodeType === 'broken' ? 'broken' : 'public',
         }
       };
     }
     
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return {
         ...createBaseResource(
           this.entry,
@@ -168,11 +171,11 @@ export class LessonSectionProvider extends BaseResourceProvider<
       return new NotFoundProvider();
     }
     
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return new NotFoundProvider();
     }
 
-    const result = findChild(this.entry.exercises, link);
+    const result = findChild(this.entry.subEntries, link);
     if (result === null) {
       return new NotFoundProvider();
     }
@@ -191,11 +194,11 @@ export class LessonSectionProvider extends BaseResourceProvider<
   }
 
   public findProvider(link: string): ExerciseProvider | null {
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return null;
     }
 
-    const result = findChild(this.entry.exercises, link);
+    const result = findChild(this.entry.subEntries, link);
     if (result === null) {
       return null;
     }

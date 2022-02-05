@@ -1,14 +1,14 @@
 import { existsSync } from "fs";
 import simpleGit from 'simple-git';
 import { CourseIndex } from "../entries";
-import { Entry, createSuccessEntry, createBrokenEntry, EntryLocation } from "./entry.js";
+import { InnerEntry, createBaseEntry, EntryLocation, createChildLocation } from "./entry.js";
 import { createBaseResource, ResourceRef, buildAssetPath, Resource, createBaseRef } from './resource.js';
 import { ChapterEntry, ChapterProvider, ChapterRef, createChapterRef, loadChapter } from "./chapter.js";
 import type { CoursesRootProvider } from "./content";
 import { findChild, readIndexFile, readYamlFile } from "./content-node.js";
 import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
 
-export type CourseEntry = Entry<{
+export type CourseEntry = InnerEntry<{
   image: string,
   lead: string,
   repo: {
@@ -16,8 +16,7 @@ export type CourseEntry = Entry<{
     branch: string,
     secret: string,
   } | null,
-  chapters: ChapterEntry[],
-}>
+}, ChapterEntry>;
 
 export type CourseResource = Resource<{
   image: string,
@@ -41,8 +40,13 @@ export const loadCourse = async (
     `${parentLocation.fsPath}/${folderName}`
   );
 
+  const location = createChildLocation(parentLocation, folderName);
+
   if (index === 'not-found') {
-    return createBrokenEntry(parentLocation, folderName);
+    return {
+      nodeType: 'broken',
+      ...createBaseEntry(location, folderName, {}),
+    };
   }
 
   const isGitRepo = existsSync(`${parentLocation.fsPath}/${folderName}/.git`);
@@ -75,22 +79,26 @@ export const loadCourse = async (
     console.log('git repo', index.title, repo);
   }
 
-  const baseEntry = createSuccessEntry(parentLocation, folderName, index.title);
-
   const chapters = await Promise.all(
     index.chapters === undefined ? [] : 
     index.chapters.map((chapterLink: string) => loadChapter(
-      baseEntry.location, chapterLink
+      location, chapterLink
     ))
   );
 
   return {
-    ...baseEntry,
-    image: index.image,
-    lead: index.lead,
-    repo,
-    chapters,
-  }
+    nodeType: 'inner',
+    ...createBaseEntry(
+      location,
+      folderName,
+      {
+        image: index.image,
+        lead: index.lead,
+        repo,
+      }
+    ),
+    subEntries: chapters,
+  };
 }
 
 export const createCourseRef = (
@@ -103,11 +111,11 @@ export const createCourseRef = (
     courseEntry,
     baseUrl,
   ),
-  publicContent: courseEntry.type === 'broken'
+  publicContent: courseEntry.nodeType === 'broken'
     ? 'broken'
     : {
-      image: buildAssetPath(courseEntry.image, courseEntry.location.path, baseUrl),
-      lead: courseEntry.lead,
+      image: buildAssetPath(courseEntry.props.image, courseEntry.location.path, baseUrl),
+      lead: courseEntry.props.lead,
     }
 });
 
@@ -131,7 +139,7 @@ export class CourseProvider extends BaseResourceProvider<
       return;
     }
   
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return;
     }
 
@@ -142,9 +150,9 @@ export class CourseProvider extends BaseResourceProvider<
       ))
     );
   
-    this.entry.image = index.image;
-    this.entry.lead = index.lead;
-    this.entry.chapters = chapters;
+    this.entry.props.image = index.image;
+    this.entry.props.lead = index.lead;
+    this.entry.subEntries = chapters;
   }
 
   public async fetch(): Promise<CourseResource> {
@@ -157,20 +165,20 @@ export class CourseProvider extends BaseResourceProvider<
       return {
         ...baseResource,
         status: 'forbidden',
-        content: this.entry.type === 'broken' 
+        content: this.entry.nodeType === 'broken' 
           ? {
             type:  'broken',
           } : {
             type: 'public',
             image: buildAssetPath(
-              this.entry.image, this.entry.location.path, this.settings.baseUrl
+              this.entry.props.image, this.entry.location.path, this.settings.baseUrl
             ),
-            lead: this.entry.lead,
+            lead: this.entry.props.lead,
           }
       };
     }
     
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return {
         ...baseResource,
         status: 'ok',
@@ -180,7 +188,7 @@ export class CourseProvider extends BaseResourceProvider<
       };
     }
   
-    const chapters = this.entry.chapters.map(
+    const chapters = this.entry.subEntries.map(
       (chapter) => {
         const access = this.access.step(chapter.link);
         return createChapterRef(chapter, access.accepts(), this.settings.baseUrl);
@@ -193,9 +201,9 @@ export class CourseProvider extends BaseResourceProvider<
       content: {
         type: 'full',
         image: buildAssetPath(
-          this.entry.image, this.entry.location.path, this.settings.baseUrl
+          this.entry.props.image, this.entry.location.path, this.settings.baseUrl
         ),
-        lead: this.entry.lead,
+        lead: this.entry.props.lead,
         chapters,
       }
     };
@@ -206,11 +214,11 @@ export class CourseProvider extends BaseResourceProvider<
       return new NotFoundProvider();
     }
     
-    if (this.entry.type === 'broken') {
+    if (this.entry.nodeType === 'broken') {
       return new NotFoundProvider();
     }
 
-    const result = findChild(this.entry.chapters, link);
+    const result = findChild(this.entry.subEntries, link);
     if (result === null) {
       return new NotFoundProvider();
     }
