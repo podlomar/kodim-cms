@@ -85,7 +85,8 @@ export const loadLessonSection = async (
     ...createBaseEntry(
       location,
       folderName,
-      {}
+      {},
+      index.title,
     ),
     subEntries: exercises,
   };

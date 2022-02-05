@@ -51,7 +51,8 @@ export const loadChapter = async (
       folderName,
       {
         lead: index.lead,
-      }
+      },
+      index.title,
     ),
     subEntries: lessons,
   };

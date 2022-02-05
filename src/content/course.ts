@@ -95,7 +95,8 @@ export const loadCourse = async (
         image: index.image,
         lead: index.lead,
         repo,
-      }
+      },
+      index.title,
     ),
     subEntries: chapters,
   };

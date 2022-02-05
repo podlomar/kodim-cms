@@ -12,7 +12,7 @@ export const loadChapter = async (parentLocation, folderName) => {
     const lessons = await Promise.all(index.lessons.map((lessonLink, idx) => loadLesson(location, lessonLink, idx)));
     return Object.assign(Object.assign({ nodeType: 'inner' }, createBaseEntry(location, folderName, {
         lead: index.lead,
-    })), { subEntries: lessons });
+    }, index.title)), { subEntries: lessons });
 };
 export const createChapterRef = (chapter, accessAllowed, baseUrl) => (Object.assign(Object.assign({}, createBaseRef(accessAllowed ? 'ok' : 'forbidden', chapter, baseUrl)), { publicContent: chapter.nodeType === 'broken'
         ? 'broken'

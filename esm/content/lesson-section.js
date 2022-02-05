@@ -43,7 +43,7 @@ export const loadLessonSection = async (parentLocation, folderName) => {
     const location = createChildLocation(parentLocation, folderName);
     let excsCount = 0;
     const exercises = await Promise.all(index.excs.map((link, idx) => loadExercise(location, link, excsCount + idx)));
-    return Object.assign(Object.assign({ nodeType: 'inner' }, createBaseEntry(location, folderName, {})), { subEntries: exercises });
+    return Object.assign(Object.assign({ nodeType: 'inner' }, createBaseEntry(location, folderName, {}, index.title)), { subEntries: exercises });
 };
 export class LessonSectionProvider extends BaseResourceProvider {
     constructor(parent, entry, position, crumbs, access, settings) {

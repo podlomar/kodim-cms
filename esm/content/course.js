@@ -38,7 +38,7 @@ export const loadCourse = async (parentLocation, folderName) => {
         image: index.image,
         lead: index.lead,
         repo,
-    })), { subEntries: chapters });
+    }, index.title)), { subEntries: chapters });
 };
 export const createCourseRef = (courseEntry, accessAllowed, baseUrl) => (Object.assign(Object.assign({}, createBaseRef(accessAllowed ? 'ok' : 'forbidden', courseEntry, baseUrl)), { publicContent: courseEntry.nodeType === 'broken'
         ? 'broken'
