@@ -2,6 +2,7 @@ import { escape } from 'html-escaper';
 import { Element } from 'hast';
 import { JsmlNode, JsmlElement, setAttr, getChildren, el, getAttrs } from "./jsml.js";
 import { LessonSectionProvider } from './content/lesson-section.js';
+import { spaceTrim } from 'spacetrim';
 
 interface RefAttr {
   path: string,
@@ -73,7 +74,7 @@ export const codeTransform = async (
   const attrs = getAttrs(node as JsmlElement);
   
   return el(
-    'code', attrs, ...children.map((child) => escape(String(child)))
+    'code', attrs, ...children.map((child) => escape(spaceTrim(String(child))))
   );
 }
 
