@@ -1,6 +1,7 @@
 export interface ExerciseFrontMatter {
   title: string;
   demand: 1 | 2 | 3 | 4 | 5;
+  hasSolution?: boolean;
 }
 
 export interface ExcsIndex {

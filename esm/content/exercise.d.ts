@@ -7,16 +7,19 @@ import { Crumbs, Resource } from "./resource.js";
 export declare type ExerciseEntry = LeafEntry<{
     demand: 1 | 2 | 3 | 4 | 5;
     num: number;
+    hasSolution: boolean;
 }>;
 export declare type ExerciseResource = Resource<{
     demand: 1 | 2 | 3 | 4 | 5;
     num: number;
+    hasSolution: boolean;
     assignJsml: Jsml;
     solutionJsml: Jsml;
 }>;
 export interface ExerciseAssign {
     demand: 1 | 2 | 3 | 4 | 5;
     num: number;
+    hasSolution: boolean;
     jsml: Jsml;
 }
 export declare const loadExercise: (parentLocation: EntryLocation, link: string, pos: number) => Promise<ExerciseEntry>;
