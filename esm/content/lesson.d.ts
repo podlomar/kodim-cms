@@ -1,4 +1,4 @@
-import { InnerEntry, EntryLocation } from "./entry.js";
+import { InnerEntry, BaseEntry } from "./entry.js";
 import { ResourceRef, Resource } from './resource.js';
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import type { ChapterProvider } from "./chapter.js";
@@ -21,7 +21,7 @@ export declare type LessonRef = ResourceRef<{
     num: number;
     lead: string;
 }>;
-export declare const loadLesson: (parentLocation: EntryLocation, folderName: string, position: number) => Promise<LessonEntry>;
+export declare const loadLesson: (parentBase: BaseEntry, folderName: string, position: number) => Promise<LessonEntry>;
 export declare const createLessonRef: (lesson: LessonEntry, accessAllowed: boolean, baseUrl: string) => LessonRef;
 export declare class LessonProvider extends BaseResourceProvider<ChapterProvider, LessonEntry, LessonSectionProvider> {
     getFirstSectionLink(): string | null;

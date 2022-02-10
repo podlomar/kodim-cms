@@ -1,16 +1,16 @@
 import express, { Router, Request, Response } from 'express';
 import { KodimCms } from '.';
 import { ResourceProvider } from './content/provider';
-import { Access, AccessGranted } from "./content/access.js";
+import { AccessCheck, AccessGrantAll } from "./content/access-check.js";
 
 export class CmsApp {
   public readonly router: Router;
   private cms: KodimCms;
-  private getAccess: () => Access;
+  private getAccessCheck: () => AccessCheck;
 
-  public constructor(cms: KodimCms, getAccess: () => Access) {
+  public constructor(cms: KodimCms, getAccessCheck: () => AccessCheck) {
     this.cms = cms;
-    this.getAccess = getAccess;
+    this.getAccessCheck = getAccessCheck;
 
     this.router = express.Router();
     this.router.use(express.json());
@@ -21,8 +21,8 @@ export class CmsApp {
 
   private getProviderByPath(path: string): ResourceProvider {
     const links = path.split('/');
-    const access = this.getAccess();
-    return this.cms.getRoot(access).search(...links);
+    const accessCheck = this.getAccessCheck();
+    return this.cms.getRoot(accessCheck).search(...links);
   }
 
   private handleGetEntry = async (req: Request, res: Response) => {
@@ -47,8 +47,8 @@ export class CmsApp {
 
   private handleHooks = async (req: Request, res: Response) => {
     const url = req.body.repository.clone_url;
-    const access = new AccessGranted();
-    const provider = this.cms.getRoot(access).findRepo(url);
+    const accessCheck = new AccessGrantAll();
+    const provider = this.cms.getRoot(accessCheck).findRepo(url);
     console.log(url);
     if (provider === null) {
       res.sendStatus(400);

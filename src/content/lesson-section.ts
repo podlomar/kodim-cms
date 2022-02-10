@@ -8,13 +8,14 @@ import markdown from "remark-parse";
 import directive from "remark-directive";
 import rehype from "remark-rehype";
 import stringify from "rehype-stringify";
-import { InnerEntry, EntryLocation, createChildLocation, createBaseEntry } from "./entry.js";
+import { LessonSectionIndex } from "../entries";
+import { InnerEntry, createBaseEntry, BaseEntry } from "./entry.js";
 import { ExerciseEntry, ExerciseProvider, loadExercise } from "./exercise.js";
 import { findChild } from "./content-node.js";
 import { MarkdownProcessor } from "../markdown.js";
 import { buildExcTransform } from "../markdown-transforms.js";
 import { Jsml } from "../jsml.js";
-import { Access } from "./access.js";
+import { AccessCheck } from "./access-check.js";
 
 export type LessonSectionEntry = InnerEntry<{}, ExerciseEntry>;
 
@@ -32,22 +33,17 @@ export const processor = unified()
   .use(rehype)
   .use(stringify);
 
-interface SectionIndex {
-  title: string;
-  excs: string[];
-}
-
-export const parseSection = async (file: string): Promise<SectionIndex> => {
+export const parseSection = async (file: string): Promise<LessonSectionIndex> => {
   const text = await fs.readFile(file, "utf-8");
   const tree = processor.parse(text);
   
-  let title = "";
+  let title: string | null = null;
   let excs: string[] = [];
 
   for (const node of tree.children) {
     if (node.type === "heading" && node.depth === 2) {
       const content = node.children[0];
-      if (content.type === "text") {
+      if (content.type === "text" && title === null) {
         title = content.value;
       }
     }
@@ -60,34 +56,34 @@ export const parseSection = async (file: string): Promise<SectionIndex> => {
     }
   }
 
+  if (title === null) {
+    title = path.basename(file);
+  }
+
   return { title, excs };
 };
 
 export const loadLessonSection = async (
-  parentLocation: EntryLocation,
+  parentBase: BaseEntry,
   folderName: string,
 ): Promise<LessonSectionEntry> => {
   const index = await parseSection(
-    `${parentLocation.fsPath}/${folderName}.md`
+    `${parentBase.fsPath}/${folderName}.md`
   );
 
-  const location = createChildLocation(parentLocation, folderName);
+  const baseEntry = createBaseEntry(parentBase, index, folderName);
 
   let excsCount = 0; 
   const exercises = await Promise.all(
     index.excs.map((link: string, idx: number) => loadExercise(
-      location, link, excsCount + idx
+      baseEntry, link, excsCount + idx
     ))
   );
 
   return {
     nodeType: 'inner',
-    ...createBaseEntry(
-      location,
-      folderName,
-      {},
-      index.title,
-    ),
+    ...baseEntry,
+    props: {},
     subEntries: exercises,
   };
 }
@@ -102,10 +98,10 @@ export class LessonSectionProvider extends BaseResourceProvider<
     entry: LessonSectionEntry, 
     position: number, 
     crumbs: Crumbs,
-    access: Access,
+    accessCheck: AccessCheck,
     settings: ProviderSettings
   ) {
-    super(parent, entry, position, crumbs, access, settings);
+    super(parent, entry, position, crumbs, accessCheck, settings);
     this.markdownProcessor = new MarkdownProcessor(
       this.buildAssetPath,
     ).useTransform(
@@ -114,7 +110,7 @@ export class LessonSectionProvider extends BaseResourceProvider<
   }
   
   private buildAssetPath = (fileName: string) => buildAssetPath(
-    fileName, path.join(this.entry.location.path, '..'), this.settings.baseUrl
+    fileName, path.join(this.entry.path, '..'), this.settings.baseUrl
   )
 
   public async fetch(): Promise<LessonSectionResource> {
@@ -123,7 +119,7 @@ export class LessonSectionProvider extends BaseResourceProvider<
       this.settings.baseUrl
     );
     
-    if (!this.access.accepts()) {
+    if (!this.accessCheck.accepts()) {
       return {
         ...baseResource,
         status: 'forbidden',
@@ -149,7 +145,7 @@ export class LessonSectionProvider extends BaseResourceProvider<
     
     const next = this.parent.getNextSection(this.position);
     const prev = this.parent.getPrevSection(this.position);
-    const jsml = await this.markdownProcessor.process(`${this.entry.location.fsPath}.md`);
+    const jsml = await this.markdownProcessor.process(`${this.entry.fsPath}.md`);
     
     return {
       ...createBaseResource(
@@ -168,7 +164,7 @@ export class LessonSectionProvider extends BaseResourceProvider<
   }
 
   public find(link: string): ExerciseProvider | NotFoundProvider {
-    if (!this.access.accepts()) {
+    if (!this.accessCheck.accepts()) {
       return new NotFoundProvider();
     }
     
@@ -187,9 +183,9 @@ export class LessonSectionProvider extends BaseResourceProvider<
       result.pos, 
       [...this.crumbs, { 
         title: this.entry.title, 
-        path: this.entry.location.path
+        path: this.entry.path
       }],
-      this.access.step(result.child.link),
+      this.accessCheck.step(result.child),
       this.settings
     );
   }
@@ -210,9 +206,9 @@ export class LessonSectionProvider extends BaseResourceProvider<
       result.pos, 
       [...this.crumbs, { 
         title: this.entry.title, 
-        path: this.entry.location.path
+        path: this.entry.path
       }],
-      this.access.step(result.child.link),
+      this.accessCheck.step(result.child),
       this.settings
     );
   }

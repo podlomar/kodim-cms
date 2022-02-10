@@ -1,19 +1,19 @@
-import { createBaseEntry, createChildLocation } from "./entry.js";
+import { createBaseEntry, createBrokenEntry } from "./entry.js";
 import { createBaseResource, createBaseRef } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { LessonSectionProvider, loadLessonSection } from "./lesson-section.js";
-export const loadLesson = async (parentLocation, folderName, position) => {
-    const index = await readIndexFile(`${parentLocation.fsPath}/${folderName}`);
-    const location = createChildLocation(parentLocation, folderName);
+export const loadLesson = async (parentBase, folderName, position) => {
+    const index = await readIndexFile(`${parentBase.fsPath}/${folderName}`);
     if (index === 'not-found') {
-        return Object.assign({ nodeType: 'broken' }, createBaseEntry(location, folderName, {}));
+        return createBrokenEntry(parentBase, folderName);
     }
-    const sections = await Promise.all(index.sections.map((sectionLink) => loadLessonSection(location, sectionLink)));
-    return Object.assign(Object.assign({ nodeType: 'inner' }, createBaseEntry(location, folderName, {
-        num: position + 1,
-        lead: index.lead,
-    }, index.title)), { subEntries: sections });
+    const baseEntry = createBaseEntry(parentBase, index, folderName);
+    const sections = await Promise.all(index.sections.map((sectionLink) => loadLessonSection(baseEntry, sectionLink)));
+    return Object.assign(Object.assign({ nodeType: 'inner' }, baseEntry), { props: {
+            num: position + 1,
+            lead: index.lead,
+        }, subEntries: sections });
 };
 export const createLessonRef = (lesson, accessAllowed, baseUrl) => (Object.assign(Object.assign({}, createBaseRef(accessAllowed ? 'ok' : 'forbidden', lesson, baseUrl)), { publicContent: lesson.nodeType === 'broken'
         ? 'broken'
@@ -33,7 +33,7 @@ export class LessonProvider extends BaseResourceProvider {
     }
     async fetch() {
         const baseResource = createBaseResource(this.entry, this.crumbs, this.settings.baseUrl);
-        if (!this.access.accepts()) {
+        if (!this.accessCheck.accepts()) {
             return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: this.entry.nodeType === 'broken'
                     ? {
                         type: 'broken',
@@ -49,7 +49,7 @@ export class LessonProvider extends BaseResourceProvider {
                 } });
         }
         const sections = this.entry.subEntries.map((section) => {
-            const sectionAccess = this.access.step(section.link);
+            const sectionAccess = this.accessCheck.step(section);
             return Object.assign(Object.assign({}, createBaseRef(sectionAccess.accepts() ? 'ok' : 'forbidden', section, this.settings.baseUrl)), { publicContent: section.nodeType === 'broken' ? 'broken' : {} });
         });
         const next = this.parent.getNextLesson(this.position);
@@ -64,7 +64,7 @@ export class LessonProvider extends BaseResourceProvider {
             } });
     }
     find(link) {
-        if (!this.access.accepts()) {
+        if (!this.accessCheck.accepts()) {
             return new NotFoundProvider();
         }
         if (this.entry.nodeType === 'broken') {
@@ -76,8 +76,8 @@ export class LessonProvider extends BaseResourceProvider {
         }
         return new LessonSectionProvider(this, result.child, result.pos, [...this.crumbs, {
                 title: this.entry.title,
-                path: this.entry.location.path
-            }], this.access.step(result.child.link), this.settings);
+                path: this.entry.path
+            }], this.accessCheck.step(result.child), this.settings);
     }
     getNextSection(pos) {
         if (this.entry.nodeType === 'broken') {
@@ -87,7 +87,7 @@ export class LessonProvider extends BaseResourceProvider {
         if (section === undefined) {
             return null;
         }
-        const childAccess = this.access.step(section.link);
+        const childAccess = this.accessCheck.step(section);
         return Object.assign(Object.assign({}, createBaseRef(childAccess.accepts() ? 'ok' : 'forbidden', section, this.settings.baseUrl)), { publicContent: section.nodeType === 'broken' ? 'broken' : {} });
     }
     getPrevSection(pos) {
@@ -98,7 +98,7 @@ export class LessonProvider extends BaseResourceProvider {
         if (section === undefined) {
             return null;
         }
-        const childAccess = this.access.step(section.link);
+        const childAccess = this.accessCheck.step(section);
         return Object.assign(Object.assign({}, createBaseRef(childAccess.accepts() ? 'ok' : 'forbidden', section, this.settings.baseUrl)), { publicContent: section.nodeType === 'broken' ? 'broken' : {} });
     }
     findRepo(repoUrl) {

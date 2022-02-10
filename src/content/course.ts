@@ -1,12 +1,13 @@
 import { existsSync } from "fs";
 import simpleGit from 'simple-git';
 import { CourseIndex } from "../entries";
-import { InnerEntry, createBaseEntry, EntryLocation, createChildLocation } from "./entry.js";
+import { InnerEntry, createBaseEntry, BaseEntry, createBrokenEntry } from "./entry.js";
 import { createBaseResource, ResourceRef, buildAssetPath, Resource, createBaseRef } from './resource.js';
 import { ChapterEntry, ChapterProvider, ChapterRef, createChapterRef, loadChapter } from "./chapter.js";
 import type { CoursesRootProvider } from "./content";
 import { findChild, readIndexFile, readYamlFile } from "./content-node.js";
 import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
+import { create } from "domain";
 
 export type CourseEntry = InnerEntry<{
   image: string,
@@ -33,34 +34,29 @@ export type CourseRef = ResourceRef<{
 }>;
 
 export const loadCourse = async (
-  parentLocation: EntryLocation,
+  parentBase: BaseEntry,
   folderName: string,
 ): Promise<CourseEntry> => {
   const index = await readIndexFile<CourseIndex>(
-    `${parentLocation.fsPath}/${folderName}`
+    `${parentBase.fsPath}/${folderName}`
   );
 
-  const location = createChildLocation(parentLocation, folderName);
-
   if (index === 'not-found') {
-    return {
-      nodeType: 'broken',
-      ...createBaseEntry(location, folderName, {}),
-    };
+    return createBrokenEntry(parentBase, folderName);
   }
 
-  const isGitRepo = existsSync(`${parentLocation.fsPath}/${folderName}/.git`);
+  const isGitRepo = existsSync(`${parentBase.fsPath}/${folderName}/.git`);
   let repo = null;
 
   if (isGitRepo) {
     const git = simpleGit({
-      baseDir: `${parentLocation.fsPath}/${folderName}`,
+      baseDir: `${parentBase.fsPath}/${folderName}`,
       binary: 'git',
     });
     
     const url = await git.remote(['get-url', 'origin']) as string;
     const repoParams = await readYamlFile<{branch: string, secret: string}>(
-      `${parentLocation.fsPath}/${folderName}/repo.yml`
+      `${parentBase.fsPath}/${folderName}/repo.yml`
     );
     
     if (repoParams === 'not-found') {
@@ -79,25 +75,23 @@ export const loadCourse = async (
     console.log('git repo', index.title, repo);
   }
 
+  const baseEntry = createBaseEntry(parentBase, index, folderName);
+
   const chapters = await Promise.all(
     index.chapters === undefined ? [] : 
     index.chapters.map((chapterLink: string) => loadChapter(
-      location, chapterLink
+      baseEntry, chapterLink
     ))
   );
 
   return {
     nodeType: 'inner',
-    ...createBaseEntry(
-      location,
-      folderName,
-      {
-        image: index.image,
-        lead: index.lead,
-        repo,
-      },
-      index.title,
-    ),
+    ...baseEntry,
+    props: {
+      image: index.image,
+      lead: index.lead,
+      repo,
+    },
     subEntries: chapters,
   };
 }
@@ -115,7 +109,7 @@ export const createCourseRef = (
   publicContent: courseEntry.nodeType === 'broken'
     ? 'broken'
     : {
-      image: buildAssetPath(courseEntry.props.image, courseEntry.location.path, baseUrl),
+      image: buildAssetPath(courseEntry.props.image, courseEntry.path, baseUrl),
       lead: courseEntry.props.lead,
     }
 });
@@ -125,7 +119,7 @@ export class CourseProvider extends BaseResourceProvider<
 > {
   public async reload(): Promise<void> {
     const git = simpleGit({
-      baseDir: this.entry.location.fsPath,
+      baseDir: this.entry.fsPath,
       binary: 'git',
     });
     
@@ -133,7 +127,7 @@ export class CourseProvider extends BaseResourceProvider<
     console.log('pullResult', pullResult);
 
     const index = await readIndexFile<CourseIndex>(
-      this.entry.location.fsPath,
+      this.entry.fsPath,
     );
   
     if (index === 'not-found') {
@@ -147,7 +141,7 @@ export class CourseProvider extends BaseResourceProvider<
     const chapters = await Promise.all(
       index.chapters === undefined ? [] : 
       index.chapters.map((chapterLink: string) => loadChapter(
-        this.entry.location, chapterLink
+        this.entry, chapterLink
       ))
     );
   
@@ -162,7 +156,7 @@ export class CourseProvider extends BaseResourceProvider<
       this.settings.baseUrl
     );
     
-    if (!this.access.accepts()) {
+    if (!this.accessCheck.accepts()) {
       return {
         ...baseResource,
         status: 'forbidden',
@@ -172,7 +166,7 @@ export class CourseProvider extends BaseResourceProvider<
           } : {
             type: 'public',
             image: buildAssetPath(
-              this.entry.props.image, this.entry.location.path, this.settings.baseUrl
+              this.entry.props.image, this.entry.path, this.settings.baseUrl
             ),
             lead: this.entry.props.lead,
           }
@@ -191,8 +185,8 @@ export class CourseProvider extends BaseResourceProvider<
   
     const chapters = this.entry.subEntries.map(
       (chapter) => {
-        const access = this.access.step(chapter.link);
-        return createChapterRef(chapter, access.accepts(), this.settings.baseUrl);
+        const accessCheck = this.accessCheck.step(chapter);
+        return createChapterRef(chapter, accessCheck.accepts(), this.settings.baseUrl);
       }
     );
 
@@ -202,7 +196,7 @@ export class CourseProvider extends BaseResourceProvider<
       content: {
         type: 'full',
         image: buildAssetPath(
-          this.entry.props.image, this.entry.location.path, this.settings.baseUrl
+          this.entry.props.image, this.entry.path, this.settings.baseUrl
         ),
         lead: this.entry.props.lead,
         chapters,
@@ -211,7 +205,7 @@ export class CourseProvider extends BaseResourceProvider<
   }
 
   public find(link: string): ChapterProvider | NotFoundProvider  {
-    if (!this.access.accepts()) {
+    if (!this.accessCheck.accepts()) {
       return new NotFoundProvider();
     }
     
@@ -230,9 +224,9 @@ export class CourseProvider extends BaseResourceProvider<
       result.pos,
       [...this.crumbs, { 
         title: this.entry.title, 
-        path: this.entry.location.path
+        path: this.entry.path
       }],
-      this.access.step(result.child.link),
+      this.accessCheck.step(result.child),
       this.settings
     );
   }

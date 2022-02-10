@@ -2,7 +2,7 @@ import { CoursesRootIndex, DivisionIndex } from "../entries.js";
 import { Resource, createBaseResource, createBaseRef } from "./resource.js";
 import { readIndexFile } from "./content-node.js";
 import { CourseEntry, CourseProvider, CourseRef, createCourseRef, loadCourse } from "./course.js";
-import { createBaseEntry, createChildLocation, InnerEntry } from "./entry.js";
+import { BaseEntry, createBaseEntry, createBrokenEntry, InnerEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
 
 export interface Division<T extends CourseEntry | CourseRef = CourseEntry> {
@@ -27,23 +27,30 @@ export const loadCoursesRoot = async (
     `${contentFolder}/${coursesFolder}`
   );
 
-  const location = createChildLocation({ path: '', fsPath: contentFolder }, coursesFolder);
+  const parentBase: BaseEntry = {
+    link: coursesFolder,
+    title: '',
+    path: '',
+    fsPath: contentFolder,
+    authors: [],
+    access: 'public',
+    draft: false,
+  };
 
   if (index === 'not-found') {
-    return { 
-      nodeType: 'broken',
-      ...createBaseEntry(location, coursesFolder, {}),
-    };
+    return createBrokenEntry(parentBase, coursesFolder);
   }
+
+  const baseEntry = createBaseEntry(parentBase, index, coursesFolder);
 
   let pos = 0;
   const divisions: (Division)[] = await Promise.all(
     index.divisions.map(async (divisionIndex: DivisionIndex) => ({
-      title: divisionIndex.title,
+      title: divisionIndex.title ?? 'Missing title!',
       lead: divisionIndex.lead,
       courses: await Promise.all(
         divisionIndex.courses.map((courseFolder) => loadCourse(
-          location, courseFolder)
+          baseEntry, courseFolder)
         )
       )
     })
@@ -51,14 +58,10 @@ export const loadCoursesRoot = async (
 
   return {
     nodeType: 'inner',
-    ...createBaseEntry(
-      location,
-      '',
-      {
-        divisions,
-      },
-      '',
-    ),
+    ...baseEntry,
+    props: {
+      divisions,
+    },
     subEntries: [],
   }
 }
@@ -72,7 +75,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
       this.settings.baseUrl
     );
     
-    if (!this.access.accepts()) {
+    if (!this.accessCheck.accepts()) {
       return {
         ...baseResource,
         status: 'forbidden',
@@ -101,7 +104,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
           (division): Division<CourseRef> => ({
             ...division,
             courses: division.courses.map((course): CourseRef => {
-              const childAccess = this.access.step(course.link);
+              const childAccess = this.accessCheck.step(course);
               return createCourseRef(course, childAccess.accepts(), this.settings.baseUrl);
             })
           })
@@ -111,7 +114,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
   }
 
   public find(link: string): CourseProvider | NotFoundProvider {
-    if (!this.access.accepts()) {
+    if (!this.accessCheck.accepts()) {
       return new NotFoundProvider();
     }
     
@@ -134,7 +137,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
       courses[pos], 
       pos, 
       [],
-      this.access.step(courses[pos].link),
+      this.accessCheck.step(courses[pos]),
       this.settings
     );
   }
@@ -157,7 +160,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
             course,
             i,
             [],
-            this.access.step(course.link),
+            this.accessCheck.step(course),
             this.settings
           );
         }

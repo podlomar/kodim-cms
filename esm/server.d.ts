@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { KodimCms } from '.';
-import { Access } from "./content/access.js";
+import { AccessCheck } from "./content/access-check.js";
 export declare class CmsApp {
     readonly router: Router;
     private cms;
-    private getAccess;
-    constructor(cms: KodimCms, getAccess: () => Access);
+    private getAccessCheck;
+    constructor(cms: KodimCms, getAccessCheck: () => AccessCheck);
     private getProviderByPath;
     private handleGetEntry;
     private handleGetAsset;

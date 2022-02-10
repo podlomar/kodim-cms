@@ -1,4 +1,4 @@
-import { Access } from "./access.js";
+import { AccessCheck } from "./access-check.js";
 import { Entry } from "./entry.js";
 import { Crumbs, NotFound, Resource } from "./resource.js";
 export interface ResourceProvider<C extends ResourceProvider<any> = any> {
@@ -24,9 +24,9 @@ export declare abstract class BaseResourceProvider<P extends ResourceProvider | 
     protected readonly parent: P;
     protected readonly position: number;
     protected readonly crumbs: Crumbs;
-    protected readonly access: Access;
+    protected readonly accessCheck: AccessCheck;
     protected readonly settings: ProviderSettings;
-    constructor(parent: P, entry: E, position: number, crumbs: Crumbs, access: Access, settings: ProviderSettings);
+    constructor(parent: P, entry: E, position: number, crumbs: Crumbs, accessCheck: AccessCheck, settings: ProviderSettings);
     search(...[link, ...restLinks]: string[]): ResourceProvider;
     asset(fileName: string): string;
     success(): this;

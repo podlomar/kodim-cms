@@ -24,12 +24,12 @@ export class NotFoundProvider {
     }
 }
 export class BaseResourceProvider {
-    constructor(parent, entry, position, crumbs, access, settings) {
+    constructor(parent, entry, position, crumbs, accessCheck, settings) {
         this.entry = entry;
         this.parent = parent;
         this.position = position;
         this.crumbs = crumbs;
-        this.access = access;
+        this.accessCheck = accessCheck;
         this.settings = settings;
     }
     search(...[link, ...restLinks]) {
@@ -43,7 +43,7 @@ export class BaseResourceProvider {
         return child.search(...restLinks);
     }
     asset(fileName) {
-        return `${this.entry.location.fsPath}/assets/${fileName}`;
+        return `${this.entry.fsPath}/assets/${fileName}`;
     }
     success() {
         return this;

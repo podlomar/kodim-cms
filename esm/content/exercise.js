@@ -3,7 +3,7 @@ import { existsSync } from "fs";
 import yaml from "yaml";
 import lineReader from "line-reader";
 import { el, getChildren, getTag, isElement } from "../jsml.js";
-import { createBaseEntry, createChildLocation } from "./entry.js";
+import { createBaseEntry, createBrokenEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { MarkdownProcessor } from "../markdown.js";
 import { createBaseResource } from "./resource.js";
@@ -60,26 +60,25 @@ const getExcFilePath = (fsPath) => {
     }
     return null;
 };
-export const loadExercise = async (parentLocation, link, pos) => {
-    const fsPath = path.join(parentLocation.fsPath, '..', link.replace('>', '/'));
+export const loadExercise = async (parentBase, link, pos) => {
+    const fsPath = path.join(parentBase.fsPath, '..', link.replace('>', '/'));
     const assignPath = getExcFilePath(fsPath);
-    const location = createChildLocation(parentLocation, link, fsPath);
     if (assignPath === null) {
-        return Object.assign({ nodeType: 'broken' }, createBaseEntry(location, link, {}));
+        return createBrokenEntry(parentBase, link);
     }
     const frontMatter = await loadFrontMatter(assignPath);
-    return Object.assign({ nodeType: 'leaf' }, createBaseEntry(location, link, {
-        demand: frontMatter.demand,
-        num: pos + 1,
-        hasSolution: frontMatter.hasSolution || false,
-    }, frontMatter.title));
+    return Object.assign(Object.assign({ nodeType: 'leaf' }, createBaseEntry(parentBase, frontMatter, link, fsPath)), { props: {
+            demand: frontMatter.demand,
+            num: pos + 1,
+            hasSolution: frontMatter.hasSolution || false,
+        } });
 };
 export class ExerciseProvider extends BaseResourceProvider {
-    constructor(parent, entry, position, crumbs, access, settings) {
-        super(parent, entry, position, crumbs, access, settings);
+    constructor(parent, entry, position, crumbs, accessCheck, settings) {
+        super(parent, entry, position, crumbs, accessCheck, settings);
         this.buildAssetPath = (fileName) => {
             const baseUrl = this.settings.baseUrl;
-            return `${baseUrl}/assets${this.entry.location.path}/${fileName}`;
+            return `${baseUrl}/assets${this.entry.path}/${fileName}`;
         };
         this.markdownProcessor = new MarkdownProcessor(this.buildAssetPath);
     }
@@ -89,7 +88,7 @@ export class ExerciseProvider extends BaseResourceProvider {
     async fetch() {
         var _a;
         const baseResource = createBaseResource(this.entry, this.crumbs, this.settings.baseUrl);
-        if (!this.access.accepts()) {
+        if (!this.accessCheck.accepts()) {
             return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: {
                     type: this.entry.nodeType === 'broken' ? 'broken' : 'public',
                 } });
@@ -99,7 +98,7 @@ export class ExerciseProvider extends BaseResourceProvider {
                     type: 'broken',
                 } });
         }
-        const assignPath = getExcFilePath(this.entry.location.fsPath);
+        const assignPath = getExcFilePath(this.entry.fsPath);
         if (assignPath === null) {
             throw new Error('no assign file found');
         }
@@ -122,7 +121,7 @@ export class ExerciseProvider extends BaseResourceProvider {
             } });
     }
     async fetchAssign() {
-        const excPath = getExcFilePath(this.entry.location.fsPath);
+        const excPath = getExcFilePath(this.entry.fsPath);
         if (excPath === null) {
             throw new Error('no assign file found');
         }
@@ -134,7 +133,7 @@ export class ExerciseProvider extends BaseResourceProvider {
         const attrs = {
             num: this.entry.props.num,
             title: this.entry.title,
-            path: this.access.accepts() ? this.entry.location.path : 'forbidden',
+            path: this.accessCheck.accepts() ? this.entry.path : 'forbidden',
             demand: this.entry.props.demand,
             hasSolution: this.entry.props.hasSolution,
         };

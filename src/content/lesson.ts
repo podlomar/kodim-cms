@@ -1,5 +1,5 @@
 import { LessonIndex } from "../entries";
-import { createBaseEntry, createChildLocation, InnerEntry, EntryLocation } from "./entry.js";
+import { createBaseEntry, InnerEntry, BaseEntry, createBrokenEntry } from "./entry.js";
 import { ResourceRef, createBaseResource, createBaseRef, Resource } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
@@ -28,40 +28,33 @@ export type LessonRef = ResourceRef<{
 }>;
 
 export const loadLesson = async (
-  parentLocation: EntryLocation,
+  parentBase: BaseEntry,
   folderName: string,
   position: number,
 ): Promise<LessonEntry> => {
   const index = await readIndexFile<LessonIndex>(
-    `${parentLocation.fsPath}/${folderName}`
+    `${parentBase.fsPath}/${folderName}`
   );
-  
-  const location = createChildLocation(parentLocation, folderName);
 
   if (index === 'not-found') {
-    return {
-      nodeType: 'broken',
-      ...createBaseEntry(location, folderName, {}),
-    }
+    return createBrokenEntry(parentBase, folderName);
   }
+
+  const baseEntry = createBaseEntry(parentBase, index, folderName);
 
   const sections = await Promise.all(
     index.sections.map((sectionLink: string) => loadLessonSection(
-      location, sectionLink,
+      baseEntry, sectionLink,
     ))
   );
 
   return {
     nodeType: 'inner',
-    ...createBaseEntry(
-      location,
-      folderName,
-      {
-        num: position + 1,
-        lead: index.lead,
-      },
-      index.title,
-    ),    
+    ...baseEntry,
+    props: {
+      num: position + 1,
+      lead: index.lead,
+    },
     subEntries: sections,
   };
 }
@@ -105,7 +98,7 @@ export class LessonProvider extends BaseResourceProvider<
       this.settings.baseUrl
     );
     
-    if (!this.access.accepts()) {
+    if (!this.accessCheck.accepts()) {
       return {
         ...baseResource,
         status: 'forbidden',
@@ -132,7 +125,7 @@ export class LessonProvider extends BaseResourceProvider<
     
     const sections = this.entry.subEntries.map(
       (section) => {
-        const sectionAccess = this.access.step(section.link);
+        const sectionAccess = this.accessCheck.step(section);
         return {
           ...createBaseRef(
             sectionAccess.accepts() ? 'ok' : 'forbidden',
@@ -162,7 +155,7 @@ export class LessonProvider extends BaseResourceProvider<
   }
 
   public find(link: string): LessonSectionProvider | NotFoundProvider {
-    if (!this.access.accepts()) {
+    if (!this.accessCheck.accepts()) {
       return new NotFoundProvider();
     }
     
@@ -181,9 +174,9 @@ export class LessonProvider extends BaseResourceProvider<
       result.pos, 
       [...this.crumbs, { 
         title: this.entry.title, 
-        path: this.entry.location.path
+        path: this.entry.path
       }],
-      this.access.step(result.child.link),
+      this.accessCheck.step(result.child),
       this.settings
     );
   }
@@ -198,7 +191,7 @@ export class LessonProvider extends BaseResourceProvider<
       return null;
     }
     
-    const childAccess = this.access.step(section.link);
+    const childAccess = this.accessCheck.step(section);
     return {
       ...createBaseRef(
         childAccess.accepts() ? 'ok' : 'forbidden',
@@ -219,7 +212,7 @@ export class LessonProvider extends BaseResourceProvider<
       return null;
     }
 
-    const childAccess = this.access.step(section.link);
+    const childAccess = this.accessCheck.step(section);
     return {
       ...createBaseRef(
         childAccess.accepts() ? 'ok' : 'forbidden',

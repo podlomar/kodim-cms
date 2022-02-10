@@ -1,3 +1,25 @@
+import { Entry } from "./entry.js";
+
+export interface User {
+  login: string,
+  access: 'public' | 'registered',
+}
+
+export interface AccessCheck {
+  accepts(): boolean;
+  step(entry: Entry): AccessCheck;
+}
+
+export class AccessDenyAll implements AccessCheck {
+  public accepts(): boolean {
+    return false;
+  }
+
+  public step(): AccessCheck {
+    return this;
+  }
+}
+
 export interface Transition {
   stateIdx: number,
   regex: RegExp;
@@ -64,21 +86,22 @@ const addClaim = (states: State[], claim: string, stateIdx: number = 0): void =>
   addClaim(states, rest, state.next[transIdx].stateIdx);
 }
 
-export interface Access {
-  accepts(): boolean;
-  step(token: string): Access;
-}
-
-export class AccessMachine implements Access {
+export class AccessClaimCheck implements AccessCheck {
   private states: State[];
   private currentStates: Set<number>;
+  private user: User;
 
-  private constructor(states: State[], currentStates: Set<number>) {
+  private constructor(
+    states: State[],
+    currentStates: Set<number>,
+    user: User,
+  ) {
     this.states = states;
     this.currentStates = currentStates;
+    this.user = user;
   }
 
-  public static create(...claims: string[]): AccessMachine {
+  public static create(user: User, ...claims: string[]): AccessClaimCheck {
     const states: State[] = [
       {
         index: 0,
@@ -90,45 +113,59 @@ export class AccessMachine implements Access {
       addClaim(states, claim);
     }
 
-    return new AccessMachine(states, new Set([0]));
+    return new AccessClaimCheck(states, new Set([0]), user);
   }
 
   public accepts(): boolean {
-    return this.currentStates.size > 0;
+    return true;
   }
 
-  public step(token: string): AccessMachine {
+  public step(entry: Entry): AccessCheck {
     const nextStates = new Set<number>();
 
     for (const stateIdx of this.currentStates) {
       const state = this.states[stateIdx];
       for (const transition of state.next) {
-        if (transition.regex.test(token)) {
+        if (transition.regex.test(entry.link)) {
           nextStates.add(transition.stateIdx);
         }
       }
     }
 
-    return new AccessMachine(this.states, nextStates);
+    if (entry.access === 'deny') {
+      return new AccessDenyAll();
+    }
+
+    if (entry.draft) {
+      if (entry.authors.includes(this.user.login)) {
+        return new AccessClaimCheck(this.states, nextStates, this.user);
+      } else {
+        return new AccessDenyAll();
+      }
+    }
+
+    if (entry.access === 'public') {
+      return new AccessClaimCheck(this.states, nextStates, this.user);
+    }
+
+    if (entry.access === 'logged-in' && this.user.access === 'registered') {
+      return new AccessClaimCheck(this.states, nextStates, this.user);
+    }
+    
+    if (nextStates.size === 0) {
+      return new AccessDenyAll();
+    }
+    
+    return new AccessClaimCheck(this.states, nextStates, this.user);
   }
 }
 
-export class AccessGranted implements Access {
+export class AccessGrantAll implements AccessCheck {
   public accepts(): boolean {
     return true;
   }
 
-  public step(token: string): this {
-    return this;
-  }
-}
-
-export class AccessDenied implements Access {
-  public accepts(): boolean {
-    return false;
-  }
-
-  public step(token: string): this {
+  public step(): this {
     return this;
   }
 }

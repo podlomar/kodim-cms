@@ -56,8 +56,8 @@ export const createBaseResource = (
   baseUrl: string
 ): BaseResource => ({
   link: entry.link,
-  path: entry.location.path,
-  url: `${baseUrl}/content${entry.location.path}`,
+  path: entry.path,
+  url: `${baseUrl}/content${entry.path}`,
   title: entry.title,
   crumbs,
 });
@@ -94,8 +94,8 @@ export const createBaseRef = (
 ): BaseRef => ({
   status,
   link: entry.link,
-  path: entry.location.path,
-  url: `${baseUrl}/content${entry.location.path}`,
+  path: entry.path,
+  url: `${baseUrl}/content${entry.path}`,
   title: entry.title,
 });
 

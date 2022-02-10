@@ -1,5 +1,5 @@
 import { ChapterIndex } from "../entries";
-import { createBaseEntry, createChildLocation, EntryLocation, InnerEntry } from "./entry.js";
+import { BaseEntry, createBaseEntry, createBrokenEntry, InnerEntry } from "./entry.js";
 import { Resource, createBaseResource, createBaseRef, ResourceRef } from './resource.js';
 import { findChild, readIndexFile } from "./content-node.js";
 import type { CourseProvider } from "./course";
@@ -22,38 +22,31 @@ export type ChapterRef = ResourceRef<{
 }>;
 
 export const loadChapter = async (
-  parentLocation: EntryLocation,
+  parentBase: BaseEntry,
   folderName: string,
 ): Promise<ChapterEntry> => {
   const index = await readIndexFile<ChapterIndex>(
-    `${parentLocation.fsPath}/${folderName}`
+    `${parentBase.fsPath}/${folderName}`
   );
-  
-  const location = createChildLocation(parentLocation, folderName);
 
   if (index === 'not-found') {
-    return {
-      nodeType: 'broken',
-      ...createBaseEntry(location, folderName, {}),
-    }
+    return createBrokenEntry(parentBase, folderName);
   }
   
+  const baseEntry = createBaseEntry(parentBase, index, folderName);
+
   const lessons = await Promise.all(
     index.lessons.map((lessonLink: string, idx: number) => loadLesson(
-      location, lessonLink, idx,
+      baseEntry, lessonLink, idx,
     ))
   );
 
   return {
     nodeType: 'inner',
-    ...createBaseEntry(
-      location,
-      folderName,
-      {
-        lead: index.lead,
-      },
-      index.title,
-    ),
+    ...baseEntry,
+    props: {
+      lead: index.lead,
+    },
     subEntries: lessons,
   };
 }
@@ -84,7 +77,7 @@ export class ChapterProvider extends BaseResourceProvider<
       this.settings.baseUrl
     );
     
-    if (!this.access.accepts()) {
+    if (!this.accessCheck.accepts()) {
       return {
         ...baseResource,
         status: 'forbidden',
@@ -110,8 +103,8 @@ export class ChapterProvider extends BaseResourceProvider<
 
     const lessons = this.entry.subEntries.map(
       (lesson) => {
-        const access = this.access.step(lesson.link);
-        return createLessonRef(lesson, access.accepts(), this.settings.baseUrl);
+        const accessCheck = this.accessCheck.step(lesson);
+        return createLessonRef(lesson, accessCheck.accepts(), this.settings.baseUrl);
       }
     );
 
@@ -127,7 +120,7 @@ export class ChapterProvider extends BaseResourceProvider<
   }
 
   public find(link: string): LessonProvider | NotFoundProvider {
-    if (!this.access.accepts()) {
+    if (!this.accessCheck.accepts()) {
       return new NotFoundProvider();
     }
     
@@ -146,9 +139,9 @@ export class ChapterProvider extends BaseResourceProvider<
       result.pos, 
       [...this.crumbs, { 
         title: this.entry.title, 
-        path: this.entry.location.path
+        path: this.entry.path
       }],
-      this.access.step(result.child.link),
+      this.accessCheck.step(result.child),
       this.settings
     );
   }
@@ -163,7 +156,7 @@ export class ChapterProvider extends BaseResourceProvider<
       return null;
     }
 
-    const childAccess = this.access.step(lesson.link);
+    const childAccess = this.accessCheck.step(lesson);
     return createLessonRef(lesson, childAccess.accepts(), this.settings.baseUrl);
   }
 
@@ -177,7 +170,7 @@ export class ChapterProvider extends BaseResourceProvider<
       return null;
     }
 
-    const childAccess = this.access.step(lesson.link);
+    const childAccess = this.accessCheck.step(lesson);
     return createLessonRef(lesson, childAccess.accepts(), this.settings.baseUrl);
   }
 

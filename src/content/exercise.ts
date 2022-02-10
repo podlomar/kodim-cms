@@ -4,9 +4,9 @@ import yaml from "yaml";
 import lineReader from "line-reader";
 import { ExerciseFrontMatter } from "../entries.js";
 import { el, getChildren, getTag, isElement, Jsml, JsmlElement } from "../jsml.js";
-import { createBaseEntry, createChildLocation, EntryLocation, LeafEntry } from "./entry.js";
+import { BaseEntry, createBaseEntry, createBrokenEntry, LeafEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
-import { Access } from "./access.js";
+import { AccessCheck } from "./access-check.js";
 import { LessonSectionProvider } from "./lesson-section.js";
 import { MarkdownProcessor } from "../markdown.js";
 import { createBaseResource, Crumbs, Resource } from "./resource.js";
@@ -103,19 +103,15 @@ const getExcFilePath = (fsPath: string): string | null => {
 }
 
 export const loadExercise = async (
-  parentLocation: EntryLocation,
+  parentBase: BaseEntry,
   link: string,
   pos: number,
 ): Promise<ExerciseEntry> => {
-  const fsPath = path.join(parentLocation.fsPath, '..', link.replace('>', '/'));
+  const fsPath = path.join(parentBase.fsPath, '..', link.replace('>', '/'));
   const assignPath = getExcFilePath(fsPath);
-  const location = createChildLocation(parentLocation, link, fsPath);
 
   if (assignPath === null) {
-    return {
-      nodeType: 'broken',
-      ...createBaseEntry(location, link, {})
-    }
+    return createBrokenEntry(parentBase, link);
   }
 
   const frontMatter = await loadFrontMatter<ExerciseFrontMatter>(
@@ -124,16 +120,12 @@ export const loadExercise = async (
   
   return {
     nodeType: 'leaf',
-    ...createBaseEntry(
-      location,
-      link,
-      {
-        demand: frontMatter.demand,
-        num: pos + 1,
-        hasSolution: frontMatter.hasSolution || false,
-      },
-      frontMatter.title
-    )
+    ...createBaseEntry(parentBase, frontMatter, link, fsPath),
+    props: {
+      demand: frontMatter.demand,
+      num: pos + 1,
+      hasSolution: frontMatter.hasSolution || false,
+    },
   };
 }
 
@@ -147,10 +139,10 @@ export class ExerciseProvider extends BaseResourceProvider<
     entry: ExerciseEntry, 
     position: number, 
     crumbs: Crumbs,
-    access: Access,
+    accessCheck: AccessCheck,
     settings: ProviderSettings,
   ) {
-    super(parent, entry, position, crumbs, access, settings);
+    super(parent, entry, position, crumbs, accessCheck, settings);
     this.markdownProcessor = new MarkdownProcessor(
       this.buildAssetPath,
     );
@@ -162,7 +154,7 @@ export class ExerciseProvider extends BaseResourceProvider<
 
   private buildAssetPath = (fileName: string): string => {
     const baseUrl = this.settings.baseUrl;
-    return `${baseUrl}/assets${this.entry.location.path}/${fileName}`;
+    return `${baseUrl}/assets${this.entry.path}/${fileName}`;
   }
 
   public async fetch(): Promise<ExerciseResource> {
@@ -171,7 +163,7 @@ export class ExerciseProvider extends BaseResourceProvider<
       this.settings.baseUrl
     );
     
-    if (!this.access.accepts()) {
+    if (!this.accessCheck.accepts()) {
       return {
         ...baseResource,
         status: 'forbidden',
@@ -191,7 +183,7 @@ export class ExerciseProvider extends BaseResourceProvider<
       };
     }
     
-    const assignPath = getExcFilePath(this.entry.location.fsPath);
+    const assignPath = getExcFilePath(this.entry.fsPath);
     if (assignPath === null) {
       throw new Error('no assign file found');
     }
@@ -223,7 +215,7 @@ export class ExerciseProvider extends BaseResourceProvider<
   }
 
   public async fetchAssign(): Promise<JsmlElement> {
-    const excPath = getExcFilePath(this.entry.location.fsPath);
+    const excPath = getExcFilePath(this.entry.fsPath);
     if (excPath === null) {
       throw new Error('no assign file found');
     }    
@@ -237,7 +229,7 @@ export class ExerciseProvider extends BaseResourceProvider<
     const attrs = {
       num: this.entry.props.num,
       title: this.entry.title,
-      path: this.access.accepts() ? this.entry.location.path : 'forbidden',
+      path: this.accessCheck.accepts() ? this.entry.path : 'forbidden',
       demand: this.entry.props.demand,
       hasSolution: this.entry.props.hasSolution,
     };

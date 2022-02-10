@@ -1,51 +1,79 @@
-export interface EntryLocation {
-  path: string;
-  fsPath: string;
-}
+import { EntryIndex } from "../entries";
 
-export const createChildLocation = (
-  parentLocation: EntryLocation,
-  link: string,
-  fsPath?: string,
-) => ({
-  path: `${parentLocation.path}/${link}`,
-  fsPath: fsPath ?? `${parentLocation.fsPath}/${link}`,
-});
+export type EntryAccess = 'public' | 'logged-in' | 'claim' | 'deny';
 
-export interface BaseEntry<Props extends {} = any> {
+export interface BaseEntry {
   link: string;
   title: string;
-  location: EntryLocation;
-  props: Props;
+  path: string,
+  fsPath: string,
+  authors: string[],
+  draft: boolean,
+  access: EntryAccess,
 };
 
 export const createBaseEntry = <Props>(
-  location: EntryLocation,
+  parentBase: BaseEntry,
+  index: EntryIndex,
   link: string,
-  props: Props,
-  title?: string,
-): BaseEntry<Props> => ({
-  link,
-  title: title ?? link,
-  location,
-  props,
-});
+  fsPath?: string,
+): BaseEntry => {
+  let authors = parentBase.authors;
+  
+  if (index.author !== undefined) {
+    if (typeof index.author === 'string') {
+      authors = [...authors, index.author];
+    } else {
+      authors = [...authors, ...index.author];
+    }
+  }
 
-export interface OkLeafEntry<Props extends {}> extends BaseEntry<Props> {
+  return {
+    link,
+    title: index.title ?? link,
+    path: `${parentBase.path}/${link}`,
+    fsPath: fsPath ?? `${parentBase.fsPath}/${link}`,
+    authors,
+    draft: index.draft ?? false,
+    access: index.access ?? 'claim',
+  };
+};
+
+export interface OkLeafEntry<Props extends {}> extends BaseEntry {
   nodeType: 'leaf',
+  props: Props,
 }
 
 export interface OkInnerEntry<
   Props extends {},
   SubEntry extends Entry = any
-> extends BaseEntry<Props> {
+> extends BaseEntry {
   nodeType: 'inner',
+  props: Props,
   subEntries: SubEntry[],
 }
 
 export interface BrokenEntry extends BaseEntry {
   nodeType: 'broken',
 }
+
+export const createBrokenEntry = (
+  parentBase: BaseEntry,
+  link: string,
+  fsPath?: string,
+): BrokenEntry => {
+
+  return {
+    nodeType: 'broken',
+    link,
+    title: link,
+    path: `${parentBase.path}/${link}`,
+    fsPath: fsPath ?? `${parentBase.fsPath}/${link}`,
+    authors: parentBase.authors,
+    draft: false,
+    access: 'claim',
+  };
+};
 
 export type LeafEntry<Props extends {} = {}> = OkLeafEntry<Props> | BrokenEntry;
 

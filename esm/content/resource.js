@@ -1,8 +1,8 @@
 ;
 export const createBaseResource = (entry, crumbs, baseUrl) => ({
     link: entry.link,
-    path: entry.location.path,
-    url: `${baseUrl}/content${entry.location.path}`,
+    path: entry.path,
+    url: `${baseUrl}/content${entry.path}`,
     title: entry.title,
     crumbs,
 });
@@ -14,8 +14,8 @@ export const createNotFound = () => ({
 export const createBaseRef = (status, entry, baseUrl) => ({
     status,
     link: entry.link,
-    path: entry.location.path,
-    url: `${baseUrl}/content${entry.location.path}`,
+    path: entry.path,
+    url: `${baseUrl}/content${entry.path}`,
     title: entry.title,
 });
 export const buildAssetPath = (fileName, entryPath, baseUrl) => {

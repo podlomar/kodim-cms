@@ -9,7 +9,7 @@ export class KodimCms {
         const cms = new KodimCms(baseUrl, root);
         return cms;
     }
-    getRoot(access) {
-        return new CoursesRootProvider(null, this.coursesRoot, 0, [], access.step('kurzy'), { baseUrl: this.baseUrl });
+    getRoot(accessCheck) {
+        return new CoursesRootProvider(null, this.coursesRoot, 0, [], accessCheck.step(this.coursesRoot), { baseUrl: this.baseUrl });
     }
 }

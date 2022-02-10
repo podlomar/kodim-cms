@@ -1,4 +1,4 @@
-import { Access } from "./access.js";
+import { AccessCheck } from "./access-check.js";
 import { Entry } from "./entry.js";
 import { createNotFound, Crumbs, NotFound, Resource, ForbiddenResource, PublicContent, BrokenContent, createBaseResource } from "./resource.js";
 
@@ -51,7 +51,7 @@ export abstract class BaseResourceProvider<
   protected readonly parent: P;
   protected readonly position: number;
   protected readonly crumbs: Crumbs;
-  protected readonly access: Access;
+  protected readonly accessCheck: AccessCheck;
   protected readonly settings: ProviderSettings;
   
   public constructor(
@@ -59,14 +59,14 @@ export abstract class BaseResourceProvider<
     entry: E, 
     position: number,
     crumbs: Crumbs,
-    access: Access,
+    accessCheck: AccessCheck,
     settings: ProviderSettings
   ) {
     this.entry = entry;
     this.parent = parent;
     this.position = position;
     this.crumbs = crumbs;
-    this.access = access;
+    this.accessCheck = accessCheck;
     this.settings = settings;
   }
 
@@ -84,7 +84,7 @@ export abstract class BaseResourceProvider<
   }
 
   public asset(fileName: string): string {
-    return `${this.entry.location.fsPath}/assets/${fileName}`;
+    return `${this.entry.fsPath}/assets/${fileName}`;
   }
 
   public success(): this { 
