@@ -17,7 +17,7 @@ export const createBaseEntry = (parentBase, index, link, fsPath) => {
         fsPath: fsPath !== null && fsPath !== void 0 ? fsPath : `${parentBase.fsPath}/${link}`,
         authors,
         draft: (_b = index.draft) !== null && _b !== void 0 ? _b : false,
-        access: (_c = index.access) !== null && _c !== void 0 ? _c : 'claim',
+        access: (_c = index.access) !== null && _c !== void 0 ? _c : parentBase.access,
     };
 };
 export const createBrokenEntry = (parentBase, link, fsPath) => {

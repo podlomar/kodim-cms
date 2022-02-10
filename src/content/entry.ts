@@ -35,7 +35,7 @@ export const createBaseEntry = <Props>(
     fsPath: fsPath ?? `${parentBase.fsPath}/${link}`,
     authors,
     draft: index.draft ?? false,
-    access: index.access ?? 'claim',
+    access: index.access ?? parentBase.access,
   };
 };
 
