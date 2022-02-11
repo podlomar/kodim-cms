@@ -29,6 +29,6 @@ export const createBrokenEntry = (parentBase, link, fsPath) => {
         fsPath: fsPath !== null && fsPath !== void 0 ? fsPath : `${parentBase.fsPath}/${link}`,
         authors: parentBase.authors,
         draft: false,
-        access: 'claim',
+        access: parentBase.access,
     };
 };
