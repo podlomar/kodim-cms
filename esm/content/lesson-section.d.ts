@@ -14,7 +14,7 @@ export declare type LessonSectionResource = Resource<{
 }>;
 export declare type LessonSectionRef = ResourceRef<{}>;
 export declare const processor: import("unified").Processor<import("mdast").Root, import("mdast").Root, import("hast").Root, string>;
-export declare const parseSection: (file: string) => Promise<LessonSectionIndex>;
+export declare const parseSection: (file: string) => Promise<LessonSectionIndex | 'not-found'>;
 export declare const loadLessonSection: (parentBase: BaseEntry, folderName: string) => Promise<LessonSectionEntry>;
 export declare class LessonSectionProvider extends BaseResourceProvider<LessonProvider, LessonSectionEntry, ExerciseProvider> {
     private markdownProcessor;

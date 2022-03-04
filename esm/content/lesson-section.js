@@ -7,7 +7,7 @@ import markdown from "remark-parse";
 import directive from "remark-directive";
 import rehype from "remark-rehype";
 import stringify from "rehype-stringify";
-import { createBaseEntry } from "./entry.js";
+import { createBaseEntry, createBrokenEntry } from "./entry.js";
 import { ExerciseProvider, loadExercise } from "./exercise.js";
 import { findChild } from "./content-node.js";
 import { MarkdownProcessor } from "../markdown.js";
@@ -18,31 +18,45 @@ export const processor = unified()
     .use(rehype)
     .use(stringify);
 export const parseSection = async (file) => {
-    const text = await fs.readFile(file, "utf-8");
-    const tree = processor.parse(text);
-    let title = null;
-    let excs = [];
-    for (const node of tree.children) {
-        if (node.type === "heading" && node.depth === 2) {
-            const content = node.children[0];
-            if (content.type === "text" && title === null) {
-                title = content.value;
+    try {
+        const text = await fs.readFile(file, "utf-8");
+        const tree = processor.parse(text);
+        let title = null;
+        let excs = [];
+        for (const node of tree.children) {
+            if (node.type === "heading" && node.depth === 2) {
+                const content = node.children[0];
+                if (content.type === "text" && title === null) {
+                    title = content.value;
+                }
+            }
+            if (node.type === "leafDirective" && node.name === "exc") {
+                const content = node.children[0];
+                if (content.type === "text") {
+                    excs.push(content.value.trim());
+                }
             }
         }
-        if (node.type === "leafDirective" && node.name === "exc") {
-            const content = node.children[0];
-            if (content.type === "text") {
-                excs.push(content.value.trim());
-            }
+        if (title === null) {
+            title = path.basename(file);
+        }
+        return { title, excs };
+    }
+    catch (err) {
+        const { code } = err;
+        if (code === 'ENOENT') {
+            return 'not-found';
+        }
+        else {
+            throw err;
         }
     }
-    if (title === null) {
-        title = path.basename(file);
-    }
-    return { title, excs };
 };
 export const loadLessonSection = async (parentBase, folderName) => {
     const index = await parseSection(`${parentBase.fsPath}/${folderName}.md`);
+    if (index === 'not-found') {
+        return createBrokenEntry(parentBase, folderName);
+    }
     const baseEntry = createBaseEntry(parentBase, index, folderName);
     let excsCount = 0;
     const exercises = await Promise.all(index.excs.map((link, idx) => loadExercise(baseEntry, link, excsCount + idx)));

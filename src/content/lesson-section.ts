@@ -9,7 +9,7 @@ import directive from "remark-directive";
 import rehype from "remark-rehype";
 import stringify from "rehype-stringify";
 import { LessonSectionIndex } from "../entries";
-import { InnerEntry, createBaseEntry, BaseEntry } from "./entry.js";
+import { InnerEntry, createBaseEntry, BaseEntry, createBrokenEntry } from "./entry.js";
 import { ExerciseEntry, ExerciseProvider, loadExercise } from "./exercise.js";
 import { findChild } from "./content-node.js";
 import { MarkdownProcessor } from "../markdown.js";
@@ -33,34 +33,43 @@ export const processor = unified()
   .use(rehype)
   .use(stringify);
 
-export const parseSection = async (file: string): Promise<LessonSectionIndex> => {
-  const text = await fs.readFile(file, "utf-8");
-  const tree = processor.parse(text);
-  
-  let title: string | null = null;
-  let excs: string[] = [];
+export const parseSection = async (file: string): Promise<LessonSectionIndex | 'not-found'> => {
+  try {
+    const text = await fs.readFile(file, "utf-8");
+    const tree = processor.parse(text);
 
-  for (const node of tree.children) {
-    if (node.type === "heading" && node.depth === 2) {
-      const content = node.children[0];
-      if (content.type === "text" && title === null) {
-        title = content.value;
+    let title: string | null = null;
+    let excs: string[] = [];
+
+    for (const node of tree.children) {
+      if (node.type === "heading" && node.depth === 2) {
+        const content = node.children[0];
+        if (content.type === "text" && title === null) {
+          title = content.value;
+        }
+      }
+
+      if (node.type === "leafDirective" && node.name === "exc") {
+        const content = node.children[0];
+        if (content.type === "text") {
+          excs.push(content.value.trim());
+        }
       }
     }
 
-    if (node.type === "leafDirective" && node.name === "exc") {
-      const content = node.children[0];
-      if (content.type === "text") {
-        excs.push(content.value.trim());
-      }
+    if (title === null) {
+      title = path.basename(file);
+    }
+
+    return { title, excs };
+  } catch (err: any) {
+    const { code } = err;
+    if (code === 'ENOENT') {
+      return 'not-found';
+    } else {
+      throw err;
     }
   }
-
-  if (title === null) {
-    title = path.basename(file);
-  }
-
-  return { title, excs };
 };
 
 export const loadLessonSection = async (
@@ -71,9 +80,13 @@ export const loadLessonSection = async (
     `${parentBase.fsPath}/${folderName}.md`
   );
 
+  if (index === 'not-found') {
+    return createBrokenEntry(parentBase, folderName);
+  }
+
   const baseEntry = createBaseEntry(parentBase, index, folderName);
 
-  let excsCount = 0; 
+  let excsCount = 0;
   const exercises = await Promise.all(
     index.excs.map((link: string, idx: number) => loadExercise(
       baseEntry, link, excsCount + idx
@@ -94,9 +107,9 @@ export class LessonSectionProvider extends BaseResourceProvider<
   private markdownProcessor: MarkdownProcessor;
 
   constructor(
-    parent: LessonProvider, 
-    entry: LessonSectionEntry, 
-    position: number, 
+    parent: LessonProvider,
+    entry: LessonSectionEntry,
+    position: number,
     crumbs: Crumbs,
     accessCheck: AccessCheck,
     settings: ProviderSettings
@@ -108,7 +121,7 @@ export class LessonSectionProvider extends BaseResourceProvider<
       'exc', buildExcTransform(this),
     );;
   }
-  
+
   private buildAssetPath = (fileName: string) => buildAssetPath(
     fileName, path.join(this.entry.path, '..'), this.settings.baseUrl
   )
@@ -118,7 +131,7 @@ export class LessonSectionProvider extends BaseResourceProvider<
       this.crumbs,
       this.settings.baseUrl
     );
-    
+
     if (!this.accessCheck.accepts()) {
       return {
         ...baseResource,
@@ -128,7 +141,7 @@ export class LessonSectionProvider extends BaseResourceProvider<
         }
       };
     }
-    
+
     if (this.entry.nodeType === 'broken') {
       return {
         ...createBaseResource(
@@ -142,11 +155,11 @@ export class LessonSectionProvider extends BaseResourceProvider<
         }
       }
     }
-    
+
     const next = this.parent.getNextSection(this.position);
     const prev = this.parent.getPrevSection(this.position);
     const jsml = await this.markdownProcessor.process(`${this.entry.fsPath}.md`);
-    
+
     return {
       ...createBaseResource(
         this.entry,
@@ -167,7 +180,7 @@ export class LessonSectionProvider extends BaseResourceProvider<
     if (!this.accessCheck.accepts()) {
       return new NotFoundProvider();
     }
-    
+
     if (this.entry.nodeType === 'broken') {
       return new NotFoundProvider();
     }
@@ -176,13 +189,13 @@ export class LessonSectionProvider extends BaseResourceProvider<
     if (result === null) {
       return new NotFoundProvider();
     }
-    
+
     return new ExerciseProvider(
-      this, 
+      this,
       result.child,
-      result.pos, 
-      [...this.crumbs, { 
-        title: this.entry.title, 
+      result.pos,
+      [...this.crumbs, {
+        title: this.entry.title,
         path: this.entry.path
       }],
       this.accessCheck.step(result.child),
@@ -201,11 +214,11 @@ export class LessonSectionProvider extends BaseResourceProvider<
     }
 
     return new ExerciseProvider(
-      this, 
+      this,
       result.child,
-      result.pos, 
-      [...this.crumbs, { 
-        title: this.entry.title, 
+      result.pos,
+      [...this.crumbs, {
+        title: this.entry.title,
         path: this.entry.path
       }],
       this.accessCheck.step(result.child),
