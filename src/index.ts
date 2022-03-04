@@ -1,29 +1,33 @@
-import { CoursesRootEntry, CoursesRootProvider, loadCoursesRoot } from "./content/content.js";
-import { AccessCheck } from "./content/access-check.js";
+import { RootEntry, RootLoader } from "./content/root.js";
+import { OkQuery } from "./core/query.js";
 
-export class KodimCms{
+export class KodimCms {
   public readonly baseUrl: string;
-  private readonly coursesRoot: CoursesRootEntry;
-  
-  private constructor(baseUrl: string, coursesRoot: CoursesRootEntry) {
+  private readonly root: RootEntry;
+
+  private constructor(baseUrl: string, root: RootEntry) {
     this.baseUrl = baseUrl;
-    this.coursesRoot = coursesRoot;
+    this.root = root;
   }
 
   public static async load(contentFolder: string, baseUrl: string): Promise<KodimCms> {
-    const root = await loadCoursesRoot(contentFolder, "kurzy");
-    const cms = new KodimCms(baseUrl, root);
+    const rootEntry = await new RootLoader(contentFolder).loadOne('kurzy', 0);
+    const cms = new KodimCms(baseUrl, rootEntry);
     return cms;
   }
 
-  public getRoot(accessCheck: AccessCheck): CoursesRootProvider {
-    return new CoursesRootProvider(
-      null, 
-      this.coursesRoot, 
-      0,
-      [],
-      accessCheck.step(this.coursesRoot),
-      { baseUrl: this.baseUrl }
-    );
+  public query(): OkQuery<RootEntry> {
+    return OkQuery.of(this.root);
   }
+
+  // public getRoot(accessCheck: AccessCheck): CoursesRootProvider {
+  //   return new CoursesRootProvider(
+  //     null,
+  //     this.coursesRoot,
+  //     0,
+  //     [],
+  //     accessCheck.step(this.coursesRoot),
+  //     { baseUrl: this.baseUrl }
+  //   );
+  // }
 }

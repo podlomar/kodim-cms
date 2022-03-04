@@ -7,17 +7,7 @@ export interface CrumbStep {
 
 export type Crumbs = CrumbStep[];
 
-export type PublicContent<Pub extends {}> = {
-  type: 'public',
-} & Pub;
 
-export type FullContent<Full extends {}> = {
-  type: 'full',
-} & Full;
-
-export type BrokenContent<Bro extends {}> = {
-  type: 'broken',
-} & Bro;
 
 export interface BaseResource {
   readonly link: string,
@@ -29,16 +19,16 @@ export interface BaseResource {
 
 export interface OkResource<
   Full extends {}, Bro extends {},
-> extends BaseResource {
+  > extends BaseResource {
   readonly status: 'ok',
-  readonly content: FullContent<Full> | BrokenContent<Bro>;
+  readonly content: FullResourceContent<Full> | BrokenResourceContent<Bro>;
 }
 
 export interface ForbiddenResource<
   Pub extends {}, Bro extends {},
-> extends BaseResource {
+  > extends BaseResource {
   readonly status: 'forbidden',
-  readonly content: PublicContent<Pub> | BrokenContent<Bro>;
+  readonly content: PublicResourceContent<Pub> | BrokenResourceContent<Bro>;
 }
 
 export type Resource<Full extends {} = {}, Pub extends {} = {}, Bro extends {} = {}> = (
@@ -47,7 +37,7 @@ export type Resource<Full extends {} = {}, Pub extends {} = {}, Bro extends {} =
 );
 
 export interface NotFound {
-  readonly status: 'not-found',  
+  readonly status: 'not-found',
 };
 
 export const createBaseResource = (
@@ -88,7 +78,7 @@ export type ResourceRef<Pub extends {}> = (
 );
 
 export const createBaseRef = (
-  status: 'ok' | 'forbidden', 
+  status: 'ok' | 'forbidden',
   entry: Entry,
   baseUrl: string
 ): BaseRef => ({

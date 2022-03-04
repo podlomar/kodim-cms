@@ -40,15 +40,15 @@ export const codeTransform = async (_, node) => {
     const attrs = getAttrs(node);
     return el('code', attrs, ...children.map((child) => escape(String(child))));
 };
-export const buildExcTransform = (sectionProvider) => async (element, node) => {
+export const buildExcTransform = (lessonSectionEntry) => async (element, node) => {
     const linkChild = element.children[0];
     if (linkChild.type !== 'text') {
         return node;
     }
     const link = linkChild.value;
-    const exerciseProvider = sectionProvider.findProvider(link);
-    if (exerciseProvider === null) {
+    const exerciseEntry = lessonSectionEntry.findSubEntry(link);
+    if (exerciseEntry === null) {
         return node;
     }
-    return exerciseProvider.fetchAssign();
+    return exerciseEntry.fetchAssign();
 };

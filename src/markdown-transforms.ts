@@ -1,7 +1,7 @@
 import { escape } from 'html-escaper';
 import { Element } from 'hast';
 import { JsmlNode, JsmlElement, setAttr, getChildren, el, getAttrs } from "./jsml.js";
-import { LessonSectionProvider } from './content/lesson-section.js';
+import { LessonSectionEntry } from './content/lesson-section.js';
 
 interface RefAttr {
   path: string,
@@ -35,64 +35,62 @@ export const buildAssetTransform = (
 ) => async (
   element: Element, node: JsmlNode
 ): Promise<JsmlNode> => {
-  const refAttr = urlFromElement(element);
-  if (refAttr === null) {
+    const refAttr = urlFromElement(element);
+    if (refAttr === null) {
+      return node;
+    }
+
+    if (refAttr.path.startsWith('assets/')) {
+      return setAttr(
+        node as JsmlElement,
+        refAttr.name,
+        buildAssetPath(refAttr.path.slice(7)),
+      );
+    }
+
     return node;
   }
-
-  if (refAttr.path.startsWith('assets/')) {
-    return setAttr(
-      node as JsmlElement, 
-      refAttr.name, 
-      buildAssetPath(refAttr.path.slice(7)),
-    );
-  }
-
-  return node;
-}
 
 export const buildFigTransform = (
   buildAssetPath: (path: string) => string,
 ) => async (
   element: Element, node: JsmlNode
 ): Promise<JsmlNode> => {
-  const assetTransform = buildAssetTransform(buildAssetPath);
-  const children = getChildren(node as JsmlElement);
-  const attrs = getAttrs(node as JsmlElement);
-  
-  return assetTransform(
-    element,
-    el('fig', { ...attrs, alt: String(children[0])}),
-  );
-}
+    const assetTransform = buildAssetTransform(buildAssetPath);
+    const children = getChildren(node as JsmlElement);
+    const attrs = getAttrs(node as JsmlElement);
+
+    return assetTransform(
+      element,
+      el('fig', { ...attrs, alt: String(children[0]) }),
+    );
+  }
 
 export const codeTransform = async (
   _: Element, node: JsmlNode
 ): Promise<JsmlNode> => {
   const children = getChildren(node as JsmlElement);
   const attrs = getAttrs(node as JsmlElement);
-  
+
   return el(
     'code', attrs, ...children.map((child) => escape(String(child)))
   );
 }
 
-export const buildExcTransform = (
-  sectionProvider: LessonSectionProvider
-) => async (
+export const buildExcTransform = (lessonSectionEntry: LessonSectionEntry) => async (
   element: Element, node: JsmlNode
 ): Promise<JsmlNode> => {
   const linkChild = element.children[0];
   if (linkChild.type !== 'text') {
     return node;
   }
-    
-  const link = linkChild.value;
-  const exerciseProvider = sectionProvider.findProvider(link);
 
-  if (exerciseProvider === null) {
+  const link = linkChild.value;
+  const exerciseEntry = lessonSectionEntry.findSubEntry(link);
+
+  if (exerciseEntry === null) {
     return node;
   }
 
-  return exerciseProvider.fetchAssign();
+  return exerciseEntry.fetchAssign();
 };

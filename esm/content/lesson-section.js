@@ -1,15 +1,13 @@
 import { promises as fs } from "fs";
 import path from 'path';
-import { buildAssetPath, createBaseResource } from "./resource.js";
-import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { unified } from "unified";
 import markdown from "remark-parse";
 import directive from "remark-directive";
 import rehype from "remark-rehype";
 import stringify from "rehype-stringify";
-import { createBaseEntry } from "./entry.js";
-import { ExerciseProvider, loadExercise } from "./exercise.js";
-import { findChild } from "./content-node.js";
+import { InnerEntry } from '../core/entry.js';
+import { EntryLoader } from '../core/loader.js';
+import { ExerciseLoader } from "./exercise.js";
 import { MarkdownProcessor } from "../markdown.js";
 import { buildExcTransform } from "../markdown-transforms.js";
 export const processor = unified()
@@ -41,72 +39,27 @@ export const parseSection = async (file) => {
     }
     return { title, excs };
 };
-export const loadLessonSection = async (parentBase, folderName) => {
-    const index = await parseSection(`${parentBase.fsPath}/${folderName}.md`);
-    const baseEntry = createBaseEntry(parentBase, index, folderName);
-    let excsCount = 0;
-    const exercises = await Promise.all(index.excs.map((link, idx) => loadExercise(baseEntry, link, excsCount + idx)));
-    return Object.assign(Object.assign({ nodeType: 'inner' }, baseEntry), { props: {}, subEntries: exercises });
-};
-export class LessonSectionProvider extends BaseResourceProvider {
-    constructor(parent, entry, position, crumbs, accessCheck, settings) {
-        super(parent, entry, position, crumbs, accessCheck, settings);
-        this.buildAssetPath = (fileName) => buildAssetPath(fileName, path.join(this.entry.path, '..'), this.settings.baseUrl);
-        this.markdownProcessor = new MarkdownProcessor(this.buildAssetPath).useTransform('exc', buildExcTransform(this));
-        ;
+export class LessonSectionLoader extends EntryLoader {
+    async loadEntry(common, index, position) {
+        const sectionEntry = new LessonSectionEntry(this.parentEntry, common, index);
+        const exercises = await new ExerciseLoader(sectionEntry).loadMany(index.excs);
+        sectionEntry.pushSubEntries(...exercises);
+        return sectionEntry;
     }
-    async fetch() {
-        const baseResource = createBaseResource(this.entry, this.crumbs, this.settings.baseUrl);
-        if (!this.accessCheck.accepts()) {
-            return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: {
-                    type: this.entry.nodeType === 'broken' ? 'broken' : 'public',
-                } });
-        }
-        if (this.entry.nodeType === 'broken') {
-            return Object.assign(Object.assign({}, createBaseResource(this.entry, this.crumbs, this.settings.baseUrl)), { status: 'ok', content: {
-                    type: 'broken',
-                } });
-        }
-        const next = this.parent.getNextSection(this.position);
-        const prev = this.parent.getPrevSection(this.position);
-        const jsml = await this.markdownProcessor.process(`${this.entry.fsPath}.md`);
-        return Object.assign(Object.assign({}, createBaseResource(this.entry, this.crumbs, this.settings.baseUrl)), { status: 'ok', content: {
-                type: 'full',
-                jsml,
-                next,
-                prev,
-            } });
+}
+export class LessonSectionEntry extends InnerEntry {
+    constructor(parentEntry, common, index) {
+        super(parentEntry, common, index, []);
+        this.markdownProcessor = new MarkdownProcessor(() => '').useTransform('exc', buildExcTransform(this));
     }
-    find(link) {
-        if (!this.accessCheck.accepts()) {
-            return new NotFoundProvider();
-        }
-        if (this.entry.nodeType === 'broken') {
-            return new NotFoundProvider();
-        }
-        const result = findChild(this.entry.subEntries, link);
-        if (result === null) {
-            return new NotFoundProvider();
-        }
-        return new ExerciseProvider(this, result.child, result.pos, [...this.crumbs, {
-                title: this.entry.title,
-                path: this.entry.path
-            }], this.accessCheck.step(result.child), this.settings);
+    getPublicAttrs() {
+        return {};
     }
-    findProvider(link) {
-        if (this.entry.nodeType === 'broken') {
-            return null;
-        }
-        const result = findChild(this.entry.subEntries, link);
-        if (result === null) {
-            return null;
-        }
-        return new ExerciseProvider(this, result.child, result.pos, [...this.crumbs, {
-                title: this.entry.title,
-                path: this.entry.path
-            }], this.accessCheck.step(result.child), this.settings);
-    }
-    findRepo(repoUrl) {
-        return null;
+    async fetchFullAttrs(index) {
+        var _a, _b, _c, _d;
+        const jsml = await this.markdownProcessor.process(`${this.common.fsPath}.md`);
+        const next = (_b = (_a = this.getNextSibling()) === null || _a === void 0 ? void 0 : _a.getRef()) !== null && _b !== void 0 ? _b : null;
+        const prev = (_d = (_c = this.getPrevSibling()) === null || _c === void 0 ? void 0 : _c.getRef()) !== null && _d !== void 0 ? _d : null;
+        return { jsml, next, prev };
     }
 }

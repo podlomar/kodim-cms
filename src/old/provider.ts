@@ -1,20 +1,17 @@
 import { AccessCheck } from "./access-check.js";
-import { Entry } from "./entry.js";
-import { createNotFound, Crumbs, NotFound, Resource, ForbiddenResource, PublicContent, BrokenContent, createBaseResource } from "./resource.js";
+import { BrokenEntry, InnerEntry, LeafEntry, OkEntry } from "./entry.js";
+import { createNotFound, Crumbs, NotFound, Resource, ForbiddenResource, PublicResourceContent, BrokenResourceContent, createBaseResource } from "./resource.js";
 
-export interface ResourceProvider<
-  C extends ResourceProvider<any> = any
-> {
+export interface ResourceProvider {
   fetch(): Promise<Resource | NotFound>;
-  find(link: string): C | NotFoundProvider;
+  find(link: string): ResourceProvider;
   search(...links: string[]): ResourceProvider;
   asset(fileName: string): string | 'forbidden' | 'not-found';
   findRepo(repoUrl: string): ResourceProvider | null;
   success(): this | null;
-  reload(): Promise<void>;
 }
 
-export class NotFoundProvider implements ResourceProvider<never> {
+export class NotFoundProvider implements ResourceProvider {
   public async fetch(): Promise<NotFound> {
     return createNotFound();
   }
@@ -38,25 +35,62 @@ export class NotFoundProvider implements ResourceProvider<never> {
   public success(): null {
     return null;
   }
+}
 
-  public async reload(): Promise<void> {
-    return;
+export abstract class BaseProvider {
+  protected readonly position: number;
+  protected readonly crumbs: Crumbs;
+  protected readonly accessCheck: AccessCheck;
+  protected readonly settings: ProviderSettings;
+
+  public constructor(
+    position: number,
+    crumbs: Crumbs,
+    accessCheck: AccessCheck,
+    settings: ProviderSettings
+  ) {
+    this.position = position;
+    this.crumbs = crumbs;
+    this.accessCheck = accessCheck;
+    this.settings = settings;
   }
 }
 
+export abstract class LeafProvider<
+  E extends LeafEntry<any>, P extends InnerEntry<any, E>
+> extends BaseProvider {
+  protected readonly entry: E;
+  protected readonly parent: P;
+
+  public constructor(
+    position: number,
+    crumbs: Crumbs,
+    accessCheck: AccessCheck,
+    settings: ProviderSettings
+  ) {
+    this.position = position;
+    this.crumbs = crumbs;
+    this.accessCheck = accessCheck;
+    this.settings = settings;
+  }
+
+}
+
+>
+
 export abstract class BaseResourceProvider<
-  P extends ResourceProvider | null, E extends Entry, C extends ResourceProvider,
-> implements ResourceProvider<C> {
+  P extends ResourceProvider | null, E extends OkEntry | BrokenEntry, C extends ResourceProvider,
+  > implements ResourceProvider {
   protected readonly entry: E;
   protected readonly parent: P;
   protected readonly position: number;
   protected readonly crumbs: Crumbs;
   protected readonly accessCheck: AccessCheck;
   protected readonly settings: ProviderSettings;
-  
+
   public constructor(
-    parent: P, 
-    entry: E, 
+    parent: P,
+    entry: E,
     position: number,
     crumbs: Crumbs,
     accessCheck: AccessCheck,
@@ -87,7 +121,7 @@ export abstract class BaseResourceProvider<
     return `${this.entry.fsPath}/assets/${fileName}`;
   }
 
-  public success(): this { 
+  public success(): this {
     return this;
   }
 
@@ -95,10 +129,7 @@ export abstract class BaseResourceProvider<
     return this.entry;
   }
 
-  public async reload(): Promise<void> {
-    return;
-  }
-
+  public abstract reload(links: string[]): Promise<E>;
   public abstract fetch(): Promise<Resource | NotFound>;
   public abstract findRepo(repoUrl: string): ResourceProvider | null;
   public abstract find(link: string): C | NotFoundProvider;

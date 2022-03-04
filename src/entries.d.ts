@@ -1,4 +1,4 @@
-import { EntryAccess } from "./content/entry";
+export type EntryAccess = 'public' | 'logged-in' | 'claim' | 'deny';
 
 export interface EntryIndex {
   title?: string;
@@ -9,7 +9,7 @@ export interface EntryIndex {
 
 export interface ExerciseFrontMatter extends EntryIndex {
   demand: 1 | 2 | 3 | 4 | 5;
-  hasSolution?: boolean;
+  showSolution?: boolean;
 }
 
 export interface LessonSectionIndex extends EntryIndex {
@@ -37,6 +37,6 @@ export interface DivisionIndex extends EntryIndex {
   courses: string[];
 }
 
-export interface CoursesRootIndex extends EntryIndex {
+export interface RootIndex extends EntryIndex {
   divisions: DivisionIndex[];
 }

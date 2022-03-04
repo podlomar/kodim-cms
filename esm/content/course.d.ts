@@ -1,34 +1,21 @@
-import { InnerEntry, BaseEntry } from "./entry.js";
-import { ResourceRef, Resource } from './resource.js';
-import { ChapterEntry, ChapterProvider, ChapterRef } from "./chapter.js";
-import type { CoursesRootProvider } from "./content";
-import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
-export declare type CourseEntry = InnerEntry<{
-    image: string;
-    lead: string;
-    repo: {
-        url: string;
-        branch: string;
-        secret: string;
-    } | null;
-}, ChapterEntry>;
-export declare type CourseResource = Resource<{
-    image: string;
-    lead: string;
+import { CourseIndex } from '../entries.js';
+import { ChapterEntry, ChapterRef } from './chapter.js';
+import { EntryCommon, InnerEntry } from '../core/entry.js';
+import { EntryLoader } from '../core/loader.js';
+import { ResourceRef } from '../core/resource.js';
+import type { RootEntry } from './root.js';
+export interface PublicCourseAttrs {
+    readonly image: string;
+    readonly lead: string;
+}
+export interface FullCourseAttrs extends PublicCourseAttrs {
     chapters: ChapterRef[];
-}, {
-    image: string;
-    lead: string;
-}>;
-export declare type CourseRef = ResourceRef<{
-    image: string;
-    lead: string;
-}>;
-export declare const loadCourse: (parentBase: BaseEntry, folderName: string) => Promise<CourseEntry>;
-export declare const createCourseRef: (courseEntry: CourseEntry, accessAllowed: boolean, baseUrl: string) => CourseRef;
-export declare class CourseProvider extends BaseResourceProvider<CoursesRootProvider, CourseEntry, ChapterProvider> {
-    reload(): Promise<void>;
-    fetch(): Promise<CourseResource>;
-    find(link: string): ChapterProvider | NotFoundProvider;
-    findRepo(repoUrl: string): null;
+}
+export declare type CourseRef = ResourceRef<PublicCourseAttrs>;
+export declare class CourseLoader extends EntryLoader<CourseIndex, RootEntry, CourseEntry> {
+    protected loadEntry(common: EntryCommon, index: CourseIndex | null, position: number): Promise<CourseEntry>;
+}
+export declare class CourseEntry extends InnerEntry<RootEntry, PublicCourseAttrs, FullCourseAttrs, CourseIndex, ChapterEntry> {
+    getPublicAttrs(index: CourseIndex): PublicCourseAttrs;
+    fetchFullAttrs(index: CourseIndex): Promise<FullCourseAttrs>;
 }

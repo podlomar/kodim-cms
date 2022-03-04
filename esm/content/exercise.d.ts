@@ -1,34 +1,27 @@
-import { Jsml, JsmlElement } from "../jsml.js";
-import { BaseEntry, LeafEntry } from "./entry.js";
-import { BaseResourceProvider, NotFoundProvider, ProviderSettings } from "./provider.js";
-import { AccessCheck } from "./access-check.js";
-import { LessonSectionProvider } from "./lesson-section.js";
-import { Crumbs, Resource } from "./resource.js";
-export declare type ExerciseEntry = LeafEntry<{
-    demand: 1 | 2 | 3 | 4 | 5;
-    num: number;
-    hasSolution: boolean;
-}>;
-export declare type ExerciseResource = Resource<{
-    demand: 1 | 2 | 3 | 4 | 5;
-    num: number;
-    hasSolution: boolean;
+import { ExerciseFrontMatter } from '../entries.js';
+import { EntryCommon, LeafEntry } from '../core/entry.js';
+import { EntryLoader } from '../core/loader.js';
+import { Jsml, JsmlElement } from '../jsml.js';
+import type { LessonSectionEntry } from './lesson-section.js';
+export interface PublicExerciseAttrs {
+    readonly demand: 1 | 2 | 3 | 4 | 5;
+    readonly num: number;
+    readonly showSolution: boolean;
+}
+export interface FullExerciseAttrs extends PublicExerciseAttrs {
     assignJsml: Jsml;
     solutionJsml: Jsml;
-}>;
-export interface ExerciseAssign {
-    demand: 1 | 2 | 3 | 4 | 5;
-    num: number;
-    hasSolution: boolean;
-    jsml: Jsml;
 }
-export declare const loadExercise: (parentBase: BaseEntry, link: string, pos: number) => Promise<ExerciseEntry>;
-export declare class ExerciseProvider extends BaseResourceProvider<LessonSectionProvider, ExerciseEntry, never> {
-    private markdownProcessor;
-    constructor(parent: LessonSectionProvider, entry: ExerciseEntry, position: number, crumbs: Crumbs, accessCheck: AccessCheck, settings: ProviderSettings);
-    find(link: string): NotFoundProvider;
-    private buildAssetPath;
-    fetch(): Promise<ExerciseResource>;
+export interface ExerciseAssign extends PublicExerciseAttrs {
+    readonly jsml: Jsml;
+}
+export declare class ExerciseEntry extends LeafEntry<LessonSectionEntry, PublicExerciseAttrs, FullExerciseAttrs, ExerciseFrontMatter> {
+    getPublicAttrs(frontMatter: ExerciseFrontMatter): PublicExerciseAttrs;
+    fetchFullAttrs(frontMatter: ExerciseFrontMatter): Promise<FullExerciseAttrs>;
     fetchAssign(): Promise<JsmlElement>;
-    findRepo(repoUrl: string): null;
+}
+export declare class ExerciseLoader extends EntryLoader<ExerciseFrontMatter, LessonSectionEntry, ExerciseEntry> {
+    protected buildFsPath(fileName: string): string;
+    protected loadIndex(fsPath: string): Promise<ExerciseFrontMatter | 'not-found'>;
+    protected loadEntry(common: EntryCommon, frontMatter: ExerciseFrontMatter, position: number): Promise<ExerciseEntry>;
 }

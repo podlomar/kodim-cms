@@ -1,12 +1,11 @@
-import path from "path";
+import path from 'path';
 import { existsSync } from "fs";
 import yaml from "yaml";
 import lineReader from "line-reader";
-import { el, getChildren, getTag, isElement } from "../jsml.js";
-import { createBaseEntry, createBrokenEntry } from "./entry.js";
-import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
-import { MarkdownProcessor } from "../markdown.js";
-import { createBaseResource } from "./resource.js";
+import { LeafEntry } from '../core/entry.js';
+import { EntryLoader } from '../core/loader.js';
+import { el, getChildren, getTag, isElement } from '../jsml.js';
+import { MarkdownProcessor } from '../markdown.js';
 ;
 const loadFrontMatter = async (filePath) => new Promise((resolve, reject) => {
     let inside = false;
@@ -60,49 +59,23 @@ const getExcFilePath = (fsPath) => {
     }
     return null;
 };
-export const loadExercise = async (parentBase, link, pos) => {
-    const fsPath = path.join(parentBase.fsPath, '..', link.replace('>', '/'));
-    const assignPath = getExcFilePath(fsPath);
-    if (assignPath === null) {
-        return createBrokenEntry(parentBase, link);
-    }
-    const frontMatter = await loadFrontMatter(assignPath);
-    return Object.assign(Object.assign({ nodeType: 'leaf' }, createBaseEntry(parentBase, frontMatter, link, fsPath)), { props: {
-            demand: frontMatter.demand,
-            num: pos + 1,
-            hasSolution: frontMatter.hasSolution || false,
-        } });
-};
-export class ExerciseProvider extends BaseResourceProvider {
-    constructor(parent, entry, position, crumbs, accessCheck, settings) {
-        super(parent, entry, position, crumbs, accessCheck, settings);
-        this.buildAssetPath = (fileName) => {
-            const baseUrl = this.settings.baseUrl;
-            return `${baseUrl}/assets${this.entry.path}/${fileName}`;
-        };
-        this.markdownProcessor = new MarkdownProcessor(this.buildAssetPath);
-    }
-    find(link) {
-        return new NotFoundProvider();
-    }
-    async fetch() {
+const markdownProcessor = new MarkdownProcessor(() => '');
+export class ExerciseEntry extends LeafEntry {
+    getPublicAttrs(frontMatter) {
         var _a;
-        const baseResource = createBaseResource(this.entry, this.crumbs, this.settings.baseUrl);
-        if (!this.accessCheck.accepts()) {
-            return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: {
-                    type: this.entry.nodeType === 'broken' ? 'broken' : 'public',
-                } });
-        }
-        if (this.entry.nodeType === 'broken') {
-            return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
-                    type: 'broken',
-                } });
-        }
-        const assignPath = getExcFilePath(this.entry.fsPath);
+        return {
+            demand: frontMatter.demand,
+            num: this.common.position + 1,
+            showSolution: (_a = frontMatter.showSolution) !== null && _a !== void 0 ? _a : false,
+        };
+    }
+    async fetchFullAttrs(frontMatter) {
+        var _a;
+        const assignPath = getExcFilePath(this.common.fsPath);
         if (assignPath === null) {
             throw new Error('no assign file found');
         }
-        const jsml = await this.markdownProcessor.process(assignPath);
+        const jsml = await markdownProcessor.process(assignPath);
         const firstNode = jsml[0];
         const secondNode = (_a = jsml[1]) !== null && _a !== void 0 ? _a : '';
         const assignJsml = isElement(firstNode) && getTag(firstNode) === 'assign'
@@ -111,31 +84,23 @@ export class ExerciseProvider extends BaseResourceProvider {
         const solutionJsml = isElement(secondNode) && getTag(secondNode) === 'solution'
             ? getChildren(secondNode)
             : [];
-        return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
-                type: 'full',
-                demand: this.entry.props.demand,
-                num: this.entry.props.num,
-                hasSolution: this.entry.props.hasSolution,
-                assignJsml,
-                solutionJsml,
-            } });
+        return Object.assign(Object.assign({}, this.getPublicAttrs(frontMatter)), { assignJsml,
+            solutionJsml });
     }
     async fetchAssign() {
-        const excPath = getExcFilePath(this.entry.fsPath);
+        var _a, _b, _c;
+        const excPath = getExcFilePath(this.common.fsPath);
         if (excPath === null) {
             throw new Error('no assign file found');
         }
-        if (this.entry.nodeType === 'broken') {
-            return ['error'];
-        }
         const assignText = await loadAssign(excPath);
-        const jsml = await this.markdownProcessor.processString(assignText);
+        const jsml = await markdownProcessor.processString(assignText);
         const attrs = {
-            num: this.entry.props.num,
-            title: this.entry.title,
-            path: this.accessCheck.accepts() ? this.entry.path : 'forbidden',
-            demand: this.entry.props.demand,
-            hasSolution: this.entry.props.hasSolution,
+            num: this.common.position + 1,
+            title: (_a = this.index.title) !== null && _a !== void 0 ? _a : this.common.link,
+            path: this.common.path,
+            demand: this.index.demand,
+            showSolution: (_c = (_b = this.index) === null || _b === void 0 ? void 0 : _b.showSolution) !== null && _c !== void 0 ? _c : false,
         };
         const firstNode = jsml[0];
         const content = isElement(firstNode) && getTag(firstNode) === 'assign'
@@ -143,7 +108,19 @@ export class ExerciseProvider extends BaseResourceProvider {
             : jsml;
         return el('exc', attrs, ...content);
     }
-    findRepo(repoUrl) {
-        return null;
+}
+export class ExerciseLoader extends EntryLoader {
+    buildFsPath(fileName) {
+        return path.join(this.parentEntry.getCommon().fsPath, '..', fileName.replace('>', '/'));
+    }
+    async loadIndex(fsPath) {
+        const assignPath = getExcFilePath(fsPath);
+        if (assignPath === null) {
+            return 'not-found';
+        }
+        return loadFrontMatter(assignPath);
+    }
+    async loadEntry(common, frontMatter, position) {
+        return new ExerciseEntry(this.parentEntry, common, frontMatter, []);
     }
 }

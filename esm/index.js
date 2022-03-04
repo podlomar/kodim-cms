@@ -1,15 +1,16 @@
-import { CoursesRootProvider, loadCoursesRoot } from "./content/content.js";
+import { RootLoader } from "./content/root.js";
+import { OkQuery } from "./core/query.js";
 export class KodimCms {
-    constructor(baseUrl, coursesRoot) {
+    constructor(baseUrl, root) {
         this.baseUrl = baseUrl;
-        this.coursesRoot = coursesRoot;
+        this.root = root;
     }
     static async load(contentFolder, baseUrl) {
-        const root = await loadCoursesRoot(contentFolder, "kurzy");
-        const cms = new KodimCms(baseUrl, root);
+        const rootEntry = await new RootLoader(contentFolder).loadOne('kurzy', 0);
+        const cms = new KodimCms(baseUrl, rootEntry);
         return cms;
     }
-    getRoot(accessCheck) {
-        return new CoursesRootProvider(null, this.coursesRoot, 0, [], accessCheck.step(this.coursesRoot), { baseUrl: this.baseUrl });
+    query() {
+        return OkQuery.of(this.root);
     }
 }
