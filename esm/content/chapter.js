@@ -4,12 +4,13 @@ import { findChild, readIndexFile } from "./content-node.js";
 import { createLessonRef, LessonProvider, loadLesson } from "./lesson.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 export const loadChapter = async (parentBase, folderName) => {
+    var _a;
     const index = await readIndexFile(`${parentBase.fsPath}/${folderName}`);
     if (index === 'not-found') {
         return createBrokenEntry(parentBase, folderName);
     }
     const baseEntry = createBaseEntry(parentBase, index, folderName);
-    const lessons = await Promise.all(index.lessons.map((lessonLink, idx) => loadLesson(baseEntry, lessonLink, idx)));
+    const lessons = await Promise.all(((_a = index.lessons) !== null && _a !== void 0 ? _a : []).map((lessonLink, idx) => loadLesson(baseEntry, lessonLink, idx)));
     return Object.assign(Object.assign({ nodeType: 'inner' }, baseEntry), { props: {
             lead: index.lead,
         }, subEntries: lessons });

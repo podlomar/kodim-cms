@@ -6,6 +6,7 @@ import { ChapterProvider, createChapterRef, loadChapter } from "./chapter.js";
 import { findChild, readIndexFile, readYamlFile } from "./content-node.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 export const loadCourse = async (parentBase, folderName) => {
+    var _a;
     const index = await readIndexFile(`${parentBase.fsPath}/${folderName}`);
     if (index === 'not-found') {
         return createBrokenEntry(parentBase, folderName);
@@ -32,8 +33,7 @@ export const loadCourse = async (parentBase, folderName) => {
         console.log('git repo', index.title, repo);
     }
     const baseEntry = createBaseEntry(parentBase, index, folderName);
-    const chapters = await Promise.all(index.chapters === undefined ? [] :
-        index.chapters.map((chapterLink) => loadChapter(baseEntry, chapterLink)));
+    const chapters = await Promise.all(((_a = index.chapters) !== null && _a !== void 0 ? _a : []).map((chapterLink) => loadChapter(baseEntry, chapterLink)));
     return Object.assign(Object.assign({ nodeType: 'inner' }, baseEntry), { props: {
             image: index.image,
             lead: index.lead,

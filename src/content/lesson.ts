@@ -6,7 +6,7 @@ import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import type { ChapterProvider } from "./chapter.js";
 import { LessonSectionEntry, LessonSectionProvider, LessonSectionRef, LessonSectionResource, loadLessonSection } from "./lesson-section.js";
 
-export type LessonEntry = InnerEntry<{ 
+export type LessonEntry = InnerEntry<{
   num: number,
   lead: string,
 }, LessonSectionEntry>;
@@ -23,7 +23,7 @@ export type LessonResource = Resource<{
 }>;
 
 export type LessonRef = ResourceRef<{
-  num: number, 
+  num: number,
   lead: string,
 }>;
 
@@ -43,7 +43,7 @@ export const loadLesson = async (
   const baseEntry = createBaseEntry(parentBase, index, folderName);
 
   const sections = await Promise.all(
-    index.sections.map((sectionLink: string) => loadLessonSection(
+    (index.sections ?? []).map((sectionLink: string) => loadLessonSection(
       baseEntry, sectionLink,
     ))
   );
@@ -65,7 +65,7 @@ export const createLessonRef = (
   baseUrl: string
 ): LessonRef => ({
   ...createBaseRef(
-    accessAllowed ? 'ok' : 'forbidden', 
+    accessAllowed ? 'ok' : 'forbidden',
     lesson,
     baseUrl
   ),
@@ -97,14 +97,14 @@ export class LessonProvider extends BaseResourceProvider<
       this.crumbs,
       this.settings.baseUrl
     );
-    
+
     if (!this.accessCheck.accepts()) {
       return {
         ...baseResource,
         status: 'forbidden',
-        content: this.entry.nodeType === 'broken' 
+        content: this.entry.nodeType === 'broken'
           ? {
-            type:  'broken',
+            type: 'broken',
           } : {
             type: 'public',
             num: this.entry.props.num,
@@ -112,7 +112,7 @@ export class LessonProvider extends BaseResourceProvider<
           }
       };
     }
-    
+
     if (this.entry.nodeType === 'broken') {
       return {
         ...baseResource,
@@ -122,7 +122,7 @@ export class LessonProvider extends BaseResourceProvider<
         }
       };
     }
-    
+
     const sections = this.entry.subEntries.map(
       (section) => {
         const sectionAccess = this.accessCheck.step(section);
@@ -139,7 +139,7 @@ export class LessonProvider extends BaseResourceProvider<
 
     const next = this.parent.getNextLesson(this.position);
     const prev = this.parent.getPrevLesson(this.position);
-    
+
     return {
       ...baseResource,
       status: 'ok',
@@ -158,7 +158,7 @@ export class LessonProvider extends BaseResourceProvider<
     if (!this.accessCheck.accepts()) {
       return new NotFoundProvider();
     }
-    
+
     if (this.entry.nodeType === 'broken') {
       return new NotFoundProvider();
     }
@@ -170,10 +170,10 @@ export class LessonProvider extends BaseResourceProvider<
 
     return new LessonSectionProvider(
       this,
-      result.child, 
-      result.pos, 
-      [...this.crumbs, { 
-        title: this.entry.title, 
+      result.child,
+      result.pos,
+      [...this.crumbs, {
+        title: this.entry.title,
         path: this.entry.path
       }],
       this.accessCheck.step(result.child),
@@ -190,7 +190,7 @@ export class LessonProvider extends BaseResourceProvider<
     if (section === undefined) {
       return null;
     }
-    
+
     const childAccess = this.accessCheck.step(section);
     return {
       ...createBaseRef(

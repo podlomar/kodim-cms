@@ -11,7 +11,7 @@ export interface Division<T extends CourseEntry | CourseRef = CourseEntry> {
   readonly courses: T[],
 }
 
-export type CoursesRootEntry = InnerEntry<{ 
+export type CoursesRootEntry = InnerEntry<{
   divisions: Division[];
 }>;
 
@@ -54,7 +54,7 @@ export const loadCoursesRoot = async (
         )
       )
     })
-  ))
+    ))
 
   return {
     nodeType: 'inner',
@@ -74,17 +74,17 @@ export class CoursesRootProvider extends BaseResourceProvider<
       this.crumbs,
       this.settings.baseUrl
     );
-    
+
     if (!this.accessCheck.accepts()) {
       return {
         ...baseResource,
         status: 'forbidden',
-        content: this.entry.nodeType === 'broken' 
-          ? { type: 'broken' } 
+        content: this.entry.nodeType === 'broken'
+          ? { type: 'broken' }
           : { type: 'public' }
       };
     }
-    
+
     if (this.entry.nodeType === 'broken') {
       return {
         ...baseResource,
@@ -117,7 +117,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
     if (!this.accessCheck.accepts()) {
       return new NotFoundProvider();
     }
-    
+
     if (this.entry.nodeType === 'broken') {
       return new NotFoundProvider();
     }
@@ -125,17 +125,17 @@ export class CoursesRootProvider extends BaseResourceProvider<
     const courses = this.entry.props.divisions.flatMap(
       (division) => division.courses
     );
-  
+
     const pos = courses.findIndex((c) => c.link === link);
-    
+
     if (pos < 0) {
       return new NotFoundProvider();
     }
 
     return new CourseProvider(
       this,
-      courses[pos], 
-      pos, 
+      courses[pos],
+      pos,
       [],
       this.accessCheck.step(courses[pos]),
       this.settings
@@ -151,7 +151,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
       (division) => division.courses
     );
 
-    for(let i = 0; i < courses.length; i += 1) {
+    for (let i = 0; i < courses.length; i += 1) {
       const course = courses[i];
       if (course.nodeType === 'inner') {
         if (course.props.repo?.url === repoUrl) {

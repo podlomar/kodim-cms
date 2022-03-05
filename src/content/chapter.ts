@@ -32,11 +32,11 @@ export const loadChapter = async (
   if (index === 'not-found') {
     return createBrokenEntry(parentBase, folderName);
   }
-  
+
   const baseEntry = createBaseEntry(parentBase, index, folderName);
 
   const lessons = await Promise.all(
-    index.lessons.map((lessonLink: string, idx: number) => loadLesson(
+    (index.lessons ?? []).map((lessonLink: string, idx: number) => loadLesson(
       baseEntry, lessonLink, idx,
     ))
   );
@@ -57,7 +57,7 @@ export const createChapterRef = (
   baseUrl: string
 ): ChapterRef => ({
   ...createBaseRef(
-    accessAllowed ? 'ok' : 'forbidden', 
+    accessAllowed ? 'ok' : 'forbidden',
     chapter,
     baseUrl
   ),
@@ -76,21 +76,21 @@ export class ChapterProvider extends BaseResourceProvider<
       this.crumbs,
       this.settings.baseUrl
     );
-    
+
     if (!this.accessCheck.accepts()) {
       return {
         ...baseResource,
         status: 'forbidden',
-        content: this.entry.nodeType === 'broken' 
+        content: this.entry.nodeType === 'broken'
           ? {
-            type:  'broken',
+            type: 'broken',
           } : {
             type: 'public',
             lead: this.entry.props.lead,
           }
       };
     }
-    
+
     if (this.entry.nodeType === 'broken') {
       return {
         ...baseResource,
@@ -114,7 +114,7 @@ export class ChapterProvider extends BaseResourceProvider<
       content: {
         type: 'full',
         lead: this.entry.props.lead,
-        lessons,  
+        lessons,
       }
     }
   }
@@ -123,7 +123,7 @@ export class ChapterProvider extends BaseResourceProvider<
     if (!this.accessCheck.accepts()) {
       return new NotFoundProvider();
     }
-    
+
     if (this.entry.nodeType === 'broken') {
       return new NotFoundProvider();
     }
@@ -134,11 +134,11 @@ export class ChapterProvider extends BaseResourceProvider<
     }
 
     return new LessonProvider(
-      this, 
-      result.child, 
-      result.pos, 
-      [...this.crumbs, { 
-        title: this.entry.title, 
+      this,
+      result.child,
+      result.pos,
+      [...this.crumbs, {
+        title: this.entry.title,
         path: this.entry.path
       }],
       this.accessCheck.step(result.child),

@@ -53,12 +53,12 @@ export const loadCourse = async (
       baseDir: `${parentBase.fsPath}/${folderName}`,
       binary: 'git',
     });
-    
+
     const url = await git.remote(['get-url', 'origin']) as string;
-    const repoParams = await readYamlFile<{branch: string, secret: string}>(
+    const repoParams = await readYamlFile<{ branch: string, secret: string }>(
       `${parentBase.fsPath}/${folderName}/repo.yml`
     );
-    
+
     if (repoParams === 'not-found') {
       repo = {
         url: url.trim(),
@@ -71,15 +71,14 @@ export const loadCourse = async (
         ...repoParams,
       }
     }
-    
+
     console.log('git repo', index.title, repo);
   }
 
   const baseEntry = createBaseEntry(parentBase, index, folderName);
 
   const chapters = await Promise.all(
-    index.chapters === undefined ? [] : 
-    index.chapters.map((chapterLink: string) => loadChapter(
+    (index.chapters ?? []).map((chapterLink: string) => loadChapter(
       baseEntry, chapterLink
     ))
   );
@@ -122,29 +121,29 @@ export class CourseProvider extends BaseResourceProvider<
       baseDir: this.entry.fsPath,
       binary: 'git',
     });
-    
+
     const pullResult = await git.pull();
     console.log('pullResult', pullResult);
 
     const index = await readIndexFile<CourseIndex>(
       this.entry.fsPath,
     );
-  
+
     if (index === 'not-found') {
       return;
     }
-  
+
     if (this.entry.nodeType === 'broken') {
       return;
     }
 
     const chapters = await Promise.all(
-      index.chapters === undefined ? [] : 
-      index.chapters.map((chapterLink: string) => loadChapter(
-        this.entry, chapterLink
-      ))
+      index.chapters === undefined ? [] :
+        index.chapters.map((chapterLink: string) => loadChapter(
+          this.entry, chapterLink
+        ))
     );
-  
+
     this.entry.props.image = index.image;
     this.entry.props.lead = index.lead;
     this.entry.subEntries = chapters;
@@ -155,14 +154,14 @@ export class CourseProvider extends BaseResourceProvider<
       this.crumbs,
       this.settings.baseUrl
     );
-    
+
     if (!this.accessCheck.accepts()) {
       return {
         ...baseResource,
         status: 'forbidden',
-        content: this.entry.nodeType === 'broken' 
+        content: this.entry.nodeType === 'broken'
           ? {
-            type:  'broken',
+            type: 'broken',
           } : {
             type: 'public',
             image: buildAssetPath(
@@ -172,7 +171,7 @@ export class CourseProvider extends BaseResourceProvider<
           }
       };
     }
-    
+
     if (this.entry.nodeType === 'broken') {
       return {
         ...baseResource,
@@ -182,7 +181,7 @@ export class CourseProvider extends BaseResourceProvider<
         }
       };
     }
-  
+
     const chapters = this.entry.subEntries.map(
       (chapter) => {
         const accessCheck = this.accessCheck.step(chapter);
@@ -204,11 +203,11 @@ export class CourseProvider extends BaseResourceProvider<
     };
   }
 
-  public find(link: string): ChapterProvider | NotFoundProvider  {
+  public find(link: string): ChapterProvider | NotFoundProvider {
     if (!this.accessCheck.accepts()) {
       return new NotFoundProvider();
     }
-    
+
     if (this.entry.nodeType === 'broken') {
       return new NotFoundProvider();
     }
@@ -220,10 +219,10 @@ export class CourseProvider extends BaseResourceProvider<
 
     return new ChapterProvider(
       this,
-      result.child, 
+      result.child,
       result.pos,
-      [...this.crumbs, { 
-        title: this.entry.title, 
+      [...this.crumbs, {
+        title: this.entry.title,
         path: this.entry.path
       }],
       this.accessCheck.step(result.child),

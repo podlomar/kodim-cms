@@ -4,12 +4,13 @@ import { findChild, readIndexFile } from "./content-node.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { LessonSectionProvider, loadLessonSection } from "./lesson-section.js";
 export const loadLesson = async (parentBase, folderName, position) => {
+    var _a;
     const index = await readIndexFile(`${parentBase.fsPath}/${folderName}`);
     if (index === 'not-found') {
         return createBrokenEntry(parentBase, folderName);
     }
     const baseEntry = createBaseEntry(parentBase, index, folderName);
-    const sections = await Promise.all(index.sections.map((sectionLink) => loadLessonSection(baseEntry, sectionLink)));
+    const sections = await Promise.all(((_a = index.sections) !== null && _a !== void 0 ? _a : []).map((sectionLink) => loadLessonSection(baseEntry, sectionLink)));
     return Object.assign(Object.assign({ nodeType: 'inner' }, baseEntry), { props: {
             num: position + 1,
             lead: index.lead,
