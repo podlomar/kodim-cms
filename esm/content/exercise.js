@@ -100,7 +100,9 @@ export class ExerciseProvider extends BaseResourceProvider {
         }
         const assignPath = getExcFilePath(this.entry.fsPath);
         if (assignPath === null) {
-            throw new Error('no assign file found');
+            return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
+                    type: 'broken',
+                } });
         }
         const jsml = await this.markdownProcessor.process(assignPath);
         const firstNode = jsml[0];
@@ -122,11 +124,8 @@ export class ExerciseProvider extends BaseResourceProvider {
     }
     async fetchAssign() {
         const excPath = getExcFilePath(this.entry.fsPath);
-        if (excPath === null) {
-            throw new Error('no assign file found');
-        }
-        if (this.entry.nodeType === 'broken') {
-            return ['error'];
+        if (excPath === null || this.entry.nodeType === 'broken') {
+            return el('excerr', { link: this.entry.link });
         }
         const assignText = await loadAssign(excPath);
         const jsml = await this.markdownProcessor.processString(assignText);

@@ -36,7 +36,7 @@ const loadFrontMatter = async <T>(filePath: string): Promise<T> =>
   new Promise((resolve, reject) => {
     let inside = false;
     let lines = "";
-    lineReader.eachLine(filePath, 
+    lineReader.eachLine(filePath,
       (line) => {
         if (inside) {
           if (line.startsWith("---")) {
@@ -55,20 +55,20 @@ const loadFrontMatter = async <T>(filePath: string): Promise<T> =>
     );
   });
 
-const loadAssign = async(filePath: string): Promise<string> =>
+const loadAssign = async (filePath: string): Promise<string> =>
   new Promise((resolve, reject) => {
     let opened = 0;
     let lines = "";
-    lineReader.eachLine(filePath, 
+    lineReader.eachLine(filePath,
       (line: string, last: boolean) => {
         lines += `${line}\n`;
-        
+
         if (last) {
           resolve(lines);
         }
 
         const trimmed = line.trim();
-        
+
         if (trimmed === ":::") {
           opened -= 1;
           if (opened === 0) {
@@ -117,7 +117,7 @@ export const loadExercise = async (
   const frontMatter = await loadFrontMatter<ExerciseFrontMatter>(
     assignPath,
   );
-  
+
   return {
     nodeType: 'leaf',
     ...createBaseEntry(parentBase, frontMatter, link, fsPath),
@@ -135,9 +135,9 @@ export class ExerciseProvider extends BaseResourceProvider<
   private markdownProcessor: MarkdownProcessor;
 
   constructor(
-    parent: LessonSectionProvider, 
-    entry: ExerciseEntry, 
-    position: number, 
+    parent: LessonSectionProvider,
+    entry: ExerciseEntry,
+    position: number,
     crumbs: Crumbs,
     accessCheck: AccessCheck,
     settings: ProviderSettings,
@@ -162,7 +162,7 @@ export class ExerciseProvider extends BaseResourceProvider<
       this.crumbs,
       this.settings.baseUrl
     );
-    
+
     if (!this.accessCheck.accepts()) {
       return {
         ...baseResource,
@@ -172,7 +172,7 @@ export class ExerciseProvider extends BaseResourceProvider<
         }
       };
     }
-    
+
     if (this.entry.nodeType === 'broken') {
       return {
         ...baseResource,
@@ -182,16 +182,22 @@ export class ExerciseProvider extends BaseResourceProvider<
         }
       };
     }
-    
+
     const assignPath = getExcFilePath(this.entry.fsPath);
     if (assignPath === null) {
-      throw new Error('no assign file found');
+      return {
+        ...baseResource,
+        status: 'ok',
+        content: {
+          type: 'broken',
+        }
+      };
     }
 
     const jsml = await this.markdownProcessor.process(assignPath);
     const firstNode = jsml[0];
     const secondNode = jsml[1] ?? '';
-    
+
     const assignJsml = isElement(firstNode) && getTag(firstNode) === 'assign'
       ? getChildren(firstNode)
       : jsml;
@@ -216,11 +222,11 @@ export class ExerciseProvider extends BaseResourceProvider<
 
   public async fetchAssign(): Promise<JsmlElement> {
     const excPath = getExcFilePath(this.entry.fsPath);
-    if (excPath === null) {
-      throw new Error('no assign file found');
-    }    
-    if (this.entry.nodeType === 'broken') {
-      return ['error'];
+    if (excPath === null || this.entry.nodeType === 'broken') {
+      return el(
+        'excerr',
+        { link: this.entry.link },
+      )
     }
 
     const assignText = await loadAssign(excPath);
@@ -240,7 +246,7 @@ export class ExerciseProvider extends BaseResourceProvider<
       : jsml;
 
     return el(
-      'exc', 
+      'exc',
       attrs,
       ...content,
     )
