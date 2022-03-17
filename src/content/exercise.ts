@@ -14,13 +14,13 @@ import { createBaseResource, Crumbs, Resource } from "./resource.js";
 export type ExerciseEntry = LeafEntry<{
   demand: 1 | 2 | 3 | 4 | 5;
   num: number;
-  hasSolution: boolean;
+  offerSolution: boolean;
 }>;
 
 export type ExerciseResource = Resource<{
   demand: 1 | 2 | 3 | 4 | 5;
   num: number;
-  hasSolution: boolean;
+  offerSolution: boolean;
   assignJsml: Jsml,
   solutionJsml: Jsml,
 }>;
@@ -28,7 +28,7 @@ export type ExerciseResource = Resource<{
 export interface ExerciseAssign {
   demand: 1 | 2 | 3 | 4 | 5;
   num: number;
-  hasSolution: boolean;
+  offerSolution: boolean;
   jsml: Jsml,
 };
 
@@ -124,7 +124,7 @@ export const loadExercise = async (
     props: {
       demand: frontMatter.demand,
       num: pos + 1,
-      hasSolution: frontMatter.hasSolution || false,
+      offerSolution: frontMatter.offerSolution || false,
     },
   };
 }
@@ -213,7 +213,7 @@ export class ExerciseProvider extends BaseResourceProvider<
         type: 'full',
         demand: this.entry.props.demand,
         num: this.entry.props.num,
-        hasSolution: this.entry.props.hasSolution,
+        offerSolution: this.entry.props.offerSolution,
         assignJsml,
         solutionJsml,
       },
@@ -238,7 +238,7 @@ export class ExerciseProvider extends BaseResourceProvider<
       link: this.entry.link,
       path: this.accessCheck.accepts() ? this.entry.path : 'forbidden',
       demand: this.entry.props.demand,
-      hasSolution: this.entry.props.hasSolution,
+      offerSolution: this.entry.props.offerSolution,
     };
 
     const firstNode = jsml[0];

@@ -70,7 +70,7 @@ export const loadExercise = async (parentBase, link, pos) => {
     return Object.assign(Object.assign({ nodeType: 'leaf' }, createBaseEntry(parentBase, frontMatter, link, fsPath)), { props: {
             demand: frontMatter.demand,
             num: pos + 1,
-            hasSolution: frontMatter.hasSolution || false,
+            offerSolution: frontMatter.offerSolution || false,
         } });
 };
 export class ExerciseProvider extends BaseResourceProvider {
@@ -117,7 +117,7 @@ export class ExerciseProvider extends BaseResourceProvider {
                 type: 'full',
                 demand: this.entry.props.demand,
                 num: this.entry.props.num,
-                hasSolution: this.entry.props.hasSolution,
+                offerSolution: this.entry.props.offerSolution,
                 assignJsml,
                 solutionJsml,
             } });
@@ -135,7 +135,7 @@ export class ExerciseProvider extends BaseResourceProvider {
             link: this.entry.link,
             path: this.accessCheck.accepts() ? this.entry.path : 'forbidden',
             demand: this.entry.props.demand,
-            hasSolution: this.entry.props.hasSolution,
+            offerSolution: this.entry.props.offerSolution,
         };
         const firstNode = jsml[0];
         const content = isElement(firstNode) && getTag(firstNode) === 'assign'
