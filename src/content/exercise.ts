@@ -235,6 +235,7 @@ export class ExerciseProvider extends BaseResourceProvider<
     const attrs = {
       num: this.entry.props.num,
       title: this.entry.title,
+      link: this.entry.link,
       path: this.accessCheck.accepts() ? this.entry.path : 'forbidden',
       demand: this.entry.props.demand,
       hasSolution: this.entry.props.hasSolution,
