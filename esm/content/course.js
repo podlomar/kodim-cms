@@ -1,5 +1,5 @@
 import { existsSync } from "fs";
-import simpleGit from 'simple-git';
+import simpleGit, { ResetMode } from 'simple-git';
 import { createBaseEntry, createBrokenEntry } from "./entry.js";
 import { createBaseResource, buildAssetPath, createBaseRef } from './resource.js';
 import { ChapterProvider, createChapterRef, loadChapter } from "./chapter.js";
@@ -46,8 +46,10 @@ export class CourseProvider extends BaseResourceProvider {
             baseDir: this.entry.fsPath,
             binary: 'git',
         });
-        const pullResult = await git.pull();
-        console.log('pullResult', pullResult);
+        const fetchResult = await git.fetch();
+        console.log('fetchResult', fetchResult);
+        const resetResult = await git.reset(ResetMode.HARD);
+        console.log('resethResult', resetResult);
         const index = await readIndexFile(this.entry.fsPath);
         if (index === 'not-found') {
             return;
