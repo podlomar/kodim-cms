@@ -24,7 +24,7 @@ export const loadCoursesRoot = async (contentFolder, coursesFolder) => {
         return ({
             title: (_a = divisionIndex.title) !== null && _a !== void 0 ? _a : 'Missing title!',
             lead: divisionIndex.lead,
-            courses: await Promise.all(divisionIndex.courses.map((courseFolder) => loadCourse(baseEntry, courseFolder)))
+            courses: await Promise.all(divisionIndex.courses.map((courseLink) => loadCourse(baseEntry, courseLink)))
         });
     }));
     return Object.assign(Object.assign({ nodeType: 'inner' }, baseEntry), { props: {

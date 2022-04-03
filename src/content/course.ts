@@ -1,6 +1,6 @@
 import { existsSync } from "fs";
 import simpleGit from 'simple-git';
-import { CourseIndex } from "../entries";
+import { CourseIndex, CourseLink } from "../entries";
 import { InnerEntry, createBaseEntry, BaseEntry, createBrokenEntry } from "./entry.js";
 import { createBaseResource, ResourceRef, buildAssetPath, Resource, createBaseRef } from './resource.js';
 import { ChapterEntry, ChapterProvider, ChapterRef, createChapterRef, loadChapter } from "./chapter.js";
@@ -35,47 +35,36 @@ export type CourseRef = ResourceRef<{
 
 export const loadCourse = async (
   parentBase: BaseEntry,
-  folderName: string,
+  courseLink: CourseLink,
 ): Promise<CourseEntry> => {
   const index = await readIndexFile<CourseIndex>(
-    `${parentBase.fsPath}/${folderName}`
+    `${parentBase.fsPath}/${courseLink.link}`
   );
 
   if (index === 'not-found') {
-    return createBrokenEntry(parentBase, folderName);
+    return createBrokenEntry(parentBase, courseLink.link);
   }
 
-  const isGitRepo = existsSync(`${parentBase.fsPath}/${folderName}/.git`);
+  const isGitRepo = existsSync(`${parentBase.fsPath}/${courseLink.link}/.git`);
   let repo = null;
 
   if (isGitRepo) {
     const git = simpleGit({
-      baseDir: `${parentBase.fsPath}/${folderName}`,
+      baseDir: `${parentBase.fsPath}/${courseLink.link}`,
       binary: 'git',
     });
 
     const url = await git.remote(['get-url', 'origin']) as string;
-    const repoParams = await readYamlFile<{ branch: string, secret: string }>(
-      `${parentBase.fsPath}/${folderName}/repo.yml`
-    );
-
-    if (repoParams === 'not-found') {
-      repo = {
-        url: url.trim(),
-        branch: 'not-found',
-        secret: 'not-found',
-      }
-    } else {
-      repo = {
-        url: url.trim(),
-        ...repoParams,
-      }
+    repo = {
+      url: url.trim(),
+      branch: courseLink.branch,
+      secret: courseLink.secret,
     }
 
     console.log('git repo', index.title, repo);
   }
 
-  const baseEntry = createBaseEntry(parentBase, index, folderName);
+  const baseEntry = createBaseEntry(parentBase, index, courseLink.link);
 
   const chapters = await Promise.all(
     (index.chapters ?? []).map((chapterLink: string) => loadChapter(

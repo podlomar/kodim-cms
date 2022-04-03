@@ -32,9 +32,15 @@ export interface CourseIndex extends EntryIndex {
   chapters: string[];
 }
 
+export interface CourseLink {
+  link: string;
+  branch: string;
+  secret: string;
+}
+
 export interface DivisionIndex extends EntryIndex {
   lead: string;
-  courses: string[];
+  courses: CourseLink[];
 }
 
 export interface CoursesRootIndex extends EntryIndex {

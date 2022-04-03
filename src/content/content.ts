@@ -49,8 +49,8 @@ export const loadCoursesRoot = async (
       title: divisionIndex.title ?? 'Missing title!',
       lead: divisionIndex.lead,
       courses: await Promise.all(
-        divisionIndex.courses.map((courseFolder) => loadCourse(
-          baseEntry, courseFolder)
+        divisionIndex.courses.map((courseLink) => loadCourse(
+          baseEntry, courseLink)
         )
       )
     })

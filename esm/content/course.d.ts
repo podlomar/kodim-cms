@@ -1,3 +1,4 @@
+import { CourseLink } from "../entries";
 import { InnerEntry, BaseEntry } from "./entry.js";
 import { ResourceRef, Resource } from './resource.js';
 import { ChapterEntry, ChapterProvider, ChapterRef } from "./chapter.js";
@@ -24,7 +25,7 @@ export declare type CourseRef = ResourceRef<{
     image: string;
     lead: string;
 }>;
-export declare const loadCourse: (parentBase: BaseEntry, folderName: string) => Promise<CourseEntry>;
+export declare const loadCourse: (parentBase: BaseEntry, courseLink: CourseLink) => Promise<CourseEntry>;
 export declare const createCourseRef: (courseEntry: CourseEntry, accessAllowed: boolean, baseUrl: string) => CourseRef;
 export declare class CourseProvider extends BaseResourceProvider<CoursesRootProvider, CourseEntry, ChapterProvider> {
     reload(): Promise<void>;
