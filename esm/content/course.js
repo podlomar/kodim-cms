@@ -42,19 +42,23 @@ export const createCourseRef = (courseEntry, accessAllowed, baseUrl) => (Object.
         } }));
 export class CourseProvider extends BaseResourceProvider {
     async reload() {
+        if (this.entry.nodeType === 'broken') {
+            return;
+        }
+        const repo = this.entry.props.repo;
+        if (repo === null) {
+            return;
+        }
         const git = simpleGit({
             baseDir: this.entry.fsPath,
             binary: 'git',
         });
-        const fetchResult = await git.fetch();
+        const fetchResult = await git.fetch('origin', repo.branch);
         console.log('fetchResult', fetchResult);
-        const resetResult = await git.reset(ResetMode.HARD);
-        console.log('resethResult', resetResult);
+        const resetResult = await git.reset(ResetMode.HARD, [`origin/${repo.branch}`]);
+        console.log('resetResult', resetResult);
         const index = await readIndexFile(this.entry.fsPath);
         if (index === 'not-found') {
-            return;
-        }
-        if (this.entry.nodeType === 'broken') {
             return;
         }
         const chapters = await Promise.all(index.chapters === undefined ? [] :

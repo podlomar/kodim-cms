@@ -7,7 +7,6 @@ import { ChapterEntry, ChapterProvider, ChapterRef, createChapterRef, loadChapte
 import type { CoursesRootProvider } from "./content";
 import { findChild, readIndexFile, readYamlFile } from "./content-node.js";
 import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./provider.js";
-import { create } from "domain";
 
 export type CourseEntry = InnerEntry<{
   image: string,
@@ -106,26 +105,31 @@ export class CourseProvider extends BaseResourceProvider<
   CoursesRootProvider, CourseEntry, ChapterProvider
 > {
   public async reload(): Promise<void> {
+    if (this.entry.nodeType === 'broken') {
+      return;
+    }
+
+    const repo = this.entry.props.repo;
+    if (repo === null) {
+      return;
+    }
+
     const git = simpleGit({
       baseDir: this.entry.fsPath,
       binary: 'git',
     });
 
-    const fetchResult = await git.fetch();
+    const fetchResult = await git.fetch('origin', repo.branch);
     console.log('fetchResult', fetchResult);
 
-    const resetResult = await git.reset(ResetMode.HARD);
-    console.log('resethResult', resetResult);
+    const resetResult = await git.reset(ResetMode.HARD, [`origin/${repo.branch}`]);
+    console.log('resetResult', resetResult);
 
     const index = await readIndexFile<CourseIndex>(
       this.entry.fsPath,
     );
 
     if (index === 'not-found') {
-      return;
-    }
-
-    if (this.entry.nodeType === 'broken') {
       return;
     }
 
