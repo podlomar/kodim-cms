@@ -9,7 +9,7 @@ export interface EntryIndex {
 
 export interface ExerciseFrontMatter extends EntryIndex {
   demand: 1 | 2 | 3 | 4 | 5;
-  offerSolution?: boolean;
+  draftSolution?: boolean;
 }
 
 export interface LessonSectionIndex extends EntryIndex {

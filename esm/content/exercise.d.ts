@@ -7,19 +7,19 @@ import { Crumbs, Resource } from "./resource.js";
 export declare type ExerciseEntry = LeafEntry<{
     demand: 1 | 2 | 3 | 4 | 5;
     num: number;
-    offerSolution: boolean;
+    draftSolution: boolean;
 }>;
 export declare type ExerciseResource = Resource<{
     demand: 1 | 2 | 3 | 4 | 5;
     num: number;
-    offerSolution: boolean;
+    draftSolution: boolean;
     assignJsml: Jsml;
     solutionJsml: Jsml;
 }>;
 export interface ExerciseAssign {
     demand: 1 | 2 | 3 | 4 | 5;
     num: number;
-    offerSolution: boolean;
+    draftSolution: boolean;
     jsml: Jsml;
 }
 export declare const loadExercise: (parentBase: BaseEntry, link: string, pos: number) => Promise<ExerciseEntry>;

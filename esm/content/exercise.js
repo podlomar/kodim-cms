@@ -13,38 +13,37 @@ const loadFrontMatter = async (filePath) => new Promise((resolve, reject) => {
     let lines = "";
     lineReader.eachLine(filePath, (line) => {
         if (inside) {
-            if (line.startsWith("---")) {
+            if (line.trim().startsWith("---")) {
                 resolve(yaml.parse(lines));
                 return false;
             }
             lines += `${line}\n`;
             return true;
         }
-        if (line.startsWith("---")) {
+        if (line.trim().startsWith("---")) {
             inside = true;
         }
         return true;
     }, reject);
 });
-const loadAssign = async (filePath) => new Promise((resolve, reject) => {
-    let opened = 0;
-    let lines = "";
+const loadExerciseParts = async (filePath) => new Promise((resolve, reject) => {
+    const parts = {
+        assign: '',
+    };
     lineReader.eachLine(filePath, (line, last) => {
-        lines += `${line}\n`;
-        if (last) {
-            resolve(lines);
-        }
-        const trimmed = line.trim();
-        if (trimmed === ":::") {
-            opened -= 1;
-            if (opened === 0) {
-                resolve(lines);
-                return false;
-            }
+        if (line.trim() === "---solution") {
+            parts.solution = '';
             return true;
         }
-        if (trimmed.startsWith(":::")) {
-            opened += 1;
+        if (parts.solution === undefined) {
+            parts.assign += `${line}\n`;
+        }
+        else {
+            parts.solution += `${line}\n`;
+        }
+        if (last) {
+            resolve(parts);
+            return false;
         }
         return true;
     }, reject);
@@ -70,7 +69,7 @@ export const loadExercise = async (parentBase, link, pos) => {
     return Object.assign(Object.assign({ nodeType: 'leaf' }, createBaseEntry(parentBase, frontMatter, link, fsPath)), { props: {
             demand: frontMatter.demand,
             num: pos + 1,
-            offerSolution: frontMatter.offerSolution || false,
+            draftSolution: frontMatter.draftSolution || false,
         } });
 };
 export class ExerciseProvider extends BaseResourceProvider {
@@ -86,7 +85,6 @@ export class ExerciseProvider extends BaseResourceProvider {
         return new NotFoundProvider();
     }
     async fetch() {
-        var _a;
         const baseResource = createBaseResource(this.entry, this.crumbs, this.settings.baseUrl);
         if (!this.accessCheck.accepts()) {
             return Object.assign(Object.assign({}, baseResource), { status: 'forbidden', content: {
@@ -98,26 +96,22 @@ export class ExerciseProvider extends BaseResourceProvider {
                     type: 'broken',
                 } });
         }
-        const assignPath = getExcFilePath(this.entry.fsPath);
-        if (assignPath === null) {
+        const excPath = getExcFilePath(this.entry.fsPath);
+        if (excPath === null) {
             return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
                     type: 'broken',
                 } });
         }
-        const jsml = await this.markdownProcessor.process(assignPath);
-        const firstNode = jsml[0];
-        const secondNode = (_a = jsml[1]) !== null && _a !== void 0 ? _a : '';
-        const assignJsml = isElement(firstNode) && getTag(firstNode) === 'assign'
-            ? getChildren(firstNode)
-            : jsml;
-        const solutionJsml = isElement(secondNode) && getTag(secondNode) === 'solution'
-            ? getChildren(secondNode)
-            : [];
+        const parts = await loadExerciseParts(excPath);
+        const assignJsml = await this.markdownProcessor.processString(parts.assign);
+        const solutionJsml = parts.solution === undefined
+            ? []
+            : await this.markdownProcessor.processString(parts.solution);
         return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
                 type: 'full',
                 demand: this.entry.props.demand,
                 num: this.entry.props.num,
-                offerSolution: this.entry.props.offerSolution,
+                draftSolution: this.entry.props.draftSolution,
                 assignJsml,
                 solutionJsml,
             } });
@@ -127,15 +121,15 @@ export class ExerciseProvider extends BaseResourceProvider {
         if (excPath === null || this.entry.nodeType === 'broken') {
             return el('excerr', { link: this.entry.link });
         }
-        const assignText = await loadAssign(excPath);
-        const jsml = await this.markdownProcessor.processString(assignText);
+        const parts = await loadExerciseParts(excPath);
+        const jsml = await this.markdownProcessor.processString(parts.assign);
         const attrs = {
             num: this.entry.props.num,
             title: this.entry.title,
             link: this.entry.link,
             path: this.accessCheck.accepts() ? this.entry.path : 'forbidden',
             demand: this.entry.props.demand,
-            offerSolution: this.entry.props.offerSolution,
+            draftSolution: this.entry.props.draftSolution,
         };
         const firstNode = jsml[0];
         const content = isElement(firstNode) && getTag(firstNode) === 'assign'
