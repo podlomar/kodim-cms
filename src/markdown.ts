@@ -7,9 +7,10 @@ import gfm from 'remark-gfm';
 import rehype from "remark-rehype";
 import directiveRehype from "remark-directive-rehype";
 import stringify from "rehype-stringify";
+import rehypeHighlight from "rehype-highlight";
 import { Jsml } from "./jsml.js";
 import { ElementTransform, rootToJsml, TransformFunc } from "./hast-to-jsml.js";
-import { buildAssetTransform, buildFigTransform, codeTransform } from "./markdown-transforms.js";
+import { buildAssetTransform, buildFigTransform } from "./markdown-transforms.js";
 
 const unifiedProcessor = unified()
   .use(parse)
@@ -18,6 +19,7 @@ const unifiedProcessor = unified()
   .use(directive)
   .use(directiveRehype)
   .use(rehype)
+  .use(rehypeHighlight)
   .use(stringify);
 
 export class MarkdownProcessor {
@@ -33,7 +35,6 @@ export class MarkdownProcessor {
       a: assetTransform,
       img: assetTransform,
       fig: figTransform,
-      code: codeTransform,
       ...elementTransform,
     };
   }

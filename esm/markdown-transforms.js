@@ -1,4 +1,3 @@
-import { escape } from 'html-escaper';
 import { setAttr, getChildren, el, getAttrs } from "./jsml.js";
 ;
 const urlFromElement = (element) => {
@@ -34,11 +33,6 @@ export const buildFigTransform = (buildAssetPath) => async (element, node) => {
     const children = getChildren(node);
     const attrs = getAttrs(node);
     return assetTransform(element, el('fig', Object.assign(Object.assign({}, attrs), { alt: String(children[0]) })));
-};
-export const codeTransform = async (_, node) => {
-    const children = getChildren(node);
-    const attrs = getAttrs(node);
-    return el('code', attrs, ...children.map((child) => escape(String(child))));
 };
 export const buildExcTransform = (sectionProvider) => async (element, node) => {
     const linkChild = element.children[0];
