@@ -7,7 +7,6 @@ import { createBaseEntry, createBrokenEntry } from "./entry.js";
 import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 import { MarkdownProcessor } from "../markdown.js";
 import { createBaseResource } from "./resource.js";
-;
 const loadFrontMatter = async (filePath) => new Promise((resolve, reject) => {
     let inside = false;
     let lines = "";
@@ -29,21 +28,31 @@ const loadFrontMatter = async (filePath) => new Promise((resolve, reject) => {
 const loadExerciseParts = async (filePath) => new Promise((resolve, reject) => {
     const parts = {
         assign: '',
+        solution: null,
     };
     lineReader.eachLine(filePath, (line, last) => {
+        var _a;
         if (line.trim() === "---solution") {
-            parts.solution = '';
+            if (last) {
+                resolve(parts);
+            }
+            else {
+                parts.solution = '';
+            }
             return true;
         }
-        if (parts.solution === undefined) {
+        if (parts.solution === null) {
             parts.assign += `${line}\n`;
         }
         else {
             parts.solution += `${line}\n`;
         }
         if (last) {
+            if (((_a = parts.solution) === null || _a === void 0 ? void 0 : _a.trim()) === '') {
+                parts.solution = null;
+            }
             resolve(parts);
-            return false;
+            return true;
         }
         return true;
     }, reject);
@@ -104,14 +113,13 @@ export class ExerciseProvider extends BaseResourceProvider {
         }
         const parts = await loadExerciseParts(excPath);
         const assignJsml = await this.markdownProcessor.processString(parts.assign);
-        const solutionJsml = parts.solution === undefined
+        const solutionJsml = parts.solution === null
             ? []
             : await this.markdownProcessor.processString(parts.solution);
         return Object.assign(Object.assign({}, baseResource), { status: 'ok', content: {
                 type: 'full',
                 demand: this.entry.props.demand,
                 num: this.entry.props.num,
-                draftSolution: this.entry.props.draftSolution,
                 assignJsml,
                 solutionJsml,
             } });
@@ -129,7 +137,7 @@ export class ExerciseProvider extends BaseResourceProvider {
             link: this.entry.link,
             path: this.accessCheck.accepts() ? this.entry.path : 'forbidden',
             demand: this.entry.props.demand,
-            draftSolution: this.entry.props.draftSolution,
+            hasSolution: parts.solution !== null && !this.entry.props.draftSolution,
         };
         const firstNode = jsml[0];
         const content = isElement(firstNode) && getTag(firstNode) === 'assign'

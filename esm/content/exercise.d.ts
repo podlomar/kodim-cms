@@ -12,16 +12,9 @@ export declare type ExerciseEntry = LeafEntry<{
 export declare type ExerciseResource = Resource<{
     demand: 1 | 2 | 3 | 4 | 5;
     num: number;
-    draftSolution: boolean;
     assignJsml: Jsml;
     solutionJsml: Jsml;
 }>;
-export interface ExerciseAssign {
-    demand: 1 | 2 | 3 | 4 | 5;
-    num: number;
-    draftSolution: boolean;
-    jsml: Jsml;
-}
 export declare const loadExercise: (parentBase: BaseEntry, link: string, pos: number) => Promise<ExerciseEntry>;
 export declare class ExerciseProvider extends BaseResourceProvider<LessonSectionProvider, ExerciseEntry, never> {
     private markdownProcessor;

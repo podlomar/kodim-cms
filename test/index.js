@@ -15,7 +15,7 @@ const accessCheck = AccessClaimCheck.create(
     login: 'pokus',
     access: 'public',
   },
-  // '/kurzy/daweb/**'
+  '/kurzy/daweb/**',
   // '/kurzy/daweb/*/*/*/cvlekce>*'
   // 'kurzy/daweb/zaklady-js/*/cvdoma/*',
   // 'kurzy/daweb/*/*/cvlekce/*'

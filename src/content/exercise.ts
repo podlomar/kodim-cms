@@ -20,17 +20,9 @@ export type ExerciseEntry = LeafEntry<{
 export type ExerciseResource = Resource<{
   demand: 1 | 2 | 3 | 4 | 5;
   num: number;
-  draftSolution: boolean;
   assignJsml: Jsml,
   solutionJsml: Jsml,
 }>;
-
-export interface ExerciseAssign {
-  demand: 1 | 2 | 3 | 4 | 5;
-  num: number;
-  draftSolution: boolean;
-  jsml: Jsml,
-};
 
 const loadFrontMatter = async <T>(filePath: string): Promise<T> =>
   new Promise((resolve, reject) => {
@@ -57,31 +49,39 @@ const loadFrontMatter = async <T>(filePath: string): Promise<T> =>
 
 interface ExerciseParts {
   assign: string,
-  solution?: string,
+  solution: string | null,
 }
 
 const loadExerciseParts = async (filePath: string): Promise<ExerciseParts> =>
   new Promise((resolve, reject) => {
     const parts: ExerciseParts = {
       assign: '',
+      solution: null,
     };
 
     lineReader.eachLine(filePath,
       (line: string, last: boolean) => {
         if (line.trim() === "---solution") {
-          parts.solution = '';
+          if (last) {
+            resolve(parts);
+          } else {
+            parts.solution = '';
+          }
           return true;
         }
 
-        if (parts.solution === undefined) {
+        if (parts.solution === null) {
           parts.assign += `${line}\n`;
         } else {
           parts.solution += `${line}\n`;
         }
 
         if (last) {
+          if (parts.solution?.trim() === '') {
+            parts.solution = null;
+          }
           resolve(parts);
-          return false;
+          return true;
         }
 
         return true;
@@ -198,7 +198,7 @@ export class ExerciseProvider extends BaseResourceProvider<
 
     const parts = await loadExerciseParts(excPath);
     const assignJsml = await this.markdownProcessor.processString(parts.assign);
-    const solutionJsml = parts.solution === undefined
+    const solutionJsml = parts.solution === null
       ? []
       : await this.markdownProcessor.processString(parts.solution);
 
@@ -209,7 +209,6 @@ export class ExerciseProvider extends BaseResourceProvider<
         type: 'full',
         demand: this.entry.props.demand,
         num: this.entry.props.num,
-        draftSolution: this.entry.props.draftSolution,
         assignJsml,
         solutionJsml,
       },
@@ -234,7 +233,7 @@ export class ExerciseProvider extends BaseResourceProvider<
       link: this.entry.link,
       path: this.accessCheck.accepts() ? this.entry.path : 'forbidden',
       demand: this.entry.props.demand,
-      draftSolution: this.entry.props.draftSolution,
+      hasSolution: parts.solution !== null && !this.entry.props.draftSolution,
     };
 
     const firstNode = jsml[0];
