@@ -7,11 +7,6 @@ import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
 export declare type CourseEntry = InnerEntry<{
     image: string;
     lead: string;
-    repo: {
-        url: string;
-        branch: string;
-        secret: string;
-    } | null;
 }, ChapterEntry>;
 export declare type CourseResource = Resource<{
     image: string;

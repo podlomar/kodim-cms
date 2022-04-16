@@ -20,18 +20,17 @@ export const loadCourse = async (parentBase, courseLink) => {
         });
         const url = await git.remote(['get-url', 'origin']);
         repo = {
-            url: url.trim(),
+            originUrl: url.trim(),
             branch: courseLink.branch,
             secret: courseLink.secret,
         };
         console.log('git repo', index.title, repo);
     }
-    const baseEntry = createBaseEntry(parentBase, index, courseLink.link);
+    const baseEntry = createBaseEntry(parentBase, index, courseLink.link, repo);
     const chapters = await Promise.all(((_a = index.chapters) !== null && _a !== void 0 ? _a : []).map((chapterLink) => loadChapter(baseEntry, chapterLink)));
     return Object.assign(Object.assign({ nodeType: 'inner' }, baseEntry), { props: {
             image: index.image,
             lead: index.lead,
-            repo,
         }, subEntries: chapters });
 };
 export const createCourseRef = (courseEntry, accessAllowed, baseUrl) => (Object.assign(Object.assign({}, createBaseRef(accessAllowed ? 'ok' : 'forbidden', courseEntry, baseUrl)), { publicContent: courseEntry.nodeType === 'broken'
@@ -45,17 +44,17 @@ export class CourseProvider extends BaseResourceProvider {
         if (this.entry.nodeType === 'broken') {
             return;
         }
-        const repo = this.entry.props.repo;
-        if (repo === null) {
+        const repository = this.entry.repository;
+        if (repository === null) {
             return;
         }
         const git = simpleGit({
             baseDir: this.entry.fsPath,
             binary: 'git',
         });
-        const fetchResult = await git.fetch('origin', repo.branch);
+        const fetchResult = await git.fetch('origin', repository.branch);
         console.log('fetchResult', fetchResult);
-        const resetResult = await git.reset(ResetMode.HARD, [`origin/${repo.branch}`]);
+        const resetResult = await git.reset(ResetMode.HARD, [`origin/${repository.branch}`]);
         console.log('resetResult', resetResult);
         const index = await readIndexFile(this.entry.fsPath);
         if (index === 'not-found') {

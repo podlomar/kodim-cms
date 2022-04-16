@@ -1,3 +1,4 @@
+import { relative } from "path";
 import { Entry } from "./entry";
 
 export interface CrumbStep {
@@ -19,24 +20,31 @@ export type BrokenContent<Bro extends {}> = {
   type: 'broken',
 } & Bro;
 
+export interface ResourceRepository {
+  url: string,
+  branch: string,
+  contentPath: string,
+}
+
 export interface BaseResource {
   readonly link: string,
   readonly path: string,
   readonly url: string,
   readonly title: string,
+  readonly repository?: ResourceRepository,
   readonly crumbs: Crumbs,
 }
 
 export interface OkResource<
   Full extends {}, Bro extends {},
-> extends BaseResource {
+  > extends BaseResource {
   readonly status: 'ok',
   readonly content: FullContent<Full> | BrokenContent<Bro>;
 }
 
 export interface ForbiddenResource<
   Pub extends {}, Bro extends {},
-> extends BaseResource {
+  > extends BaseResource {
   readonly status: 'forbidden',
   readonly content: PublicContent<Pub> | BrokenContent<Bro>;
 }
@@ -47,7 +55,7 @@ export type Resource<Full extends {} = {}, Pub extends {} = {}, Bro extends {} =
 );
 
 export interface NotFound {
-  readonly status: 'not-found',  
+  readonly status: 'not-found',
 };
 
 export const createBaseResource = (
@@ -59,6 +67,13 @@ export const createBaseResource = (
   path: entry.path,
   url: `${baseUrl}/content${entry.path}`,
   title: entry.title,
+  repository: entry.repository === null
+    ? undefined
+    : {
+      url: entry.repository.baseUrl,
+      branch: entry.repository.branch,
+      contentPath: relative(entry.repository.entryFsPath, entry.fsPath),
+    },
   crumbs,
 });
 
@@ -88,7 +103,7 @@ export type ResourceRef<Pub extends {}> = (
 );
 
 export const createBaseRef = (
-  status: 'ok' | 'forbidden', 
+  status: 'ok' | 'forbidden',
   entry: Entry,
   baseUrl: string
 ): BaseRef => ({

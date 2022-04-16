@@ -122,7 +122,7 @@ export const loadExercise = async (
 
   return {
     nodeType: 'leaf',
-    ...createBaseEntry(parentBase, frontMatter, link, fsPath),
+    ...createBaseEntry(parentBase, frontMatter, link, null, fsPath),
     props: {
       demand: frontMatter.demand,
       num: pos + 1,

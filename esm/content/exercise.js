@@ -75,7 +75,7 @@ export const loadExercise = async (parentBase, link, pos) => {
         return createBrokenEntry(parentBase, link);
     }
     const frontMatter = await loadFrontMatter(assignPath);
-    return Object.assign(Object.assign({ nodeType: 'leaf' }, createBaseEntry(parentBase, frontMatter, link, fsPath)), { props: {
+    return Object.assign(Object.assign({ nodeType: 'leaf' }, createBaseEntry(parentBase, frontMatter, link, null, fsPath)), { props: {
             demand: frontMatter.demand,
             num: pos + 1,
             draftSolution: frontMatter.draftSolution || false,

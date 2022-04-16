@@ -1,15 +1,27 @@
 import { EntryIndex } from "../entries";
 export declare type EntryAccess = 'public' | 'logged-in' | 'claim' | 'deny';
+export interface Repository {
+    originUrl: string;
+    baseUrl: string;
+    branch: string;
+    secret: string;
+    entryFsPath: string;
+}
 export interface BaseEntry {
     link: string;
     title: string;
     path: string;
     fsPath: string;
+    repository: Repository | null;
     authors: string[];
     draft: boolean;
     access: EntryAccess;
 }
-export declare const createBaseEntry: <Props>(parentBase: BaseEntry, index: EntryIndex, link: string, fsPath?: string | undefined) => BaseEntry;
+export declare const createBaseEntry: <Props>(parentBase: BaseEntry, index: EntryIndex, link: string, repo?: {
+    originUrl: string;
+    branch: string;
+    secret: string;
+} | null | undefined, fsPath?: string | undefined) => BaseEntry;
 export interface OkLeafEntry<Props extends {}> extends BaseEntry {
     nodeType: 'leaf';
     props: Props;

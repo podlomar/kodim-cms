@@ -13,11 +13,17 @@ export declare type FullContent<Full extends {}> = {
 export declare type BrokenContent<Bro extends {}> = {
     type: 'broken';
 } & Bro;
+export interface ResourceRepository {
+    url: string;
+    branch: string;
+    contentPath: string;
+}
 export interface BaseResource {
     readonly link: string;
     readonly path: string;
     readonly url: string;
     readonly title: string;
+    readonly repository?: ResourceRepository;
     readonly crumbs: Crumbs;
 }
 export interface OkResource<Full extends {}, Bro extends {}> extends BaseResource {

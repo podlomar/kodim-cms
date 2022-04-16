@@ -11,11 +11,6 @@ import { BaseResourceProvider, NotFoundProvider, ResourceProvider } from "./prov
 export type CourseEntry = InnerEntry<{
   image: string,
   lead: string,
-  repo: {
-    url: string,
-    branch: string,
-    secret: string,
-  } | null,
 }, ChapterEntry>;
 
 export type CourseResource = Resource<{
@@ -55,7 +50,7 @@ export const loadCourse = async (
 
     const url = await git.remote(['get-url', 'origin']) as string;
     repo = {
-      url: url.trim(),
+      originUrl: url.trim(),
       branch: courseLink.branch,
       secret: courseLink.secret,
     }
@@ -63,7 +58,7 @@ export const loadCourse = async (
     console.log('git repo', index.title, repo);
   }
 
-  const baseEntry = createBaseEntry(parentBase, index, courseLink.link);
+  const baseEntry = createBaseEntry(parentBase, index, courseLink.link, repo);
 
   const chapters = await Promise.all(
     (index.chapters ?? []).map((chapterLink: string) => loadChapter(
@@ -77,7 +72,6 @@ export const loadCourse = async (
     props: {
       image: index.image,
       lead: index.lead,
-      repo,
     },
     subEntries: chapters,
   };
@@ -109,8 +103,8 @@ export class CourseProvider extends BaseResourceProvider<
       return;
     }
 
-    const repo = this.entry.props.repo;
-    if (repo === null) {
+    const repository = this.entry.repository;
+    if (repository === null) {
       return;
     }
 
@@ -119,10 +113,10 @@ export class CourseProvider extends BaseResourceProvider<
       binary: 'git',
     });
 
-    const fetchResult = await git.fetch('origin', repo.branch);
+    const fetchResult = await git.fetch('origin', repository.branch);
     console.log('fetchResult', fetchResult);
 
-    const resetResult = await git.reset(ResetMode.HARD, [`origin/${repo.branch}`]);
+    const resetResult = await git.reset(ResetMode.HARD, [`origin/${repository.branch}`]);
     console.log('resetResult', resetResult);
 
     const index = await readIndexFile<CourseIndex>(

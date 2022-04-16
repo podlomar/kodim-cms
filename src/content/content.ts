@@ -32,6 +32,7 @@ export const loadCoursesRoot = async (
     title: '',
     path: '',
     fsPath: contentFolder,
+    repository: null,
     authors: [],
     access: 'public',
     draft: false,
@@ -154,7 +155,7 @@ export class CoursesRootProvider extends BaseResourceProvider<
     for (let i = 0; i < courses.length; i += 1) {
       const course = courses[i];
       if (course.nodeType === 'inner') {
-        if (course.props.repo?.url === repoUrl) {
+        if (course.repository?.originUrl === repoUrl) {
           return new CourseProvider(
             this,
             course,
