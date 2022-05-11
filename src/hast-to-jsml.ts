@@ -37,9 +37,7 @@ export const contentToJsml = async (
 const childrenToJsml = async (
   children: Content[], transform: ElementTransform
 ): Promise<JsmlNode[]> => Promise.all(
-  children
-    .filter((child) => !(child.type === 'text' && child.value === '\n'))
-    .map((content) => contentToJsml(content, transform))
+  children.map((content) => contentToJsml(content, transform))
 );
 
 export const rootToJsml = async (

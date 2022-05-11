@@ -13,7 +13,5 @@ export const contentToJsml = async (content, transform) => {
     }
     return 'unexpected node type';
 };
-const childrenToJsml = async (children, transform) => Promise.all(children
-    .filter((child) => !(child.type === 'text' && child.value === '\n'))
-    .map((content) => contentToJsml(content, transform)));
+const childrenToJsml = async (children, transform) => Promise.all(children.map((content) => contentToJsml(content, transform)));
 export const rootToJsml = async (root, transform = {}) => childrenToJsml(root.children, transform);
