@@ -1,4 +1,3 @@
-import { escape } from 'html-escaper';
 import { Element } from 'hast';
 import { JsmlNode, JsmlElement, setAttr, getChildren, el, getAttrs } from "./jsml.js";
 import { LessonSectionProvider } from './content/lesson-section.js';
@@ -35,64 +34,53 @@ export const buildAssetTransform = (
 ) => async (
   element: Element, node: JsmlNode
 ): Promise<JsmlNode> => {
-  const refAttr = urlFromElement(element);
-  if (refAttr === null) {
+    const refAttr = urlFromElement(element);
+    if (refAttr === null) {
+      return node;
+    }
+
+    if (refAttr.path.startsWith('assets/')) {
+      return setAttr(
+        node as JsmlElement,
+        refAttr.name,
+        buildAssetPath(refAttr.path.slice(7)),
+      );
+    }
+
     return node;
   }
-
-  if (refAttr.path.startsWith('assets/')) {
-    return setAttr(
-      node as JsmlElement, 
-      refAttr.name, 
-      buildAssetPath(refAttr.path.slice(7)),
-    );
-  }
-
-  return node;
-}
 
 export const buildFigTransform = (
   buildAssetPath: (path: string) => string,
 ) => async (
   element: Element, node: JsmlNode
 ): Promise<JsmlNode> => {
-  const assetTransform = buildAssetTransform(buildAssetPath);
-  const children = getChildren(node as JsmlElement);
-  const attrs = getAttrs(node as JsmlElement);
-  
-  return assetTransform(
-    element,
-    el('fig', { ...attrs, alt: String(children[0])}),
-  );
-}
+    const assetTransform = buildAssetTransform(buildAssetPath);
+    const children = getChildren(node as JsmlElement);
+    const attrs = getAttrs(node as JsmlElement);
 
-export const codeTransform = async (
-  _: Element, node: JsmlNode
-): Promise<JsmlNode> => {
-  const children = getChildren(node as JsmlElement);
-  const attrs = getAttrs(node as JsmlElement);
-  
-  return el(
-    'code', attrs, ...children.map((child) => escape(String(child)))
-  );
-}
+    return assetTransform(
+      element,
+      el('fig', { ...attrs, alt: String(children[0]) }),
+    );
+  }
 
 export const buildExcTransform = (
   sectionProvider: LessonSectionProvider
 ) => async (
   element: Element, node: JsmlNode
 ): Promise<JsmlNode> => {
-  const linkChild = element.children[0];
-  if (linkChild.type !== 'text') {
-    return node;
-  }
-    
-  const link = linkChild.value;
-  const exerciseProvider = sectionProvider.findProvider(link);
+    const linkChild = element.children[0];
+    if (linkChild.type !== 'text') {
+      return node;
+    }
 
-  if (exerciseProvider === null) {
-    return node;
-  }
+    const link = linkChild.value;
+    const exerciseProvider = sectionProvider.findProvider(link);
 
-  return exerciseProvider.fetchAssign();
-};
+    if (exerciseProvider === null) {
+      return node;
+    }
+
+    return exerciseProvider.fetchAssign();
+  };

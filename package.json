@@ -35,6 +35,7 @@
     "mdast-builder": "^1.1.1",
     "mdast-util-visit": "^0.2.0",
     "outmatch": "^0.7.0",
+    "rehype-highlight": "^5.0.2",
     "rehype-stringify": "^9.0.2",
     "remark-attr": "^0.11.1",
     "remark-directive": "^2.0.1",

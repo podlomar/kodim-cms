@@ -7,8 +7,9 @@ import gfm from 'remark-gfm';
 import rehype from "remark-rehype";
 import directiveRehype from "remark-directive-rehype";
 import stringify from "rehype-stringify";
+import rehypeHighlight from "rehype-highlight";
 import { rootToJsml } from "./hast-to-jsml.js";
-import { buildAssetTransform, buildFigTransform, codeTransform } from "./markdown-transforms.js";
+import { buildAssetTransform, buildFigTransform } from "./markdown-transforms.js";
 const unifiedProcessor = unified()
     .use(parse)
     .use(frontmatter)
@@ -16,6 +17,7 @@ const unifiedProcessor = unified()
     .use(directive)
     .use(directiveRehype)
     .use(rehype)
+    .use(rehypeHighlight)
     .use(stringify);
 export class MarkdownProcessor {
     constructor(buildAssetPath, elementTransform = {}) {
@@ -33,7 +35,7 @@ export class MarkdownProcessor {
         const assetTransform = buildAssetTransform(buildAssetPath);
         const figTransform = buildFigTransform(buildAssetPath);
         this.buildAssetPath = buildAssetPath;
-        this.elementTransform = Object.assign({ a: assetTransform, img: assetTransform, fig: figTransform, code: codeTransform }, elementTransform);
+        this.elementTransform = Object.assign({ a: assetTransform, img: assetTransform, fig: figTransform }, elementTransform);
     }
     useTransform(tagName, transformFunc) {
         return new MarkdownProcessor(this.buildAssetPath, Object.assign(Object.assign({}, this.elementTransform), { [tagName]: transformFunc }));
