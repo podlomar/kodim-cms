@@ -17,7 +17,7 @@ const unifiedProcessor = unified()
     .use(directive)
     .use(directiveRehype)
     .use(rehype)
-    .use(rehypeHighlight)
+    .use(rehypeHighlight, { ignoreMissing: true })
     .use(stringify);
 export class MarkdownProcessor {
     constructor(buildAssetPath, elementTransform = {}) {
