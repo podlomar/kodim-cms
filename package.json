@@ -9,6 +9,7 @@
     "esm"
   ],
   "scripts": {
+    "test": "mocha",
     "dev": "tsc -w",
     "build-schemas": "json2ts -i src/schemas -o src/types.d.ts"
   },
@@ -21,6 +22,7 @@
     "@types/node": "^16.11.6",
     "@types/serve-static": "^1.13.10",
     "json-schema-to-typescript": "^10.1.5",
+    "mocha": "^10.0.0",
     "typescript": "^4.5.3"
   },
   "dependencies": {
