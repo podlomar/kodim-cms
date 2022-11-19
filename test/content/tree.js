@@ -16,31 +16,31 @@ export default {
         courses: [
           {
             nodeType: 'inner',
-            link: 'kodim-cms-test-banany',
-            title: 'Digitální flambované banány',
-            path: '/kurzy/kodim-cms-test-banany',
-            fsPath: '/home/podlomar/work/kodim.cz/kodim-cms-test-content/kurzy/kodim-cms-test-banany',
+            link: 'zemepis',
+            title: 'Zeměpis',
+            path: '/kurzy/zemepis',
+            fsPath: '/home/podlomar/work/kodim.cz/kodim-cms-test-content/kurzy/zemepis',
             repository: {
-              originUrl: 'https://github.com/podlomar/kodim-cms-test-banany.git',
+              originUrl: 'https://github.com/podlomar/zemepis.git',
               branch: 'main',
               secret: 'xxx',
-              baseUrl: 'https://github.com/podlomar/kodim-cms-test-banany',
-              entryFsPath: '/home/podlomar/work/kodim.cz/kodim-cms-test-content/kurzy/kodim-cms-test-banany'
+              baseUrl: 'https://github.com/podlomar/zemepis',
+              entryFsPath: '/home/podlomar/work/kodim.cz/kodim-cms-test-content/kurzy/zemepis'
             },
             authors: [],
             draft: false,
             access: 'public',
             props: {
               image: 'intro-image.svg',
-              lead: 'V tomto kurzu se naučíte přípravit výborné flambované banány z nul a jedniček'
+              lead: 'V tomto kurzu se naučíte vše o naší matičce Zemi'
             },
             subEntries: [
               {
                 nodeType: 'broken',
-                link: 'priprava',
-                title: 'priprava',
-                path: '/kurzy/kodim-cms-test-banany/priprava',
-                fsPath: '/home/podlomar/work/kodim.cz/kodim-cms-test-content/kurzy/kodim-cms-test-banany/priprava',
+                link: 'neexistuje',
+                title: 'neexistuje',
+                path: '/kurzy/zemepis/neexistuje',
+                fsPath: '/home/podlomar/work/kodim.cz/kodim-cms-test-content/kurzy/zemepis/neexistuje',
                 repository: null,
                 authors: [],
                 draft: false,
