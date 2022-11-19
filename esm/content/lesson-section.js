@@ -25,7 +25,7 @@ export const parseSection = async (file) => {
         let title = null;
         let excs = [];
         for (const node of tree.children) {
-            if (node.type === "heading" && node.depth === 2) {
+            if (node.type === "heading" && node.depth === 2 && title === null) {
                 title = mdastToString(node);
             }
             else if (node.type === "leafDirective" && node.name === "exc") {
