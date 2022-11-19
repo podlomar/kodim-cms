@@ -3,13 +3,13 @@
     "strict": true,
     "outDir": "esm",
     "noImplicitAny": true,
-    "module": "es6",
-    "target": "es2017",
+    "module": "esnext",
+    "target": "es2019",
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
     "declaration": true
   },
   "include": [
-    "src"
-  ]
+    "src/**/*.ts"
+  ],
 }

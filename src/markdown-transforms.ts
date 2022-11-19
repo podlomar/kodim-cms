@@ -1,6 +1,8 @@
 import { Element } from 'hast';
 import { JsmlNode, JsmlElement, setAttr, getChildren, el, getAttrs } from "./jsml.js";
 import { LessonSectionProvider } from './content/lesson-section.js';
+import { LessonSectionEntry } from './lesson-section.js';
+import { ExerciseEntry } from './exercise.js';
 
 interface RefAttr {
   path: string,
@@ -66,7 +68,7 @@ export const buildFigTransform = (
   }
 
 export const buildExcTransform = (
-  sectionProvider: LessonSectionProvider
+  sectionEntry: LessonSectionEntry,
 ) => async (
   element: Element, node: JsmlNode
 ): Promise<JsmlNode> => {
@@ -76,11 +78,11 @@ export const buildExcTransform = (
     }
 
     const link = linkChild.value;
-    const exerciseProvider = sectionProvider.findProvider(link);
+    const exerciseEntry = sectionEntry.find(link, ExerciseEntry);
 
-    if (exerciseProvider === null) {
+    if (exerciseEntry === null) {
       return node;
     }
 
-    return exerciseProvider.fetchAssign();
+    return exerciseEntry.fetchAssign();
   };
