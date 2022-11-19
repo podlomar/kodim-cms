@@ -45,6 +45,39 @@ export default {
                 authors: [],
                 draft: false,
                 access: 'public'
+              },
+              {
+                nodeType: 'inner',
+                link: 'evropa',
+                title: 'Evropa',
+                path: '/kurzy/zemepis/evropa',
+                fsPath: '/home/podlomar/work/kodim.cz/kodim-cms-test-content/kurzy/zemepis/evropa',
+                authors: [],
+                draft: false,
+                access: 'public',
+                props: {
+                  lead: 'Evropa je území vnímané buďto jako jeden ze šesti světadílů v jejich tradičních pojetích, nebo jako západní část Eurasie.'
+                },
+                repository: {
+                  baseUrl: 'https://github.com/podlomar/zemepis',
+                  branch: 'main',
+                  entryFsPath: '/home/podlomar/work/kodim.cz/kodim-cms-test-content/kurzy/zemepis',
+                  originUrl: 'https://github.com/podlomar/zemepis.git',
+                  secret: 'xxx',
+                },
+                subEntries: [
+                  {
+                    nodeType: 'broken',
+                    link: 'neexistuje',
+                    title: 'neexistuje',
+                    path: '/kurzy/zemepis/evropa/neexistuje',
+                    access: 'public',
+                    authors: [],
+                    draft: false,
+                    fsPath: '/home/podlomar/work/kodim.cz/kodim-cms-test-content/kurzy/zemepis/evropa/neexistuje',
+                    repository: null,
+                  },
+                ],
               }
             ]
           }
