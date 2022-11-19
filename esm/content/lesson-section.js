@@ -7,6 +7,7 @@ import markdown from "remark-parse";
 import directive from "remark-directive";
 import rehype from "remark-rehype";
 import stringify from "rehype-stringify";
+import { toString as mdastToString } from 'mdast-util-to-string';
 import { createBaseEntry, createBrokenEntry } from "./entry.js";
 import { ExerciseProvider, loadExercise } from "./exercise.js";
 import { findChild } from "./content-node.js";
@@ -25,12 +26,9 @@ export const parseSection = async (file) => {
         let excs = [];
         for (const node of tree.children) {
             if (node.type === "heading" && node.depth === 2) {
-                const content = node.children[0];
-                if (content.type === "text" && title === null) {
-                    title = content.value;
-                }
+                title = mdastToString(node);
             }
-            if (node.type === "leafDirective" && node.name === "exc") {
+            else if (node.type === "leafDirective" && node.name === "exc") {
                 const content = node.children[0];
                 if (content.type === "text") {
                     excs.push(content.value.trim());

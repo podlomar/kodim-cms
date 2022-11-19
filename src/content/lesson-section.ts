@@ -8,6 +8,7 @@ import markdown from "remark-parse";
 import directive from "remark-directive";
 import rehype from "remark-rehype";
 import stringify from "rehype-stringify";
+import { toString as mdastToString } from 'mdast-util-to-string'
 import { LessonSectionIndex } from "../entries";
 import { InnerEntry, createBaseEntry, BaseEntry, createBrokenEntry } from "./entry.js";
 import { ExerciseEntry, ExerciseProvider, loadExercise } from "./exercise.js";
@@ -43,13 +44,8 @@ export const parseSection = async (file: string): Promise<LessonSectionIndex | '
 
     for (const node of tree.children) {
       if (node.type === "heading" && node.depth === 2) {
-        const content = node.children[0];
-        if (content.type === "text" && title === null) {
-          title = content.value;
-        }
-      }
-
-      if (node.type === "leafDirective" && node.name === "exc") {
+        title = mdastToString(node);
+      } else if (node.type === "leafDirective" && node.name === "exc") {
         const content = node.children[0];
         if (content.type === "text") {
           excs.push(content.value.trim());
