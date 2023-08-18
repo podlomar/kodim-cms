@@ -1,19 +1,19 @@
-import assert from 'assert';
-import { AccessClaimCheck } from '../esm/content/access-check.js';
 import { KodimCms } from '../esm/index.js';
-import contentTree from './content/tree.js';
+import { RootContentType } from '../esm/content/root.js';
+import { CourseContentType } from '../esm/content/course.js';
 
 const cms = await KodimCms.load(
-  '/home/podlomar/work/kodim.cz/kodim-cms-test-content',
+  '/home/podlomar/work/kodim.cz/content',
 );
 
-const accessCheck = AccessClaimCheck.create({
-  login: 'pokus',
-  access: 'public',
-});
+// const root = await cms.loadContent(cms.rootCursor(), RootContentType);
+// const zakladyTs = await cms.loadContent(cms.rootCursor().descend('zaklady-ts'), CourseContentType);
+// const courseEntry = cms.rootCursor().descend('zaklady-ts').entry();
 
-const rootProvider = cms.getRoot(accessCheck);
+console.log(cms.ff.summary());
 
-it('well formed content tree', () => {
-  assert.deepStrictEqual(rootProvider.getEntry(), contentTree);
-});
+// console.log(JSON.stringify(zakladyTs, null, 2));
+
+// it('well formed content tree', () => {
+//   assert.deepStrictEqual(rootProvider.getEntry(), contentTree);
+// });

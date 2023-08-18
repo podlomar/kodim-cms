@@ -1,12 +1,17 @@
 {
   "compilerOptions": {
-    "strict": true,
     "outDir": "esm",
-    "noImplicitAny": true,
-    "module": "esnext",
-    "target": "es2019",
+    "module": "es2022",
+    "target": "es2022",
+    "strict": true,
     "allowSyntheticDefaultImports": true,
-    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node16",
+    "resolveJsonModule": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "skipLibCheck": true,
     "declaration": true
   },
   "include": [

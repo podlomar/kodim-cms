@@ -1,57 +1,46 @@
-import { Cms } from '@filefish/core';
-import { EntryBase, ParentEntry } from '@filefish/core/dist/entry.js';
-import { FSysNode } from '@filefish/core/dist/fsysnodes';
-import { FolderLoader } from '@filefish/core/dist/loader.js';
-import { Course, CourseRef, CourseEntry, CourseLoader } from './course.js';
+import { ContentType } from "filefish/dist/content-types.js";
+import { Cursor, OkCursor } from "filefish/dist/cursor.js";
+import { Filefish, filefish, Asset, FilefishOptions } from "filefish/dist/index.js";
+import { IndexEntry } from "filefish/dist/treeindex.js";
+import { FsNode } from "fs-inquire";
+import { RootEntry, RootContentType } from "./content/root.js";
 
-export interface Division {
-  name: string,
-  courses: CourseRef[],
-}
+export class KodimCms {
+  private readonly ff: Filefish<RootEntry>;
 
-export type Divisions = { [Name: string]: Division };
-
-export interface Root {
-  divisions: Divisions;
-}
-
-class RootEntry extends ParentEntry<Root, CourseEntry> {
-  public constructor(base: EntryBase, subEntries: CourseEntry[]) {
-    super(base, subEntries);
+  private constructor(ff: Filefish<RootEntry>) {
+    this.ff = ff;
   }
 
-  public async fetch(): Promise<Root> {
-    const divisions: Divisions = {};
+  public static async load(
+    contentPath: string,
+    options: Partial<FilefishOptions> = {}
+  ): Promise<KodimCms> {
+    const ff = await filefish<RootEntry>(contentPath, RootContentType, options);
+    return new KodimCms(ff!);
+  }
 
-    this.subEntries.forEach((subEntry) => {
-      const name = subEntry.division;
-      let division = divisions[name];
+  public async loadContent<C>(
+    cursor: Cursor, contentType: ContentType<FsNode, IndexEntry, C>
+  ): Promise<C | null> {
+    const content = await this.ff.loadContent(cursor, contentType);
+    if (content === 'forbidden' || content === 'not-found' || content === 'mismatch') {
+      return null;
+    }
 
-      if (division === undefined) {
-        division = {
-          name,
-          courses: [],
-        };
-        divisions[name] = division;
-      }
+    return content;
+  }
 
-      division.courses.push(subEntry.getContentRef());
-    });
+  public async loadAsset(cursor: Cursor, assetName: string): Promise<Asset | null> {
+    const asset = await this.ff.loadAsset(cursor, assetName);
+    if (asset === 'not-found') {
+      return null;
+    }
 
-    return { divisions };
+    return asset;
+  }
+
+  public rootCursor(): OkCursor {
+    return this.ff.rootCursor();
   }
 }
-
-class RootLoader extends FolderLoader<RootEntry> {
-  protected async loadFolder(base: EntryBase, subNodes: FSysNode[]): Promise<RootEntry> {
-    const subentries = await new CourseLoader().loadMany(subNodes);
-    const entry = new RootEntry(base, subentries);
-    return entry;
-  }
-}
-
-export type KodimCms = Cms<RootEntry>;
-
-export const loadCms = async (rootFolder: string, rootPath: string = ''): Promise<KodimCms> => Cms.load(
-  new RootLoader(), rootFolder, rootPath,
-);

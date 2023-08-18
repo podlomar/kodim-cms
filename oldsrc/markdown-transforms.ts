@@ -1,8 +1,7 @@
 import { Element } from 'hast';
 import { JsmlNode, JsmlElement, setAttr, getChildren, el, getAttrs } from "./jsml.js";
-import { LessonSectionProvider } from './content/lesson-section.js';
-import { LessonSectionEntry } from './lesson-section.js';
-import { ExerciseEntry } from './exercise.js';
+import { SectionContentType, SectionEntry } from '../content/section.js';
+import { Node as EffmlNode} from 'effml';
 
 interface RefAttr {
   path: string,
@@ -68,19 +67,19 @@ export const buildFigTransform = (
   }
 
 export const buildExcTransform = (
-  sectionEntry: LessonSectionEntry,
+  sectionEntry: SectionEntry,
 ) => async (
   element: Element, node: JsmlNode
 ): Promise<JsmlNode> => {
-    const linkChild = element.children[0];
-    if (linkChild.type !== 'text') {
+    const nameChild = element.children[0];
+    if (nameChild.type !== 'text') {
       return node;
     }
 
-    const link = linkChild.value;
-    const exerciseEntry = sectionEntry.find(link, ExerciseEntry);
+    const name = nameChild.value;
+    const exerciseEntry = sectionEntry.subEntries.find((entry) => entry.name === name);
 
-    if (exerciseEntry === null) {
+    if (exerciseEntry === undefined) {
       return node;
     }
 

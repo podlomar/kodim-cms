@@ -1,180 +1,90 @@
-import { ChapterIndex } from "../entries";
-import { BaseEntry, createBaseEntry, createBrokenEntry, InnerEntry } from "./entry.js";
-import { Resource, createBaseResource, createBaseRef, ResourceRef } from './resource.js';
-import { findChild, readIndexFile } from "./content-node.js";
-import type { CourseProvider } from "./course";
-import { createLessonRef, LessonEntry, LessonProvider, LessonRef, loadLesson } from "./lesson.js";
-import { BaseResourceProvider, NotFoundProvider } from "./provider.js";
+import path from 'path';
+import { promises as fs } from 'fs';
+import yaml from 'yaml';
+import { IndexEntry, InnerEntry } from 'filefish/dist/treeindex.js';
+import { RefableContentType, IndexingContext, LoadingContext } from 'filefish/dist/content-types.js';
+import { folder, FolderNode } from 'fs-inquire';
+import { OkCursor } from 'filefish/dist/cursor.js';
+import { LessonContentType, LessonEntry, ShallowLesson } from './lesson.js';
 
-export type ChapterEntry = InnerEntry<{
+const CHAPTER_ENTRY_CONTENT_ID = 'chapter';
+
+export interface ChapterEntry extends InnerEntry<LessonEntry> {
+  title: string,
   lead: string,
-}, LessonEntry>;
-
-export type ChapterResource = Resource<{
-  lead: string,
-  lessons: LessonRef[],
-}, {
-  lead: string,
-}>;
-
-export type ChapterRef = ResourceRef<{
-  lead: string,
-}>;
-
-export const loadChapter = async (
-  parentBase: BaseEntry,
-  folderName: string,
-): Promise<ChapterEntry> => {
-  const index = await readIndexFile<ChapterIndex>(
-    `${parentBase.fsPath}/${folderName}`
-  );
-
-  if (index === 'not-found') {
-    return createBrokenEntry(parentBase, folderName);
-  }
-
-  const baseEntry = createBaseEntry(parentBase, index, folderName);
-
-  const lessons = await Promise.all(
-    (index.lessons ?? []).map((lessonLink: string, idx: number) => loadLesson(
-      baseEntry, lessonLink, idx,
-    ))
-  );
-
-  return {
-    nodeType: 'inner',
-    ...baseEntry,
-    props: {
-      lead: index.lead,
-    },
-    subEntries: lessons,
-  };
 }
 
-export const createChapterRef = (
-  chapter: ChapterEntry,
-  accessAllowed: boolean,
-  baseUrl: string
-): ChapterRef => ({
-  ...createBaseRef(
-    accessAllowed ? 'ok' : 'forbidden',
-    chapter,
-    baseUrl
-  ),
-  publicContent: chapter.nodeType === 'broken'
-    ? 'broken'
-    : {
-      lead: chapter.props.lead,
-    }
-});
+interface EntryFile {
+  title: string,
+  lead: string,
+  lessons: string[];
+}
 
-export class ChapterProvider extends BaseResourceProvider<
-  CourseProvider, ChapterEntry, LessonProvider
-> {
-  public async fetch(): Promise<ChapterResource> {
-    const baseResource = createBaseResource(this.entry,
-      this.crumbs,
-      this.settings.baseUrl
+export interface ShallowChapter {
+  path: string;
+  name: string;
+  title: string;
+  lead: string;
+}
+
+export interface Chapter extends ShallowChapter {
+  lessons: ShallowLesson[],
+}
+
+export const ChapterContentType: RefableContentType<
+  FolderNode, ChapterEntry, Chapter, ShallowChapter
+> = {
+  async index(folderNode: FolderNode, context: IndexingContext): Promise<ChapterEntry> {
+    const entryFileContent = await fs.readFile(
+      path.resolve(folderNode.path, 'entry.yml'), 'utf-8'
     );
+    const entryFile = yaml.parse(entryFileContent) as EntryFile;
+    
+    const lessonFolders = folder(folderNode)
+      .select
+      .folders
+      .byNames(entryFile.lessons)
+      .getOrThrow();
 
-    if (!this.accessCheck.accepts()) {
-      return {
-        ...baseResource,
-        status: 'forbidden',
-        content: this.entry.nodeType === 'broken'
-          ? {
-            type: 'broken',
-          } : {
-            type: 'public',
-            lead: this.entry.props.lead,
-          }
-      };
-    }
-
-    if (this.entry.nodeType === 'broken') {
-      return {
-        ...baseResource,
-        status: 'ok',
-        content: {
-          type: 'broken',
-        }
-      };
-    }
-
-    const lessons = this.entry.subEntries.map(
-      (lesson) => {
-        const accessCheck = this.accessCheck.step(lesson);
-        return createLessonRef(lesson, accessCheck.accepts(), this.settings.baseUrl);
-      }
-    );
+    const subEntries = await context.indexMany(lessonFolders, LessonContentType);
 
     return {
-      ...baseResource,
-      status: 'ok',
-      content: {
-        type: 'full',
-        lead: this.entry.props.lead,
-        lessons,
-      }
+      type: 'inner',
+      contentId: CHAPTER_ENTRY_CONTENT_ID,
+      name: folderNode.parsedPath.name,
+      fsNode: folderNode,
+      title: entryFile.title,
+      lead: entryFile.lead,
+      subEntries,
+    }
+  },
+  
+  fits(entry: IndexEntry): entry is ChapterEntry {
+    return entry.contentId === CHAPTER_ENTRY_CONTENT_ID;
+  },
+  
+  async loadContent(cursor: OkCursor, context: LoadingContext): Promise<Chapter> {
+    const entry = cursor.entry() as ChapterEntry;
+    const lessons = (
+      await context.loadShallowMany(cursor.children(), LessonContentType)
+    ) as ShallowLesson[];
+
+    return {
+      path: cursor.contentPath(),
+      name: entry.name,
+      title: entry.title,
+      lead: entry.lead,
+      lessons,
+    }
+  },
+
+  async loadShallowContent(cursor: OkCursor, context: LoadingContext): Promise<ShallowChapter> {
+    const entry = cursor.entry() as ChapterEntry;
+    return {
+      path: cursor.contentPath(),
+      name: entry.name,
+      title: entry.title,
+      lead: entry.lead,
     }
   }
-
-  public find(link: string): LessonProvider | NotFoundProvider {
-    if (!this.accessCheck.accepts()) {
-      return new NotFoundProvider();
-    }
-
-    if (this.entry.nodeType === 'broken') {
-      return new NotFoundProvider();
-    }
-
-    const result = findChild(this.entry.subEntries, link);
-    if (result === null) {
-      return new NotFoundProvider();
-    }
-
-    return new LessonProvider(
-      this,
-      result.child,
-      result.pos,
-      [...this.crumbs, {
-        title: this.entry.title,
-        path: this.entry.path
-      }],
-      this.accessCheck.step(result.child),
-      this.settings
-    );
-  }
-
-  public getNextLesson(pos: number): LessonRef | null {
-    if (this.entry.nodeType === 'broken') {
-      return null;
-    }
-
-    const lesson = this.entry.subEntries[pos + 1];
-    if (lesson === undefined) {
-      return null;
-    }
-
-    const childAccess = this.accessCheck.step(lesson);
-    return createLessonRef(lesson, childAccess.accepts(), this.settings.baseUrl);
-  }
-
-  public getPrevLesson(pos: number): LessonRef | null {
-    if (this.entry.nodeType === 'broken') {
-      return null;
-    }
-
-    const lesson = this.entry.subEntries[pos - 1];
-    if (lesson === undefined) {
-      return null;
-    }
-
-    const childAccess = this.accessCheck.step(lesson);
-    return createLessonRef(lesson, childAccess.accepts(), this.settings.baseUrl);
-  }
-
-  public findRepo(repoUrl: string): null {
-    return null;
-  }
-}
+};
