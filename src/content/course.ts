@@ -1,6 +1,7 @@
 import path from 'path';
 import { promises as fs } from 'fs';
 import yaml from 'yaml';
+import { simpleGit } from 'simple-git';
 import { IndexEntry, InnerEntry } from 'filefish/dist/treeindex.js';
 import { RefableContentType, IndexingContext, LoadingContext } from 'filefish/dist/content-types.js';
 import { folder, FolderNode } from 'fs-inquire';
@@ -15,6 +16,7 @@ export interface CourseEntry extends InnerEntry<ChapterEntry> {
   title: string,
   lead: string,
   image: string,
+  repoUrl?: string,
 };
 
 interface EntryFile {
@@ -51,6 +53,19 @@ export const CourseContentType: RefableContentType<FolderNode, CourseEntry, Cour
       .byNames(names)
       .getOrThrow();
 
+    const gitFolder = folder(folderNode).select.folder.byName('.git');
+
+    let repoUrl: string | undefined = undefined;
+    if (gitFolder.isSuccess()) {
+      const git = simpleGit({
+        baseDir: folderNode.path,
+        binary: 'git',
+      });
+  
+      repoUrl = await git.remote(['get-url', 'origin']) as string;
+      repoUrl = repoUrl.trim();
+    }
+
     const imageName = entryFile.image.startsWith('assets/')
       ? entryFile.image.slice(7)
       : null;
@@ -63,6 +78,7 @@ export const CourseContentType: RefableContentType<FolderNode, CourseEntry, Cour
       title: entryFile.title,
       lead: entryFile.lead,
       image: imageName ?? '',
+      repoUrl,
       assets: imageName === null ? undefined : [imageName],
       subEntries: entryFile.lessons === undefined
         ? await context.indexMany(folders, ChapterContentType)

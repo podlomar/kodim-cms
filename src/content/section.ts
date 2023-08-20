@@ -130,7 +130,6 @@ export const SectionContentType: RefableContentType<
 > = {
   async index(file: FileNode, context: IndexingContext): Promise<SectionEntry> {
     const sectionFile = await indexSection(file.path);
-    
     const excsNodes = fsNode(file)
       .parent
       .select

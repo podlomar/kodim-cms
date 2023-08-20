@@ -96,7 +96,7 @@ export const ExerciseContentType: RefableContentType<
 
   async loadContent(cursor: OkCursor, context: LoadingContext): Promise<Exercise> {
     const entry = cursor.entry() as ExerciseEntry;
-    return exerciseProcessor.process(entry.fsNode.path, cursor);
+    return exerciseProcessor.process(entry.fsNode, cursor);
   },
 
   async loadShallowContent(cursor: OkCursor): Promise<ShallowExercise> {

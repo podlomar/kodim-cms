@@ -52,8 +52,12 @@ export class SectionProcessor {
       if (node.type === 'element' && node.tagName === 'exc') {
         const content = (node.children[0] as Text).value as string;
         const name = content.trim().split('/').at(-1)!;
-        const exc = await context.loadShallow(cursor.navigate(name) as OkCursor, ExerciseContentType);
-        
+        const excCursor = cursor.navigate(name);
+        if (!excCursor.isOk()) {
+          continue;
+        }
+
+        const exc = await context.loadShallow(excCursor, ExerciseContentType);     
         if (exc === 'mismatch') {
           continue;
         }

@@ -11,6 +11,7 @@ import rehypeHighlight from "rehype-highlight";
 import { RootContent } from "hast";
 import { OkCursor } from "filefish/dist/cursor.js";
 import { Exercise, ExerciseContentType, ExerciseEntry } from "../content/exercise.js";
+import { FsNode } from "fs-inquire";
 
 const unifiedProcessor = unified()
   .use(parse)
@@ -50,9 +51,13 @@ export class ExerciseProcessor {
   // }
 
   public process = async (
-    file: string, cursor: OkCursor,
+    fsNode: FsNode, cursor: OkCursor,
   ): Promise<Exercise> => {
-    const text = await readFile(file, "utf-8");
+    const filePath = fsNode.type === 'file'
+      ? fsNode.path
+      : fsNode.path + '/exercise.md';
+
+    const text = await readFile(filePath, "utf-8");
     return this.processString(text, cursor);
   };
 
@@ -63,8 +68,6 @@ export class ExerciseProcessor {
     
     const rootChildren: RootContent[] = [];
     let solution: RootContent | null = null;
-    
-    console.log('root', root.children);
     
     for(const node of root.children) {
       if (node.type === 'doctype' || node.type === 'comment') {

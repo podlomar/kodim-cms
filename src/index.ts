@@ -1,12 +1,17 @@
-import { Cursor } from "filefish/dist/cursor.js";
 import { Filefish, filefish, Asset, FilefishOptions } from "filefish/dist/index.js";
+import { simpleGit, ResetMode, FetchResult } from "simple-git";
 import { Chapter, ChapterContentType } from "./content/chapter.js";
-import { Course, CourseContentType } from "./content/course.js";
+import { Course, CourseContentType, CourseEntry } from "./content/course.js";
 import { Exercise, ExerciseContentType } from "./content/exercise.js";
 import { Lesson, LessonContentType } from "./content/lesson.js";
 import { RootEntry, Root, RootContentType } from "./content/root.js";
 import { Section, SectionContentType } from "./content/section.js";
 import { Topic, TopicContentType } from "./content/topic.js";
+
+interface ReindexResult {
+  fetch: FetchResult;
+  head: string;
+}
 
 export class KodimCms {
   private readonly ff: Filefish<RootEntry>;
@@ -131,5 +136,37 @@ export class KodimCms {
     }
 
     return exercise;
+  }
+
+  public async reindexCourseFromRepo(
+    repoUrl: string, branchName: string
+  ): Promise<ReindexResult | 'not-found'> {
+    const cursor = this.ff.rootCursor().search(
+      (entry) => CourseContentType.fits(entry) && entry.repoUrl === repoUrl,
+    );
+
+    if (!cursor.isOk()) {
+      return 'not-found';
+    }
+
+    const courseEntry = cursor.entry() as CourseEntry;
+
+    const git = simpleGit({
+      baseDir: courseEntry.fsNode.path,
+      binary: 'git',
+    });
+
+    const fetchResult = await git.fetch('origin', branchName);
+    const resetResult = await git.reset(ResetMode.HARD, [`origin/${branchName}`]);
+    const result = await this.ff.reindex(cursor, CourseContentType);
+
+    if (result === 'not-found' || result === 'mismatch') {
+      return 'not-found';
+    }
+
+    return {
+      fetch: fetchResult,
+      head: resetResult,
+    };
   }
 }
