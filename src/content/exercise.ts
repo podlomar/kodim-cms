@@ -1,18 +1,11 @@
 import path from 'path';
-// import { promises as fs } from 'fs';
-// import { unified } from "unified";
-// import markdown from "remark-parse";
-// import directive from "remark-directive";
-// import rehype from "remark-rehype";
-// import stringify from "rehype-stringify";
-import yaml from 'yaml';
-import lineReader from "line-reader";
 import { IndexEntry, LeafEntry } from 'filefish/dist/treeindex.js';
 import { LoadingContext, RefableContentType } from 'filefish/dist/content-types.js';
 import { FsNode } from 'fs-inquire';
 import { OkCursor } from 'filefish/dist/cursor.js';
 import { Root as HastRoot } from 'hast';
-import { ExerciseProcessor } from '../render/markdown2.js';
+import { processExercise } from '../render/markdown.js';
+import { MarkdownSource } from '../render/markdown-source.js';
 
 const EXERCISE_ENTRY_CONTENT_ID = 'excercise';
 
@@ -38,55 +31,42 @@ export interface Exercise extends ShallowExercise {
   solution?: HastRoot,
 }
 
-export interface ExerciseFrontMatter {
+export interface ExerciseFile {
   readonly title: string;
   readonly demand: Demand;
   readonly lead?: string;
   readonly draftSolution?: boolean;
+  readonly assets: string[];
 }
 
-const loadFrontMatter = async (filePath: string): Promise<ExerciseFrontMatter> => {
-  return new Promise((resolve, reject) => {
-    let inside = false;
-    let lines = "";
-    lineReader.eachLine(filePath,
-      (line) => {
-        if (inside) {
-          if (line.trim().startsWith("---")) {
-            resolve(yaml.parse(lines));
-            return false;
-          }
-          lines += `${line}\n`;
-          return true;
-        }
-        if (line.trim().startsWith("---")) {
-          inside = true;
-        }
-        return true;
-      },
-      reject,
-    );
-  });
-}
+const indexExercise = async (fsNode: FsNode): Promise<ExerciseFile> => {
+  const filePath = fsNode.type === 'file'
+    ? fsNode.path
+    : path.join(fsNode.path, 'exercise.md');
+  const source = await MarkdownSource.fromFile(filePath);
+  const assets = source.collectAssets();
 
-const exerciseProcessor = new ExerciseProcessor();
+  return {
+    ...source.getFrontMatter(),
+    assets,
+  };
+}
 
 export const ExerciseContentType: RefableContentType<
   FsNode, ExerciseEntry, Exercise, ShallowExercise
 > = {
   async index(node: FsNode): Promise<ExerciseEntry> {
-    const frontMatter = node.type === 'file'
-      ? await loadFrontMatter(node.path)
-      : await loadFrontMatter(path.join(node.path, 'exercise.md'));    
+    const exerciseFile = await indexExercise(node);
 
     return {
       type: 'leaf',
       contentId: EXERCISE_ENTRY_CONTENT_ID,
       name: node.parsedPath.name,
       fsNode: node,
-      title: frontMatter.title,
-      demand: frontMatter.demand,
-      lead: frontMatter.lead ?? 'no-lead',
+      title: exerciseFile.title,
+      demand: exerciseFile.demand,
+      lead: exerciseFile.lead ?? 'no-lead',
+      assets: exerciseFile.assets,
     }
   },
 
@@ -96,7 +76,7 @@ export const ExerciseContentType: RefableContentType<
 
   async loadContent(cursor: OkCursor, context: LoadingContext): Promise<Exercise> {
     const entry = cursor.entry() as ExerciseEntry;
-    return exerciseProcessor.process(entry.fsNode, cursor);
+    return processExercise(entry.fsNode, cursor, context);
   },
 
   async loadShallowContent(cursor: OkCursor): Promise<ShallowExercise> {

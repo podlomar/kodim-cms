@@ -1,93 +1,110 @@
-import { readFile } from "fs/promises";
-import { unified } from "unified";
-import parse from "remark-parse";
-import directive from "remark-directive";
-import frontmatter from 'remark-frontmatter';
-import gfm from 'remark-gfm';
-import rehype from "remark-rehype";
-import directiveRehype from "remark-directive-rehype";
-import stringify from "rehype-stringify";
-import rehypeHighlight from "rehype-highlight";
 import { SectionBlock } from "../content/section.js";
-import { Text } from "hast";
+import { RootContent, Text } from "hast";
 import { LoadingContext } from "filefish/dist/content-types.js";
 import { OkCursor } from "filefish/dist/cursor.js";
-import { ExerciseContentType } from "../content/exercise.js";
+import { Exercise, ExerciseContentType, ExerciseEntry } from "../content/exercise.js";
+import { MarkdownSource } from "./markdown-source.js";
+import { FsNode } from "fs-inquire";
 
-const unifiedProcessor = unified()
-  .use(parse)
-  .use(frontmatter)
-  .use(gfm)
-  .use(directive)
-  .use(directiveRehype)
-  .use(rehype)
-  .use(rehypeHighlight, { ignoreMissing: true })
-  .use(stringify);
+export const processSection = async (
+  file: string, cursor: OkCursor, context: LoadingContext,
+): Promise<SectionBlock[]> => {
+  const source = await MarkdownSource.fromFile(file);
+  const root = await source.process(cursor, context);
+  const blocks: SectionBlock[] = [];
 
-export class SectionProcessor {
-  public process = async (
-    file: string, cursor: OkCursor, context: LoadingContext
-  ): Promise<SectionBlock[]> => {
-    const text = await readFile(file, "utf-8");
-    return this.processString(text, cursor, context);
-  };
-
-  public processString = async (
-    text: string, cursor: OkCursor, context: LoadingContext,
-  ): Promise<SectionBlock[]> => {
-    const mdastTree = unifiedProcessor.parse(text);
-    const root = await unifiedProcessor.run(mdastTree);
-    const blocks: SectionBlock[] = [];
-
-    for(const node of root.children) {
-      if (node.type === 'doctype' || node.type === 'comment') {
-        continue;
-      }
+  for(const node of root.children) {
+    if (node.type === 'doctype' || node.type === 'comment') {
+      continue;
+    }
       
-      if (node.type === 'text' && node.value.trim() === '') {
+    if (node.type === 'text' && node.value.trim() === '') {
+      continue;
+    }
+
+    let lastBlock = blocks.at(-1);
+    if (node.type === 'element' && node.tagName === 'exc') {
+      const content = (node.children[0] as Text).value as string;
+      const name = content.trim().split('/').at(-1)!;
+      const excCursor = cursor.navigate(name);
+      if (!excCursor.isOk()) {
         continue;
       }
 
-      let lastBlock = blocks.at(-1);
-      if (node.type === 'element' && node.tagName === 'exc') {
-        const content = (node.children[0] as Text).value as string;
-        const name = content.trim().split('/').at(-1)!;
-        const excCursor = cursor.navigate(name);
-        if (!excCursor.isOk()) {
-          continue;
-        }
-
-        const exc = await context.loadShallow(excCursor, ExerciseContentType);     
-        if (exc === 'mismatch') {
-          continue;
-        }
-
-        if (lastBlock === undefined || lastBlock.type !== 'excs') {
-          blocks.push({ type: 'excs', excs: [exc] });
-        } else {
-          lastBlock.excs.push(exc);
-        }
+      const exc = await context.loadShallow(excCursor, ExerciseContentType);     
+      if (exc === 'mismatch') {
         continue;
       }
 
-      if (node.type === 'element' && node.tagName === 'fig') {
-        const assetName = (node.properties!.src as string).split('/')[1];
-        node.properties!.src = context.buildAssetPath(cursor, assetName);
-      }
-
-      if (lastBlock === undefined || lastBlock.type !== 'hast') {
-        blocks.push({
-          type: 'hast',
-          root: {
-            type: 'root',
-            children: [node],
-          }
-        });
+      if (lastBlock === undefined || lastBlock.type !== 'excs') {
+        blocks.push({ type: 'excs', excs: [exc] });
       } else {
-        lastBlock.root.children.push(node);
-      } 
+        lastBlock.excs.push(exc);
+      }
+      continue;
+    }
+
+    if (lastBlock === undefined || lastBlock.type !== 'hast') {
+      blocks.push({
+        type: 'hast',
+        root: {
+          type: 'root',
+          children: [node],
+        }
+      });
+    } else {
+      lastBlock.root.children.push(node);
+    } 
+  }
+    
+  return blocks;
+};
+
+export const processExercise = async (
+  fsNode: FsNode, cursor: OkCursor, context: LoadingContext
+): Promise<Exercise> => {
+  const filePath = fsNode.type === 'file'
+    ? fsNode.path
+    : fsNode.path + '/exercise.md';
+  
+  const entry = cursor.entry() as ExerciseEntry;
+  const source = await MarkdownSource.fromFile(filePath);
+  const root = await source.process(cursor, context);
+  
+  const rootChildren: RootContent[] = [];
+  let solution: RootContent | null = null;
+  
+  for(const node of root.children) {
+    if (node.type === 'doctype' || node.type === 'comment') {
+      continue;
     }
     
-    return blocks;
+    if (node.type === 'text' && node.value.trim() === '') {
+      continue;
+    }
+
+    if (node.type === 'element' && node.tagName === 'solution') {
+      solution = node;
+      continue;
+    }
+
+    rootChildren.push(node);
+  }
+  
+  return {
+    path: cursor.contentPath(),
+    name: entry.name,
+    lead: entry.lead,
+    title: entry.title,
+    demand: entry.demand,
+    num: cursor.pos() + 1,
+    assign: {
+      ...root,
+      children: rootChildren,
+    },
+    solution: {
+      type: 'root',
+      children: solution === null ? [] : solution.children,
+    },
   };
-}
+};

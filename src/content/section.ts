@@ -1,19 +1,12 @@
 import path from 'path';
-import { promises as fs } from 'fs';
-import { unified } from "unified";
-import { selectAll } from 'unist-util-select';
-import markdown from "remark-parse";
-import directive from "remark-directive";
-import rehype from "remark-rehype";
-import stringify from "rehype-stringify";
 import { IndexEntry, InnerEntry, LeafEntry } from 'filefish/dist/treeindex.js';
 import { RefableContentType, IndexingContext, LoadingContext } from 'filefish/dist/content-types.js';
 import { FileNode, folder, fsNode } from 'fs-inquire';
 import { OkCursor } from 'filefish/dist/cursor.js';
 import { ExerciseContentType, ExerciseEntry, ShallowExercise } from './exercise.js';
-import { SectionProcessor } from '../render/markdown.js';
-import { Content, Root } from 'mdast';
+import { processSection } from '../render/markdown.js';
 import { Root as HastRoot } from 'hast';
+import { MarkdownSource } from '../render/markdown-source.js';
 
 const SECTION_ENTRY_CONTENT_ID = 'section';
 
@@ -51,41 +44,10 @@ export interface Section extends ShallowSection {
   next: ShallowSection | null,
 }
 
-export const processor = unified()
-  .use(markdown)
-  .use(directive)
-  .use(rehype)
-  .use(stringify);
-
-export const indexAssets = (tree: Root): string[] => {
-  const assets = [] as string[];
-  const nodes = selectAll('image, link, leafDirective[name=fig]', tree) as Content[];
-
-  for (const content of nodes) {
-    let url: string | null = null;
-    if (content.type === 'image' || content.type === 'link') {
-      if (content.url.startsWith('assets/')) {
-        url = content.url;
-      }
-    } else if (content.type === 'leafDirective') {
-      const src = content.attributes?.src ?? '';
-      if (src.startsWith('assets/')) {
-        url = src;
-      }
-    }
-    
-    if (url !== null) {
-      assets.push(url.slice(7));
-    }
-  }
-  
-  return assets;
-}
-
 export const indexSection = async (file: string): Promise<SectionFile | undefined> => {
   try {
-    const text = await fs.readFile(file, "utf-8");
-    const tree = processor.parse(text);
+    const source = await MarkdownSource.fromFile(file);
+    const tree = source.getRoot();
 
     let title: string | null = null;
     let excs: string[] = [];
@@ -110,7 +72,7 @@ export const indexSection = async (file: string): Promise<SectionFile | undefine
       title = path.basename(file);
     }
 
-    const assets = indexAssets(tree);
+    const assets = source.collectAssets();
 
     return { title, excs, assets };
   } catch (err: any) {
@@ -122,8 +84,6 @@ export const indexSection = async (file: string): Promise<SectionFile | undefine
     }
   }
 };
-
-const sectionProcessor = new SectionProcessor();
 
 export const SectionContentType: RefableContentType<
   FileNode, SectionEntry, Section, ShallowSection
@@ -158,7 +118,7 @@ export const SectionContentType: RefableContentType<
     const entry = cursor.entry() as SectionEntry;
     const prevCursor = cursor.prevSibling();
     const nextCursor = cursor.nextSibling();
-    const blocks = await sectionProcessor.process(entry.fsNode.path, cursor, context);
+    const blocks = await processSection(entry.fsNode.path, cursor, context);
 
     return {
       path: cursor.contentPath(),
