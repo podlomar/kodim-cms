@@ -15,6 +15,7 @@ export interface ExerciseEntry extends LeafEntry {
   title: string,
   lead: string,
   demand: Demand,
+  offerSolution: boolean,
 }
 
 export interface ShallowExercise {
@@ -35,7 +36,7 @@ export interface ExerciseFile {
   readonly title: string;
   readonly demand: Demand;
   readonly lead?: string;
-  readonly draftSolution?: boolean;
+  readonly offerSolution?: boolean;
   readonly assets: string[];
 }
 
@@ -45,9 +46,13 @@ const indexExercise = async (fsNode: FsNode): Promise<ExerciseFile> => {
     : path.join(fsNode.path, 'exercise.md');
   const source = await MarkdownSource.fromFile(filePath);
   const assets = source.collectAssets();
+  const frontMatter = source.getFrontMatter();
 
   return {
-    ...source.getFrontMatter(),
+    title: frontMatter.title,
+    demand: frontMatter.demand,
+    lead: frontMatter.lead,
+    offerSolution: frontMatter.offerSolution,
     assets,
   };
 }
@@ -66,6 +71,7 @@ export const ExerciseContentType: RefableContentType<
       title: exerciseFile.title,
       demand: exerciseFile.demand,
       lead: exerciseFile.lead ?? 'no-lead',
+      offerSolution: exerciseFile.offerSolution ?? true,
       assets: exerciseFile.assets,
     }
   },

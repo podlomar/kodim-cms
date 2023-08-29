@@ -102,9 +102,11 @@ export const processExercise = async (
       ...root,
       children: rootChildren,
     },
-    solution: {
-      type: 'root',
-      children: solution === null ? [] : solution.children,
-    },
+    solution: solution === null || entry.offerSolution === false
+      ? undefined
+      : {
+        type: 'root',
+        children: solution.children,
+      },
   };
 };

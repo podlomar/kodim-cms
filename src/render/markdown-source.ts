@@ -56,7 +56,7 @@ export class MarkdownSource {
     return this.root;
   }
 
-  public getFrontMatter(): any {
+  public getFrontMatter(): Record<string, any> {
     return this.frontMatter;
   }
 
