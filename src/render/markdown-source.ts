@@ -87,15 +87,29 @@ export class MarkdownSource {
 
   public async process(cursor: OkCursor, context: LoadingContext): Promise<HastRoot> {
     const hast = await unifiedProcessor.run(this.root);
-    const figures = hast.children
+    const assetLinks = hast.children
       .filter((node): node is Element => node.type === 'element')
       // FIXME: This is some weirdness with the hast types
       // @ts-ignore
-      .flatMap((node) => hastSelectAll('fig', node));
+      .flatMap((node) => hastSelectAll('fig, a, img', node));
 
-    for (const figure of figures) {
-      const assetName = (figure.properties!.src as string).split('/')[1];
-      figure.properties!.src = context.buildAssetPath(cursor, assetName);
+    for (const link of assetLinks) {
+      const url = link.properties!.href ?? link.properties!.src;
+      if (typeof url !== 'string') {
+        continue;
+      }
+
+      if (!url.startsWith('assets/')) {
+        continue;
+      }
+
+      const assetPath = context.buildAssetPath(cursor, url.slice(7));
+      
+      if (link.properties!.src !== undefined) {
+        link.properties!.src = assetPath;
+      } else if (link.properties!.href !== undefined) {
+        link.properties!.href = assetPath;
+      }
     }
     
     return hast;
