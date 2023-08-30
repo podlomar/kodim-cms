@@ -25,6 +25,7 @@ export class KodimCms {
     options: Partial<FilefishOptions> = {}
   ): Promise<KodimCms> {
     const ff = await filefish<RootEntry>(contentPath, RootContentType, options);
+    console.log('Loaded Kodim CMS', ff?.summary());
     return new KodimCms(ff!);
   }
 

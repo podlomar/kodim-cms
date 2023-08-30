@@ -29,7 +29,7 @@ export const RootContentType: ContentType<FolderNode, RootEntry, Root> = {
     const topicFolders = folder(folderNode)
       .select
       .folders
-      .byNames(entryFile.topics)
+      .byPaths(entryFile.topics)
       .getOrThrow();
 
     const subEntries = await context.indexMany(topicFolders, TopicContentType);
@@ -48,11 +48,8 @@ export const RootContentType: ContentType<FolderNode, RootEntry, Root> = {
   },
 
   async loadContent(cursor: OkCursor, context: LoadingContext): Promise<Root> {
-    const entry = cursor.entry() as RootEntry;
-    const subCursors = cursor.children();
-    
     const topics = (
-      await context.loadMany(subCursors, TopicContentType)
+      await context.loadMany(cursor.children(), TopicContentType)
     ) as Topic[];
 
     return { topics };

@@ -46,7 +46,7 @@ export const TopicContentType: ContentType<FolderNode, TopicEntry, Topic> = {
     const courseFolders = folder(folderNode)
       .select
       .folders
-      .byNames(entryFile.courses)
+      .byPaths(entryFile.courses)
       .getOrThrow();
 
     const subEntries = await context.indexMany(courseFolders, CourseContentType);

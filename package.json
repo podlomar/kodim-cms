@@ -24,8 +24,8 @@
     "typescript": "^5.1.3"
   },
   "dependencies": {
-    "filefish": "^1.0.0-alpha.3",
-    "fs-inquire": "^1.0.0-alpha.1",
+    "filefish": "^1.0.0-alpha.4",
+    "fs-inquire": "^1.0.0-alpha.2",
     "hast": "^1.0.0",
     "hast-util-select": "^6.0.0",
     "mdast": "^3.0.0",

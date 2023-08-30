@@ -46,7 +46,7 @@ export const LessonContentType: RefableContentType<
     const sectionFiles = folder(folderNode)
       .select
       .files
-      .byNames(entryFile.sections, 'md')
+      .byPaths(entryFile.sections, '.md')
       .getOrThrow();
     
     const subEntries = await context.indexMany(sectionFiles, SectionContentType);

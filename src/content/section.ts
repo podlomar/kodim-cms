@@ -94,7 +94,7 @@ export const SectionContentType: RefableContentType<
       .parent
       .select
       .nodes
-      .byPaths(sectionFile?.excs ?? [], 'md')
+      .byPaths(sectionFile?.excs ?? [], '', '.md')
       .getOrThrow();
 
     const subEntries = await context.indexMany(excsNodes, ExerciseContentType);

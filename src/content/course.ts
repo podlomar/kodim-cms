@@ -50,10 +50,10 @@ export const CourseContentType: RefableContentType<FolderNode, CourseEntry, Cour
     const folders = folder(folderNode)
       .select
       .folders
-      .byNames(names)
+      .byPaths(names)
       .getOrThrow();
 
-    const gitFolder = folder(folderNode).select.folder.byName('.git');
+    const gitFolder = folder(folderNode).select.folder.byPath('.git');
 
     let repoUrl: string | undefined = undefined;
     if (gitFolder.isSuccess()) {

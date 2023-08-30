@@ -43,7 +43,7 @@ export const ChapterContentType: RefableContentType<
     const lessonFolders = folder(folderNode)
       .select
       .folders
-      .byNames(entryFile.lessons)
+      .byPaths(entryFile.lessons)
       .getOrThrow();
 
     const subEntries = await context.indexMany(lessonFolders, LessonContentType);
