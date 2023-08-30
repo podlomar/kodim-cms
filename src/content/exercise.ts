@@ -11,11 +11,13 @@ const EXERCISE_ENTRY_CONTENT_ID = 'excercise';
 
 export type Demand = 1 | 2 | 3 | 4 | 5;
 
+export type SolutionAccess = 'allow' | 'lock' | 'hide';
+
 export interface ExerciseEntry extends LeafEntry {
   title: string,
   lead: string,
   demand: Demand,
-  offerSolution: boolean,
+  solutionAccess: SolutionAccess,
 }
 
 export interface ShallowExercise {
@@ -29,14 +31,14 @@ export interface ShallowExercise {
 
 export interface Exercise extends ShallowExercise {
   assign: HastRoot,
-  solution?: HastRoot,
+  solution: HastRoot | 'locked' | 'none',
 }
 
 export interface ExerciseFile {
   readonly title: string;
   readonly demand: Demand;
   readonly lead?: string;
-  readonly offerSolution?: boolean;
+  readonly solutionAccess?: SolutionAccess;
   readonly assets: string[];
 }
 
@@ -52,7 +54,7 @@ const indexExercise = async (fsNode: FsNode): Promise<ExerciseFile> => {
     title: frontMatter.title,
     demand: frontMatter.demand,
     lead: frontMatter.lead,
-    offerSolution: frontMatter.offerSolution,
+    solutionAccess: frontMatter.solutionAccess,
     assets,
   };
 }
@@ -71,7 +73,7 @@ export const ExerciseContentType: RefableContentType<
       title: exerciseFile.title,
       demand: exerciseFile.demand,
       lead: exerciseFile.lead ?? 'no-lead',
-      offerSolution: exerciseFile.offerSolution ?? true,
+      solutionAccess: exerciseFile.solutionAccess ?? 'allow',
       assets: exerciseFile.assets,
     }
   },
