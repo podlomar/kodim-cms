@@ -6,6 +6,7 @@ import { OkCursor } from 'filefish/dist/cursor.js';
 import { Root as HastRoot } from 'hast';
 import { processExercise } from '../render/markdown.js';
 import { MarkdownSource } from '../render/markdown-source.js';
+import { Crumbs } from './crumbs.js';
 
 const EXERCISE_ENTRY_CONTENT_ID = 'excercise';
 
@@ -30,6 +31,7 @@ export interface ShallowExercise {
 }
 
 export interface Exercise extends ShallowExercise {
+  crumbs: Crumbs,
   assign: HastRoot,
   solution: HastRoot | 'locked' | 'none',
 }

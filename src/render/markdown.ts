@@ -5,6 +5,7 @@ import { OkCursor } from "filefish/dist/cursor.js";
 import { Exercise, ExerciseContentType, ExerciseEntry } from "../content/exercise.js";
 import { MarkdownSource } from "./markdown-source.js";
 import { FsNode } from "fs-inquire";
+import { crumbsFromCursor } from "../content/crumbs.js";
 
 export const processSection = async (
   file: string, cursor: OkCursor, context: LoadingContext,
@@ -92,6 +93,7 @@ export const processExercise = async (
   }
   
   return {
+    crumbs: crumbsFromCursor(cursor),
     path: cursor.contentPath(),
     name: entry.name,
     lead: entry.lead,

@@ -9,6 +9,7 @@ import { Chapter, ChapterContentType, ChapterEntry, ShallowChapter } from './cha
 import { OkCursor } from 'filefish/dist/cursor.js';
 import { LessonContentType, LessonEntry, ShallowLesson } from './lesson.js';
 import type { TopicEntry } from './topic.js';
+import { Crumbs, crumbsFromCursor } from './crumbs.js';
 
 const COURSE_ENTRY_CONTENT_ID = 'course';
 
@@ -37,6 +38,7 @@ export interface ShallowCourse {
 }
 
 export interface Course extends ShallowCourse {
+  crumbs: Crumbs;
   chapters: ShallowChapter[];
 }
 
@@ -106,6 +108,7 @@ export const CourseContentType: RefableContentType<FolderNode, CourseEntry, Cour
     const chapters = await context.loadMany(subCursors, ChapterContentType);
 
     return {
+      crumbs: crumbsFromCursor(cursor),
       path: cursor.contentPath(),
       name: entry.name,
       title: entry.title,

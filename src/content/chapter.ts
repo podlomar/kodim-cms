@@ -6,6 +6,7 @@ import { RefableContentType, IndexingContext, LoadingContext } from 'filefish/di
 import { folder, FolderNode } from 'fs-inquire';
 import { OkCursor } from 'filefish/dist/cursor.js';
 import { LessonContentType, LessonEntry, ShallowLesson } from './lesson.js';
+import { Crumbs, crumbsFromCursor } from './crumbs.js';
 
 const CHAPTER_ENTRY_CONTENT_ID = 'chapter';
 
@@ -28,6 +29,7 @@ export interface ShallowChapter {
 }
 
 export interface Chapter extends ShallowChapter {
+  crumbs: Crumbs;
   lessons: ShallowLesson[],
 }
 
@@ -70,6 +72,7 @@ export const ChapterContentType: RefableContentType<
     ) as ShallowLesson[];
 
     return {
+      crumbs: crumbsFromCursor(cursor),
       path: cursor.contentPath(),
       name: entry.name,
       title: entry.title,

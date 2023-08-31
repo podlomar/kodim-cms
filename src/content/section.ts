@@ -7,6 +7,7 @@ import { ExerciseContentType, ExerciseEntry, ShallowExercise } from './exercise.
 import { processSection } from '../render/markdown.js';
 import { Root as HastRoot } from 'hast';
 import { MarkdownSource } from '../render/markdown-source.js';
+import { Crumbs, crumbsFromCursor } from './crumbs.js';
 
 const SECTION_ENTRY_CONTENT_ID = 'section';
 
@@ -39,6 +40,7 @@ export interface ExerciseBlock {
 export type SectionBlock = TextBlock | ExerciseBlock;
 
 export interface Section extends ShallowSection {
+  crumbs: Crumbs,
   blocks: SectionBlock[],
   prev: ShallowSection | null,
   next: ShallowSection | null,
@@ -121,6 +123,7 @@ export const SectionContentType: RefableContentType<
     const blocks = await processSection(entry.fsNode.path, cursor, context);
 
     return {
+      crumbs: crumbsFromCursor(cursor),
       path: cursor.contentPath(),
       name: entry.name,
       title: entry.title,
