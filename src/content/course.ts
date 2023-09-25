@@ -2,23 +2,28 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import yaml from 'yaml';
 import { simpleGit } from 'simple-git';
-import { IndexEntry, InnerEntry } from 'filefish/dist/treeindex.js';
-import { RefableContentType, IndexingContext, LoadingContext } from 'filefish/dist/content-types.js';
+import { InnerEntry } from 'filefish/dist/treeindex.js';
+import { IndexingContext, LoadingContext, contentType } from 'filefish/dist/content-types.js';
 import { folder, FolderNode } from 'fs-inquire';
 import { Chapter, ChapterContentType, ChapterEntry, ShallowChapter } from './chapter.js';
 import { OkCursor } from 'filefish/dist/cursor.js';
 import { LessonContentType, LessonEntry, ShallowLesson } from './lesson.js';
-import type { TopicEntry } from './topic.js';
-import { Crumbs, crumbsFromCursor } from './crumbs.js';
+import { TopicContentType, TopicEntry } from './topic.js';
+import { Result } from 'monadix/result';
+import { BaseContent, BaseShallowContent, buildBaseContent, buildBaseShallowContent } from './base.js';
+import { LoadError } from 'filefish/dist/errors.js';
 
-const COURSE_ENTRY_CONTENT_ID = 'course';
+export interface CourseData {
+  readonly lead: string,
+  readonly image: string,
+}
 
-export interface CourseEntry extends InnerEntry<ChapterEntry> {
-  title: string,
-  lead: string,
-  image: string,
-  repoUrl?: string,
-};
+export type CourseEntry = InnerEntry<
+  ChapterEntry,
+  CourseData & {
+    repoUrl?: string,
+  }
+>;
 
 interface EntryFile {
   title: string,
@@ -28,22 +33,16 @@ interface EntryFile {
   lessons?: string[];
 }
 
-export interface ShallowCourse {
-  path: string;
-  name: string;
-  title: string;
-  lead: string;
-  image: string;
+export interface ShallowCourse extends BaseShallowContent, CourseData {
   topicMask: string;
 }
 
-export interface Course extends ShallowCourse {
-  crumbs: Crumbs;
+export interface Course extends ShallowCourse, BaseContent {
   chapters: ShallowChapter[];
 }
 
-export const CourseContentType: RefableContentType<FolderNode, CourseEntry, Course, ShallowCourse> = {
-  async index(folderNode: FolderNode, context: IndexingContext): Promise<CourseEntry> {
+export const CourseContentType = contentType('kodim/course', {
+  async indexOne(folderNode: FolderNode, context: IndexingContext): Promise<CourseEntry> {
     const entryFileContent = await fs.readFile(
       path.resolve(folderNode.path, 'entry.yml'), 'utf-8'
     );
@@ -72,64 +71,64 @@ export const CourseContentType: RefableContentType<FolderNode, CourseEntry, Cour
       ? entryFile.image.slice(7)
       : null;
 
-    return {
-      type: 'inner' as const,
-      contentId: COURSE_ENTRY_CONTENT_ID,
-      fsNode: folderNode,
-      name: folderNode.parsedPath.name,
-      title: entryFile.title,
+    const data = {
       lead: entryFile.lead,
       image: imageName ?? '',
       repoUrl,
+    };
+
+    const subEntries = entryFile.lessons === undefined
+      ? await context.indexSubEntries(folders, folderNode.fileName, ChapterContentType)
+      : [{
+        type: 'inner' as const,
+        contentId: ChapterContentType.contentId,
+        name: 'lekce',
+        fsNode: folderNode,
+        subEntries: await context.indexSubEntries(folders, folderNode.fileName, LessonContentType),
+        title: '',
+        data: {
+          lead: ''
+        },
+      }];
+
+    return {
+      ...context.buildInnerEntry(folderNode, data, subEntries),
+      title: entryFile.title,
       assets: imageName === null ? undefined : [imageName],
-      subEntries: entryFile.lessons === undefined
-        ? await context.indexMany(folders, ChapterContentType)
-        : [{
-          type: 'inner' as const,
-          contentId: 'chapter',
-          name: 'lekce',
-          fsNode: folderNode,
-          subEntries: await context.indexMany(folders, LessonContentType),
-          title: '',
-          lead: '',
-        }]
     };
   },
-  
-  fits(entry: IndexEntry): entry is CourseEntry {
-    return entry.contentId === COURSE_ENTRY_CONTENT_ID;
-  },
-  
-  async loadContent(cursor: OkCursor, context: LoadingContext): Promise<Course> {
-    const topicEntry = cursor.parent().entry() as TopicEntry;
-    const entry = cursor.entry() as CourseEntry;
+  async loadOne(
+    cursor: OkCursor<CourseEntry>, context: LoadingContext,
+  ): Promise<Result<Course, LoadError>>  {
+    const parentCursor = cursor.parent() as OkCursor<TopicEntry>;
+    const topicEntry = parentCursor.entry();
+    const entry = cursor.entry();
     const subCursors = cursor.children();
     
-    const chapters = await context.loadMany(subCursors, ChapterContentType);
+    const chapters = Result.collectSuccess(
+      await ChapterContentType.loadShallowMany(subCursors, context)
+    );
 
-    return {
-      crumbs: crumbsFromCursor(cursor),
-      path: cursor.contentPath(),
-      name: entry.name,
-      title: entry.title,
-      lead: entry.lead,
-      image: context.buildAssetPath(cursor, entry.image),
-      topicMask: context.buildAssetPath(cursor.parent() as OkCursor, topicEntry.mask),
+    return Result.success({
+      ...buildBaseContent(cursor),
+      lead: entry.data.lead,
+      image: CourseContentType.buildAssetPath(cursor, entry.data.image, context),
+      topicMask: TopicContentType.buildAssetPath(parentCursor, topicEntry.data.mask, context),
       chapters: chapters as Chapter[],
-    };
+    });
   },
-
-  async loadShallowContent(cursor: OkCursor, context: LoadingContext): Promise<ShallowCourse> {
-    const topicEntry = cursor.parent().entry() as TopicEntry;
-    const entry = cursor.entry() as CourseEntry;
+  async loadShallowOne(
+    cursor: OkCursor<CourseEntry>, context: LoadingContext,
+  ): Promise<Result<ShallowCourse, LoadError>>  {
+    const parentCursor = cursor.parent() as OkCursor<TopicEntry>;
+    const topicEntry = parentCursor.entry();
+    const entry = cursor.entry();
     
-    return {
-      path: cursor.contentPath(),
-      name: entry.name,
-      title: entry.title,
-      lead: entry.lead,
-      image: context.buildAssetPath(cursor, entry.image),
-      topicMask: context.buildAssetPath(cursor.parent() as OkCursor, topicEntry.mask),
-    };
+    return Result.success({
+      ...buildBaseShallowContent(cursor),
+      lead: entry.data.lead,
+      image: CourseContentType.buildAssetPath(cursor, entry.data.image, context),
+      topicMask: TopicContentType.buildAssetPath(parentCursor, topicEntry.data.mask, context),
+    });
   }
-};
+});

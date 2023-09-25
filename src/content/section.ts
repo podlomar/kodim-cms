@@ -1,31 +1,25 @@
 import path from 'path';
-import { IndexEntry, InnerEntry, LeafEntry } from 'filefish/dist/treeindex.js';
-import { RefableContentType, IndexingContext, LoadingContext } from 'filefish/dist/content-types.js';
+import { InnerEntry } from 'filefish/dist/treeindex.js';
+import { IndexingContext, LoadingContext, contentType } from 'filefish/dist/content-types.js';
 import { FileNode, folder, fsNode } from 'fs-inquire';
 import { OkCursor } from 'filefish/dist/cursor.js';
 import { ExerciseContentType, ExerciseEntry, ShallowExercise } from './exercise.js';
 import { processSection } from '../render/markdown.js';
 import { Root as HastRoot } from 'hast';
 import { MarkdownSource } from '../render/markdown-source.js';
-import { Crumbs, crumbsFromCursor } from './crumbs.js';
+import { BaseContent, BaseShallowContent, buildBaseContent } from './base.js';
+import { LoadError } from 'filefish/dist/errors.js';
+import { Result } from 'monadix/result';
 
-const SECTION_ENTRY_CONTENT_ID = 'section';
-
-export interface SectionEntry extends InnerEntry<ExerciseEntry> {
-  title: string,
-}
+export type SectionEntry = InnerEntry<ExerciseEntry>;
 
 interface SectionFile {
-  title: string;
+  title?: string;
   assets: string[];
   excs: string[];
 }
 
-export interface ShallowSection {
-  path: string,
-  name: string;
-  title: string,
-};
+export type ShallowSection = BaseShallowContent;
 
 export interface TextBlock {
   type: 'hast',
@@ -39,8 +33,7 @@ export interface ExerciseBlock {
 
 export type SectionBlock = TextBlock | ExerciseBlock;
 
-export interface Section extends ShallowSection {
-  crumbs: Crumbs,
+export interface Section extends ShallowSection, BaseContent {
   blocks: SectionBlock[],
   prev: ShallowSection | null,
   next: ShallowSection | null,
@@ -51,13 +44,13 @@ export const indexSection = async (file: string): Promise<SectionFile | undefine
     const source = await MarkdownSource.fromFile(file);
     const tree = source.getRoot();
 
-    let title: string | null = null;
+    let title: string | undefined = undefined;
     let excs: string[] = [];
 
     for (const node of tree.children) {
       if (node.type === "heading" && node.depth === 2) {
         const content = node.children[0];
-        if (content.type === "text" && title === null) {
+        if (content.type === "text" && title === undefined) {
           title = content.value;
         }
       }
@@ -68,10 +61,6 @@ export const indexSection = async (file: string): Promise<SectionFile | undefine
           excs.push(content.value.trim());
         }
       }
-    }
-
-    if (title === null) {
-      title = path.basename(file);
     }
 
     const assets = source.collectAssets();
@@ -87,10 +76,8 @@ export const indexSection = async (file: string): Promise<SectionFile | undefine
   }
 };
 
-export const SectionContentType: RefableContentType<
-  FileNode, SectionEntry, Section, ShallowSection
-> = {
-  async index(file: FileNode, context: IndexingContext): Promise<SectionEntry> {
+export const SectionContentType = contentType('kodim/section', {
+  async indexOne(file: FileNode, context: IndexingContext): Promise<SectionEntry> {
     const sectionFile = await indexSection(file.path);
     const excsNodes = fsNode(file)
       .parent
@@ -99,50 +86,37 @@ export const SectionContentType: RefableContentType<
       .byPaths(sectionFile?.excs ?? [], '', '.md')
       .getOrThrow();
 
-    const subEntries = await context.indexMany(excsNodes, ExerciseContentType);
-
+    const subEntries = await context.indexSubEntries(excsNodes, file.fileName, ExerciseContentType);
+    const baseEntry = context.buildInnerEntry(file, {}, subEntries);
     return {
-      type: 'inner',
-      contentId: SECTION_ENTRY_CONTENT_ID,
-      name: file.parsedPath.name,
-      fsNode: file,
-      title: sectionFile?.title ?? 'not-found',
+      ...baseEntry,
+      title: sectionFile?.title ?? baseEntry.title,
       assets: sectionFile?.assets,
-      subEntries,
     }
   },
-  
-  fits(entry: IndexEntry): entry is SectionEntry {
-    return entry.contentId === SECTION_ENTRY_CONTENT_ID;
-  },
-  
-  async loadContent(cursor: OkCursor, context: LoadingContext): Promise<Section> {
-    const entry = cursor.entry() as SectionEntry;
-    const prevCursor = cursor.prevSibling();
-    const nextCursor = cursor.nextSibling();
+  async loadOne(
+    cursor: OkCursor<SectionEntry>, context: LoadingContext
+  ): Promise<Result<Section, LoadError>> {
+    const entry = cursor.entry();
+    const prev = await cursor.prevSibling().loadShallow(SectionContentType, context);
+    const next = await cursor.nextSibling().loadShallow(SectionContentType, context);
     const blocks = await processSection(entry.fsNode.path, cursor, context);
 
-    return {
-      crumbs: crumbsFromCursor(cursor),
-      path: cursor.contentPath(),
-      name: entry.name,
-      title: entry.title,
-      prev: prevCursor.isOk()
-        ? (await context.loadShallow(prevCursor, SectionContentType)) as ShallowSection
-        : null,
-      next: nextCursor.isOk()
-        ? (await context.loadShallow(nextCursor, SectionContentType)) as ShallowSection
-        : null,
+    return Result.success({
+      ...buildBaseContent(cursor),
+      prev: prev.getOrElse(null),
+      next: next.getOrElse(null),
       blocks,
-    }
+    });
   },
-
-  async loadShallowContent(cursor: OkCursor): Promise<ShallowSection> {
-    const entry = cursor.entry() as SectionEntry;
-    return {
+  async loadShallowOne(
+    cursor: OkCursor<SectionEntry>
+  ): Promise<Result<ShallowSection, LoadError>> {
+    const entry = cursor.entry();
+    return Result.success({
       path: cursor.contentPath(),
       name: entry.name,
       title: entry.title,
-    }
+    });
   }
-};
+});

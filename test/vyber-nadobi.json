@@ -1,0 +1,770 @@
+{
+  "name": "vyber-nadobi",
+  "title": "Bezpečný výběr nádobí a materiálů",
+  "path": "/spravne/kouzelna-kucharka/lekce/voda-bez-rizika/vyber-nadobi",
+  "crumbs": [
+    {
+      "path": "/spravne",
+      "title": "Správné formátování"
+    },
+    {
+      "path": "/spravne/kouzelna-kucharka",
+      "title": "Kouzelná kuchařka pro lenochy"
+    },
+    {
+      "path": "/spravne/kouzelna-kucharka/lekce/voda-bez-rizika",
+      "title": "Jak uvařit vodu bez rizika"
+    }
+  ],
+  "prev": null,
+  "next": {
+    "path": "/spravne/kouzelna-kucharka/lekce/voda-bez-rizika/kontrola",
+    "name": "kontrola",
+    "title": "kontrola"
+  },
+  "blocks": [
+    {
+      "type": "hast",
+      "root": {
+        "type": "root",
+        "children": [
+          {
+            "type": "element",
+            "tagName": "h2",
+            "properties": {},
+            "children": [
+              {
+                "type": "text",
+                "value": "Bezpečný výběr nádobí a materiálů",
+                "position": {
+                  "start": {
+                    "line": 1,
+                    "column": 4,
+                    "offset": 3
+                  },
+                  "end": {
+                    "line": 1,
+                    "column": 37,
+                    "offset": 36
+                  }
+                }
+              }
+            ],
+            "position": {
+              "start": {
+                "line": 1,
+                "column": 1,
+                "offset": 0
+              },
+              "end": {
+                "line": 1,
+                "column": 37,
+                "offset": 36
+              }
+            }
+          },
+          {
+            "type": "element",
+            "tagName": "p",
+            "properties": {},
+            "children": [
+              {
+                "type": "text",
+                "value": "Při vaření vody je důležité začít správně již při výběru nádobí a materiálů. Zde jsou několik tipů, jak zajistit bezpečný a účinný proces:",
+                "position": {
+                  "start": {
+                    "line": 3,
+                    "column": 1,
+                    "offset": 38
+                  },
+                  "end": {
+                    "line": 3,
+                    "column": 139,
+                    "offset": 176
+                  }
+                }
+              }
+            ],
+            "position": {
+              "start": {
+                "line": 3,
+                "column": 1,
+                "offset": 38
+              },
+              "end": {
+                "line": 3,
+                "column": 139,
+                "offset": 176
+              }
+            }
+          },
+          {
+            "type": "element",
+            "tagName": "ul",
+            "properties": {},
+            "children": [
+              {
+                "type": "text",
+                "value": "\n"
+              },
+              {
+                "type": "element",
+                "tagName": "li",
+                "properties": {},
+                "children": [
+                  {
+                    "type": "element",
+                    "tagName": "strong",
+                    "properties": {},
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Kvalitní hrnec:",
+                        "position": {
+                          "start": {
+                            "line": 5,
+                            "column": 5,
+                            "offset": 182
+                          },
+                          "end": {
+                            "line": 5,
+                            "column": 20,
+                            "offset": 197
+                          }
+                        }
+                      }
+                    ],
+                    "position": {
+                      "start": {
+                        "line": 5,
+                        "column": 3,
+                        "offset": 180
+                      },
+                      "end": {
+                        "line": 5,
+                        "column": 22,
+                        "offset": 199
+                      }
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "value": " Zvolte hrnec vyrobený z vhodného materiálu, například nerezové oceli nebo smaltovaného železa. Ujistěte se, že má pevné uchytky a dobře přiléhající víko.",
+                    "position": {
+                      "start": {
+                        "line": 5,
+                        "column": 22,
+                        "offset": 199
+                      },
+                      "end": {
+                        "line": 5,
+                        "column": 176,
+                        "offset": 353
+                      }
+                    }
+                  }
+                ],
+                "position": {
+                  "start": {
+                    "line": 5,
+                    "column": 1,
+                    "offset": 178
+                  },
+                  "end": {
+                    "line": 5,
+                    "column": 176,
+                    "offset": 353
+                  }
+                }
+              },
+              {
+                "type": "text",
+                "value": "\n"
+              },
+              {
+                "type": "element",
+                "tagName": "li",
+                "properties": {},
+                "children": [
+                  {
+                    "type": "element",
+                    "tagName": "strong",
+                    "properties": {},
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Dostatečně velký hrnec:",
+                        "position": {
+                          "start": {
+                            "line": 6,
+                            "column": 5,
+                            "offset": 358
+                          },
+                          "end": {
+                            "line": 6,
+                            "column": 28,
+                            "offset": 381
+                          }
+                        }
+                      }
+                    ],
+                    "position": {
+                      "start": {
+                        "line": 6,
+                        "column": 3,
+                        "offset": 356
+                      },
+                      "end": {
+                        "line": 6,
+                        "column": 30,
+                        "offset": 383
+                      }
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "value": " Zvolte hrnec, který má dostatečný objem pro množství vody, které chcete uvařit. Zabráňte přeplňování hrnce, což může způsobit přetékání.",
+                    "position": {
+                      "start": {
+                        "line": 6,
+                        "column": 30,
+                        "offset": 383
+                      },
+                      "end": {
+                        "line": 6,
+                        "column": 167,
+                        "offset": 520
+                      }
+                    }
+                  }
+                ],
+                "position": {
+                  "start": {
+                    "line": 6,
+                    "column": 1,
+                    "offset": 354
+                  },
+                  "end": {
+                    "line": 6,
+                    "column": 167,
+                    "offset": 520
+                  }
+                }
+              },
+              {
+                "type": "text",
+                "value": "\n"
+              },
+              {
+                "type": "element",
+                "tagName": "li",
+                "properties": {},
+                "children": [
+                  {
+                    "type": "element",
+                    "tagName": "strong",
+                    "properties": {},
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Čistota:",
+                        "position": {
+                          "start": {
+                            "line": 7,
+                            "column": 5,
+                            "offset": 525
+                          },
+                          "end": {
+                            "line": 7,
+                            "column": 13,
+                            "offset": 533
+                          }
+                        }
+                      }
+                    ],
+                    "position": {
+                      "start": {
+                        "line": 7,
+                        "column": 3,
+                        "offset": 523
+                      },
+                      "end": {
+                        "line": 7,
+                        "column": 15,
+                        "offset": 535
+                      }
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "value": " Před vařením vždy důkladně umyjte hrnec a vařečku, aby se minimalizovala kontaminace vody nečistotami.",
+                    "position": {
+                      "start": {
+                        "line": 7,
+                        "column": 15,
+                        "offset": 535
+                      },
+                      "end": {
+                        "line": 7,
+                        "column": 118,
+                        "offset": 638
+                      }
+                    }
+                  }
+                ],
+                "position": {
+                  "start": {
+                    "line": 7,
+                    "column": 1,
+                    "offset": 521
+                  },
+                  "end": {
+                    "line": 7,
+                    "column": 118,
+                    "offset": 638
+                  }
+                }
+              },
+              {
+                "type": "text",
+                "value": "\n"
+              },
+              {
+                "type": "element",
+                "tagName": "li",
+                "properties": {},
+                "children": [
+                  {
+                    "type": "element",
+                    "tagName": "strong",
+                    "properties": {},
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "Kontrola nádobí:",
+                        "position": {
+                          "start": {
+                            "line": 8,
+                            "column": 5,
+                            "offset": 643
+                          },
+                          "end": {
+                            "line": 8,
+                            "column": 21,
+                            "offset": 659
+                          }
+                        }
+                      }
+                    ],
+                    "position": {
+                      "start": {
+                        "line": 8,
+                        "column": 3,
+                        "offset": 641
+                      },
+                      "end": {
+                        "line": 8,
+                        "column": 23,
+                        "offset": 661
+                      }
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "value": " Před použitím zkontrolujte hrnec a vařečku na případné trhliny, škrábance nebo odškrabky, které by mohly ovlivnit čistotu vařené vody.",
+                    "position": {
+                      "start": {
+                        "line": 8,
+                        "column": 23,
+                        "offset": 661
+                      },
+                      "end": {
+                        "line": 8,
+                        "column": 158,
+                        "offset": 796
+                      }
+                    }
+                  }
+                ],
+                "position": {
+                  "start": {
+                    "line": 8,
+                    "column": 1,
+                    "offset": 639
+                  },
+                  "end": {
+                    "line": 8,
+                    "column": 158,
+                    "offset": 796
+                  }
+                }
+              },
+              {
+                "type": "text",
+                "value": "\n"
+              }
+            ],
+            "position": {
+              "start": {
+                "line": 5,
+                "column": 1,
+                "offset": 178
+              },
+              "end": {
+                "line": 8,
+                "column": 158,
+                "offset": 796
+              }
+            }
+          },
+          {
+            "type": "element",
+            "tagName": "fig",
+            "properties": {
+              "src": "/spravne/kouzelna-kucharka/lekce/voda-bez-rizika/vyber-nadobi/boil.jpg"
+            },
+            "children": [],
+            "position": {
+              "start": {
+                "line": 10,
+                "column": 1,
+                "offset": 798
+              },
+              "end": {
+                "line": 10,
+                "column": 27,
+                "offset": 824
+              }
+            }
+          },
+          {
+            "type": "element",
+            "tagName": "p",
+            "properties": {},
+            "children": [
+              {
+                "type": "text",
+                "value": "Zde je jednoduchý Python kód, který můžete použít k výpočtu objemu vody podle průměru a výšky hrnce:",
+                "position": {
+                  "start": {
+                    "line": 12,
+                    "column": 1,
+                    "offset": 826
+                  },
+                  "end": {
+                    "line": 12,
+                    "column": 101,
+                    "offset": 926
+                  }
+                }
+              }
+            ],
+            "position": {
+              "start": {
+                "line": 12,
+                "column": 1,
+                "offset": 826
+              },
+              "end": {
+                "line": 12,
+                "column": 101,
+                "offset": 926
+              }
+            }
+          },
+          {
+            "type": "element",
+            "tagName": "pre",
+            "properties": {},
+            "children": [
+              {
+                "type": "element",
+                "tagName": "code",
+                "properties": {
+                  "className": [
+                    "hljs",
+                    "language-py"
+                  ]
+                },
+                "children": [
+                  {
+                    "type": "element",
+                    "tagName": "span",
+                    "properties": {
+                      "className": [
+                        "hljs-keyword"
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "import"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": " math\n\n"
+                  },
+                  {
+                    "type": "element",
+                    "tagName": "span",
+                    "properties": {
+                      "className": [
+                        "hljs-keyword"
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "def"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": " "
+                  },
+                  {
+                    "type": "element",
+                    "tagName": "span",
+                    "properties": {
+                      "className": [
+                        "hljs-title",
+                        "function_"
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "objem_vody"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": "("
+                  },
+                  {
+                    "type": "element",
+                    "tagName": "span",
+                    "properties": {
+                      "className": [
+                        "hljs-params"
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "prumer, vyska"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": "):\n    polomer = prumer / "
+                  },
+                  {
+                    "type": "element",
+                    "tagName": "span",
+                    "properties": {
+                      "className": [
+                        "hljs-number"
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "2"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": "\n    objem = math.pi * polomer**"
+                  },
+                  {
+                    "type": "element",
+                    "tagName": "span",
+                    "properties": {
+                      "className": [
+                        "hljs-number"
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "2"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": " * vyska\n    "
+                  },
+                  {
+                    "type": "element",
+                    "tagName": "span",
+                    "properties": {
+                      "className": [
+                        "hljs-keyword"
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "return"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": " objem\n\n"
+                  },
+                  {
+                    "type": "element",
+                    "tagName": "span",
+                    "properties": {
+                      "className": [
+                        "hljs-comment"
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "# Příklad použití funkce"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": "\nprumer_hrnce_cm = "
+                  },
+                  {
+                    "type": "element",
+                    "tagName": "span",
+                    "properties": {
+                      "className": [
+                        "hljs-number"
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "20"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": "\nvyska_hrnce_cm = "
+                  },
+                  {
+                    "type": "element",
+                    "tagName": "span",
+                    "properties": {
+                      "className": [
+                        "hljs-number"
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "15"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": "\nobjem = objem_vody(prumer_hrnce_cm, vyska_hrnce_cm)\n"
+                  },
+                  {
+                    "type": "element",
+                    "tagName": "span",
+                    "properties": {
+                      "className": [
+                        "hljs-built_in"
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "print"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": "("
+                  },
+                  {
+                    "type": "element",
+                    "tagName": "span",
+                    "properties": {
+                      "className": [
+                        "hljs-string"
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "f\"Objem vody v hrnci je "
+                      },
+                      {
+                        "type": "element",
+                        "tagName": "span",
+                        "properties": {
+                          "className": [
+                            "hljs-subst"
+                          ]
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "{objem}"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "value": " cm^3.\""
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "value": ")\n"
+                  }
+                ],
+                "position": {
+                  "start": {
+                    "line": 14,
+                    "column": 1,
+                    "offset": 928
+                  },
+                  "end": {
+                    "line": 27,
+                    "column": 4,
+                    "offset": 1229
+                  }
+                }
+              }
+            ],
+            "position": {
+              "start": {
+                "line": 14,
+                "column": 1,
+                "offset": 928
+              },
+              "end": {
+                "line": 27,
+                "column": 4,
+                "offset": 1229
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

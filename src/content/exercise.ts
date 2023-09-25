@@ -1,37 +1,33 @@
 import path from 'path';
-import { IndexEntry, LeafEntry } from 'filefish/dist/treeindex.js';
-import { LoadingContext, RefableContentType } from 'filefish/dist/content-types.js';
+import { LeafEntry } from 'filefish/dist/treeindex.js';
+import { IndexingContext, LoadingContext, contentType } from 'filefish/dist/content-types.js';
 import { FsNode } from 'fs-inquire';
 import { OkCursor } from 'filefish/dist/cursor.js';
 import { Root as HastRoot } from 'hast';
 import { processExercise } from '../render/markdown.js';
 import { MarkdownSource } from '../render/markdown-source.js';
-import { Crumbs } from './crumbs.js';
-
-const EXERCISE_ENTRY_CONTENT_ID = 'excercise';
+import { LoadError } from 'filefish/dist/errors.js';
+import { Result } from 'monadix/result';
+import { BaseContent, BaseShallowContent } from './base.js';
 
 export type Demand = 1 | 2 | 3 | 4 | 5;
 
 export type SolutionAccess = 'allow' | 'lock' | 'hide';
 
-export interface ExerciseEntry extends LeafEntry {
-  title: string,
+export interface ExerciseData {
   lead: string,
   demand: Demand,
-  solutionAccess: SolutionAccess,
 }
 
-export interface ShallowExercise {
-  path: string,
-  name: string,
-  lead: string,
-  title: string,
-  demand: Demand;
+export type ExerciseEntry = LeafEntry<ExerciseData & {
+  solutionAccess: SolutionAccess,
+}>;
+
+export interface ShallowExercise extends BaseShallowContent, ExerciseData {
   num: number;
 }
 
-export interface Exercise extends ShallowExercise {
-  crumbs: Crumbs,
+export interface Exercise extends BaseContent, ShallowExercise {
   assign: HastRoot,
   solution: HastRoot | 'locked' | 'none',
 }
@@ -61,43 +57,39 @@ const indexExercise = async (fsNode: FsNode): Promise<ExerciseFile> => {
   };
 }
 
-export const ExerciseContentType: RefableContentType<
-  FsNode, ExerciseEntry, Exercise, ShallowExercise
-> = {
-  async index(node: FsNode): Promise<ExerciseEntry> {
+export const ExerciseContentType = contentType<FsNode, ExerciseEntry, Exercise, ShallowExercise>('kodim/exercise', {
+  async indexOne(node: FsNode, context: IndexingContext): Promise<ExerciseEntry> {
     const exerciseFile = await indexExercise(node);
 
-    return {
-      type: 'leaf',
-      contentId: EXERCISE_ENTRY_CONTENT_ID,
-      name: node.parsedPath.name,
-      fsNode: node,
-      title: exerciseFile.title,
-      demand: exerciseFile.demand,
+    const data = {
       lead: exerciseFile.lead ?? 'no-lead',
+      demand: exerciseFile.demand,
       solutionAccess: exerciseFile.solutionAccess ?? 'allow',
+    };
+
+    return {
+      ...context.buildLeafEntry(node, data),
+      title: exerciseFile.title,
       assets: exerciseFile.assets,
     }
   },
-
-  fits(entry: IndexEntry): entry is ExerciseEntry {
-    return entry.contentId === EXERCISE_ENTRY_CONTENT_ID;
+  async loadOne(
+    cursor: OkCursor<ExerciseEntry>, context: LoadingContext
+  ): Promise<Result<Exercise, LoadError>> {
+    const entry = cursor.entry();
+    return Result.success(await processExercise(entry.fsNode, cursor, context));
   },
-
-  async loadContent(cursor: OkCursor, context: LoadingContext): Promise<Exercise> {
-    const entry = cursor.entry() as ExerciseEntry;
-    return processExercise(entry.fsNode, cursor, context);
-  },
-
-  async loadShallowContent(cursor: OkCursor): Promise<ShallowExercise> {
-    const entry = cursor.entry() as ExerciseEntry;
-    return {
+  async loadShallowOne(
+    cursor: OkCursor<ExerciseEntry>
+  ): Promise<Result<ShallowExercise, LoadError>> {
+    const entry = cursor.entry();
+    return Result.success({
       path: cursor.contentPath(),
       name: entry.name,
       title: entry.title,
-      lead: entry.lead,
-      demand: entry.demand,
+      lead: entry.data.lead,
+      demand: entry.data.demand,
       num: cursor.pos() + 1,
-    };
+    });
   }
-};
+});

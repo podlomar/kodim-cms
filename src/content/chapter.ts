@@ -1,19 +1,20 @@
 import path from 'path';
 import { promises as fs } from 'fs';
 import yaml from 'yaml';
-import { IndexEntry, InnerEntry } from 'filefish/dist/treeindex.js';
-import { RefableContentType, IndexingContext, LoadingContext } from 'filefish/dist/content-types.js';
+import { InnerEntry } from 'filefish/dist/treeindex.js';
+import { IndexingContext, LoadingContext, contentType } from 'filefish/dist/content-types.js';
 import { folder, FolderNode } from 'fs-inquire';
 import { OkCursor } from 'filefish/dist/cursor.js';
 import { LessonContentType, LessonEntry, ShallowLesson } from './lesson.js';
-import { Crumbs, crumbsFromCursor } from './crumbs.js';
+import { BaseContent, BaseShallowContent, buildBaseContent } from './base.js';
+import { LoadError } from 'filefish/dist/errors.js';
+import { Result } from 'monadix/result';
 
-const CHAPTER_ENTRY_CONTENT_ID = 'chapter';
-
-export interface ChapterEntry extends InnerEntry<LessonEntry> {
-  title: string,
-  lead: string,
+export interface ChapterData {
+  readonly lead: string;
 }
+
+export type ChapterEntry = InnerEntry<LessonEntry, ChapterData>;
 
 interface EntryFile {
   title: string,
@@ -21,22 +22,14 @@ interface EntryFile {
   lessons: string[];
 }
 
-export interface ShallowChapter {
-  path: string;
-  name: string;
-  title: string;
-  lead: string;
+export type ShallowChapter = BaseShallowContent & ChapterData;
+
+export interface Chapter extends ShallowChapter, BaseContent {
+  readonly lessons: ShallowLesson[],
 }
 
-export interface Chapter extends ShallowChapter {
-  crumbs: Crumbs;
-  lessons: ShallowLesson[],
-}
-
-export const ChapterContentType: RefableContentType<
-  FolderNode, ChapterEntry, Chapter, ShallowChapter
-> = {
-  async index(folderNode: FolderNode, context: IndexingContext): Promise<ChapterEntry> {
+export const ChapterContentType = contentType('kodim/chapter', {
+  async indexOne(folderNode: FolderNode, context: IndexingContext): Promise<ChapterEntry> {
     const entryFileContent = await fs.readFile(
       path.resolve(folderNode.path, 'entry.yml'), 'utf-8'
     );
@@ -48,46 +41,42 @@ export const ChapterContentType: RefableContentType<
       .byPaths(entryFile.lessons)
       .getOrThrow();
 
-    const subEntries = await context.indexMany(lessonFolders, LessonContentType);
-
-    return {
-      type: 'inner',
-      contentId: CHAPTER_ENTRY_CONTENT_ID,
-      name: folderNode.parsedPath.name,
-      fsNode: folderNode,
-      title: entryFile.title,
+    const data = {
       lead: entryFile.lead,
-      subEntries,
-    }
-  },
-  
-  fits(entry: IndexEntry): entry is ChapterEntry {
-    return entry.contentId === CHAPTER_ENTRY_CONTENT_ID;
-  },
-  
-  async loadContent(cursor: OkCursor, context: LoadingContext): Promise<Chapter> {
-    const entry = cursor.entry() as ChapterEntry;
-    const lessons = (
-      await context.loadShallowMany(cursor.children(), LessonContentType)
-    ) as ShallowLesson[];
+    };
+
+    const subEntries = await context.indexSubEntries(
+      lessonFolders, folderNode.fileName, LessonContentType
+    );
 
     return {
-      crumbs: crumbsFromCursor(cursor),
-      path: cursor.contentPath(),
-      name: entry.name,
-      title: entry.title,
-      lead: entry.lead,
+      ...context.buildInnerEntry(folderNode, data, subEntries),
+      title: entryFile.title,
+    }
+  },
+  async loadOne(
+    cursor: OkCursor<ChapterEntry>, context: LoadingContext
+  ): Promise<Result<Chapter, LoadError>> {
+    const entry = cursor.entry();
+    const lessons = Result.collectSuccess(
+      await LessonContentType.loadShallowMany(cursor.children(), context),
+    );
+
+    return Result.success({
+      ...buildBaseContent(cursor),
+      lead: entry.data.lead,
       lessons,
-    }
+    })
   },
-
-  async loadShallowContent(cursor: OkCursor, context: LoadingContext): Promise<ShallowChapter> {
-    const entry = cursor.entry() as ChapterEntry;
-    return {
+  async loadShallowOne(
+    cursor: OkCursor<ChapterEntry>, context: LoadingContext
+  ): Promise<Result<ShallowChapter, LoadError>> {
+    const entry = cursor.entry();
+    return Result.success({
       path: cursor.contentPath(),
       name: entry.name,
       title: entry.title,
-      lead: entry.lead,
-    }
+      lead: entry.data.lead,
+    });
   }
-};
+});

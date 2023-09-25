@@ -1,0 +1,36 @@
+{
+  "name": "voda-bez-rizika",
+  "title": "Jak uvařit vodu bez rizika",
+  "path": "/spravne/kouzelna-kucharka/lekce/voda-bez-rizika",
+  "crumbs": [
+    {
+      "path": "/spravne",
+      "title": "Správné formátování"
+    },
+    {
+      "path": "/spravne/kouzelna-kucharka",
+      "title": "Kouzelná kuchařka pro lenochy"
+    }
+  ],
+  "num": 1,
+  "lead": "Důležité tipy a triky, jak uvařit vodu bezpečně a bez zbytečného stresu. Naučíme vás správným postupům, které zabezpečí, že vaše voda bude vždy chutná, čerstvá a oku lahodící.",
+  "sections": [
+    {
+      "path": "/spravne/kouzelna-kucharka/lekce/voda-bez-rizika/vyber-nadobi",
+      "name": "vyber-nadobi",
+      "title": "Bezpečný výběr nádobí a materiálů"
+    },
+    {
+      "path": "/spravne/kouzelna-kucharka/lekce/voda-bez-rizika/kontrola",
+      "name": "kontrola",
+      "title": "kontrola"
+    },
+    {
+      "path": "/spravne/kouzelna-kucharka/lekce/voda-bez-rizika/cv-vareni-vody",
+      "name": "cv-vareni-vody",
+      "title": "Cvičení: Vaření vody"
+    }
+  ],
+  "prev": null,
+  "next": null
+}

@@ -1,0 +1,22 @@
+{
+  "name": "kouzelna-kucharka",
+  "title": "Kouzelná kuchařka pro lenochy",
+  "path": "/spravne/kouzelna-kucharka",
+  "crumbs": [
+    {
+      "path": "/spravne",
+      "title": "Správné formátování"
+    }
+  ],
+  "lead": "Zapomeňte na komplikované hodiny strávené v kuchyni, s naší kuchařkou budete připravovat lahodná jídla a nápoje tak snadno, že si budete připadat jako mágové ve světě kulinářského umění.",
+  "image": "/spravne/kouzelna-kucharka/cookbook.svg",
+  "topicMask": "/spravne/spravne-mask.svg",
+  "chapters": [
+    {
+      "path": "/spravne/kouzelna-kucharka/lekce",
+      "name": "lekce",
+      "title": "",
+      "lead": ""
+    }
+  ]
+}

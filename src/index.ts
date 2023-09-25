@@ -7,26 +7,36 @@ import { Lesson, LessonContentType } from "./content/lesson.js";
 import { RootEntry, Root, RootContentType } from "./content/root.js";
 import { Section, SectionContentType } from "./content/section.js";
 import { Topic, TopicContentType } from "./content/topic.js";
+import { IndexingContext } from "filefish/dist/content-types.js";
+import { KodimCmsIndexingContext, RepoRegistry } from "./indexing-context.js";
 
 interface ReindexResult {
   fetch: FetchResult;
   head: string;
+  statuses: string[];
 }
 
 export class KodimCms {
   private readonly ff: Filefish<RootEntry>;
+  private readonly repoRegistry: RepoRegistry;
 
-  private constructor(ff: Filefish<RootEntry>) {
+  private constructor(ff: Filefish<RootEntry>, repoRegistry: RepoRegistry) {
     this.ff = ff;
+    this.repoRegistry = repoRegistry;
   }
 
-  public static async load(
-    contentPath: string,
-    options: Partial<FilefishOptions> = {}
-  ): Promise<KodimCms> {
-    const ff = await filefish<RootEntry>(contentPath, RootContentType, options);
-    console.log('Loaded Kodim CMS', ff?.summary());
-    return new KodimCms(ff!);
+  public static async load(contentPath: string): Promise<KodimCms> {
+    const repoRegistry: RepoRegistry = {};
+    const ff = await filefish<RootEntry>(contentPath, RootContentType, {
+      createIndexingContext(contentId: string): IndexingContext {
+        return new KodimCmsIndexingContext(contentId, [], repoRegistry);
+      }
+    });
+    return new KodimCms(ff!, repoRegistry);
+  }
+
+  public root(): RootEntry {
+    return this.ff.root();
   }
 
   public async loadAsset(assetPath: string[]): Promise<Asset | null> {
@@ -43,80 +53,50 @@ export class KodimCms {
 
   public async loadRoot(): Promise<Root | null> {
     const root = await this.ff.loadContent(this.ff.rootCursor(), RootContentType);
-    if (root === 'forbidden' || root === 'not-found' || root === 'mismatch') {
-      return null;
-    }
-
-    return root;
+    return root.getOrElse(null);
   }
 
   public async loadTopic(topicId: string): Promise<Topic | null> {
     const topic = await this.ff.loadContent(
       this.ff.rootCursor().navigate(topicId), TopicContentType
     );
-    
-    if (topic === 'forbidden' || topic === 'not-found' || topic === 'mismatch') {
-      return null;
-    }
-
-    return topic;
+    return topic.getOrElse(null);
   }
 
   public async loadCourse(topicId: string, courseId: string): Promise<Course | null> {
     const course = await this.ff.loadContent(
       this.ff.rootCursor().navigate(topicId, courseId), CourseContentType,
     );
-
-    if (course === 'forbidden' || course === 'not-found' || course === 'mismatch') {
-      return null;
-    }
-
-    return course;
+    return course.getOrElse(null);
   }
 
   public async loadChapter(
     topicId: string, courseId: string, chapterId: string
   ): Promise<Chapter | null> {
     const chapter = await this.ff.loadContent(
-      this.ff.rootCursor().navigate(topicId, courseId, chapterId),
-      ChapterContentType,
+      this.ff.rootCursor().navigate(topicId, courseId, chapterId), ChapterContentType,
     );
 
-    if (chapter === 'forbidden' || chapter === 'not-found' || chapter === 'mismatch') {
-      return null;
-    }
-
-    return chapter;
+    return chapter.getOrElse(null);
   }
 
   public async loadLesson(
     topicId: string, courseId: string, chapterId: string, lessonId: string
   ): Promise<Lesson | null> {
     const lesson = await this.ff.loadContent(
-      this.ff.rootCursor().navigate(topicId, courseId, chapterId, lessonId),
-      LessonContentType,
+      this.ff.rootCursor().navigate(topicId, courseId, chapterId, lessonId), LessonContentType,
     );
-
-    if (lesson === 'forbidden' || lesson === 'not-found' || lesson === 'mismatch') {
-      return null;
-    }
-
-    return lesson;
+    return lesson.getOrElse(null);
   }
 
   public async loadSection(
     topicId: string, courseId: string, chapterId: string, lessonId: string, sectionId: string,
   ): Promise<Section | null> {
-    const lesson = await this.ff.loadContent(
+    const section = await this.ff.loadContent(
       this.ff.rootCursor().navigate(topicId, courseId, chapterId, lessonId, sectionId),
       SectionContentType,
     );
-
-    if (lesson === 'forbidden' || lesson === 'not-found' || lesson === 'mismatch') {
-      return null;
-    }
-
-    return lesson;
+    return section.getOrElse(null);
   }
 
   public async loadExercise(
@@ -131,43 +111,45 @@ export class KodimCms {
       this.ff.rootCursor().navigate(topicId, courseId, chapterId, lessonId, sectionId, exerciseId),
       ExerciseContentType,
     );
-
-    if (exercise === 'forbidden' || exercise === 'not-found' || exercise === 'mismatch') {
-      return null;
-    }
-
-    return exercise;
+    return exercise.getOrElse(null);
   }
 
-  public async reindexCourseFromRepo(
+  public async reindexFromRepo(
     repoUrl: string, branchName: string
-  ): Promise<ReindexResult | 'not-found'> {
-    const cursor = this.ff.rootCursor().search(
-      (entry) => CourseContentType.fits(entry) && entry.repoUrl === repoUrl,
-    );
-
-    if (!cursor.isOk()) {
-      return 'not-found';
+  ): Promise<ReindexResult | 'not-found' | 'no-such-repo'> {
+    const repoRecords = this.repoRegistry[repoUrl];
+    if (repoRecords === undefined) {
+      return 'no-such-repo';
     }
-
-    const courseEntry = cursor.entry() as CourseEntry;
-
+    
     const git = simpleGit({
-      baseDir: courseEntry.fsNode.path,
+      baseDir: repoRecords[0].repoPath,
       binary: 'git',
     });
 
     const fetchResult = await git.fetch('origin', branchName);
     const resetResult = await git.reset(ResetMode.HARD, [`origin/${branchName}`]);
-    const result = await this.ff.reindex(cursor, CourseContentType);
+    
+    const statuses = await Promise.all(
+      repoRecords.map(async (repoRecord) => {
+        const cursor = this.ff.rootCursor().navigate(...repoRecord.contentPath);
+        if (!cursor.isOk()) {
+          return 'not-found';
+        }
 
-    if (result === 'not-found' || result === 'mismatch') {
-      return 'not-found';
-    }
+        const result = await this.ff.reindex(cursor, repoRecord.contentType);
+        if (result === 'not-found' || result === 'mismatch') {
+          return 'not-found';
+        }
+        
+        return 'ok';
+      })
+    );
 
     return {
       fetch: fetchResult,
       head: resetResult,
+      statuses,
     };
   }
 }

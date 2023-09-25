@@ -1,5 +1,4 @@
 import { Cursor } from "filefish/dist/cursor.js";
-import { IndexEntry } from "filefish/dist/treeindex.js";
 import { ChapterContentType } from "./chapter.js";
 
 export interface CrumbItem {
@@ -10,20 +9,18 @@ export interface CrumbItem {
 export type Crumbs = CrumbItem[];
 
 export const crumbsFromCursor = (cursor: Cursor): Crumbs => {
-  type CmsEntry = IndexEntry & { title?: string };
-  
   const crumbs: Crumbs = [];
   
   let parent = cursor.parent();
   while (parent.isOk()) {
-    const entry = parent.entry() as CmsEntry;
-    if (ChapterContentType.fits(entry) && entry.name === 'lekce') {
+    const entry = parent.entry();
+    if (ChapterContentType.fits(parent) && entry.name === 'lekce') {
       parent = parent.parent();
       continue;
     }  
     
-    const title = entry.title ?? entry.name;
-    const path = parent.contentPath();
+    const title = entry.title;
+    const path = parent.contentPath()!;
 
     crumbs.push({ path, title });
     parent = parent.parent();
