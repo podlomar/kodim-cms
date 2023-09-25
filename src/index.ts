@@ -28,6 +28,7 @@ export class KodimCms {
   public static async load(contentPath: string): Promise<KodimCms> {
     const repoRegistry: RepoRegistry = {};
     const ff = await filefish<RootEntry>(contentPath, RootContentType, {
+      assetsBasePath: '/cms/assets',
       createIndexingContext(contentId: string): IndexingContext {
         return new KodimCmsIndexingContext(contentId, [], repoRegistry);
       }
