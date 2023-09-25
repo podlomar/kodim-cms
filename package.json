@@ -30,6 +30,7 @@
     "hast": "^1.0.0",
     "hast-util-select": "^6.0.0",
     "mdast": "^3.0.0",
+    "mdast-util-to-string": "^4.0.0",
     "monadix": "^1.0.6",
     "rehype-highlight": "^5.0.2",
     "rehype-stringify": "^9.0.2",

@@ -2,6 +2,7 @@ import path from 'path';
 import { InnerEntry } from 'filefish/dist/treeindex.js';
 import { IndexingContext, LoadingContext, contentType } from 'filefish/dist/content-types.js';
 import { FileNode, folder, fsNode } from 'fs-inquire';
+import { toString as mdastToString } from 'mdast-util-to-string'
 import { OkCursor } from 'filefish/dist/cursor.js';
 import { ExerciseContentType, ExerciseEntry, ShallowExercise } from './exercise.js';
 import { processSection } from '../render/markdown.js';
@@ -48,11 +49,8 @@ export const indexSection = async (file: string): Promise<SectionFile | undefine
     let excs: string[] = [];
 
     for (const node of tree.children) {
-      if (node.type === "heading" && node.depth === 2) {
-        const content = node.children[0];
-        if (content.type === "text" && title === undefined) {
-          title = content.value;
-        }
+      if (node.type === "heading" && node.depth === 2 && title === undefined) {
+        title = mdastToString(node);
       }
 
       if (node.type === "leafDirective" && node.name === "exc") {
