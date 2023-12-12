@@ -26,10 +26,11 @@ export class KodimCmsIndexingContext extends IndexingContext {
   public registerRepo(
     repoUrl: string, repoPath: string, contentPath: string[], contentType: ContentType
   ): void {
-    if (!this.repoRegistry[repoUrl]) {
-      this.repoRegistry[repoUrl] = [];
+    const normlizedUrl = repoUrl.endsWith('.git') ? repoUrl : repoUrl + '.git';
+    if (!this.repoRegistry[normlizedUrl]) {
+      this.repoRegistry[normlizedUrl] = [];
     }
 
-    this.repoRegistry[repoUrl].push({ repoPath, contentPath, contentType });
+    this.repoRegistry[normlizedUrl].push({ repoPath, contentPath, contentType });
   }
 }

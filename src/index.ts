@@ -118,7 +118,9 @@ export class KodimCms {
   public async reindexFromRepo(
     repoUrl: string, branchName: string
   ): Promise<ReindexResult | 'not-found' | 'no-such-repo'> {
-    const repoRecords = this.repoRegistry[repoUrl];
+    const normlizedUrl = repoUrl.endsWith('.git') ? repoUrl : repoUrl + '.git';
+    
+    const repoRecords = this.repoRegistry[normlizedUrl];
     if (repoRecords === undefined) {
       return 'no-such-repo';
     }

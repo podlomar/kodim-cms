@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "outDir": "esm",
-    "module": "es2022",
+    "module": "node16",
     "target": "es2022",
     "strict": true,
     "allowSyntheticDefaultImports": true,
