@@ -7,32 +7,32 @@
       "crumbs": [],
       "lead": "Správně zformátovaný obsah je klíčovým prvkem ve světě psaného a tištěného textu, stejně jako v digitálním prostředí. Tento koncept se týká způsobu, jakým jsou informace, text a média prezentovány a uspořádány, aby byly snadno čitelné, esteticky příjemné a efektivní ve sdělení svého obsahu.",
       "heading": "Správně zformátovaný obsah",
-      "image": "/spravne/spravne.svg",
-      "mask": "/spravne/spravne-mask.svg",
+      "image": "/cms/assets/spravne/spravne.svg",
+      "mask": "/cms/assets/spravne/spravne-mask.svg",
       "courses": [
         {
           "name": "kouzelna-kucharka",
           "title": "Kouzelná kuchařka pro lenochy",
           "path": "/spravne/kouzelna-kucharka",
           "lead": "Zapomeňte na komplikované hodiny strávené v kuchyni, s naší kuchařkou budete připravovat lahodná jídla a nápoje tak snadno, že si budete připadat jako mágové ve světě kulinářského umění.",
-          "image": "/spravne/kouzelna-kucharka/cookbook.svg",
-          "topicMask": "/spravne/spravne-mask.svg"
+          "image": "/cms/assets/spravne/kouzelna-kucharka/cookbook.svg",
+          "topicMask": "/cms/assets/spravne/spravne-mask.svg"
         },
         {
           "name": "pruvodce-vesmirem",
           "title": "Bláznivý Průvodce Vesmírem",
           "path": "/spravne/pruvodce-vesmirem",
           "lead": "Tento kurz vás vezme na neuvěřitelnou cestu vesmírem, kde budete objevovat tajemství černých děr, potkávat mimozemské bytosti a učit se, jak ve vesmíru přežít a zároveň se bavit.",
-          "image": "/spravne/pruvodce-vesmirem/universe.svg",
-          "topicMask": "/spravne/spravne-mask.svg"
+          "image": "/cms/assets/spravne/pruvodce-vesmirem/universe.svg",
+          "topicMask": "/cms/assets/spravne/spravne-mask.svg"
         },
         {
           "name": "boby",
           "title": "Úžasné Dobrodružství s Čarodějnou Boby",
           "path": "/spravne/boby",
           "lead": "Od lekce o létání na koštěti až po setkání s kouzelnými bytostmi, budete se učit, jak ovládat kouzla, bavit se a vytvářet vlastní magické příběhy. Připravte se na nekonečné kouzla a smích.",
-          "image": "/spravne/boby/witch.svg",
-          "topicMask": "/spravne/spravne-mask.svg"
+          "image": "/cms/assets/spravne/boby/witch.svg",
+          "topicMask": "/cms/assets/spravne/spravne-mask.svg"
         }
       ]
     }

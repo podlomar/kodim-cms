@@ -1,4 +1,4 @@
-import { Filefish, filefish, Asset, FilefishOptions } from "filefish/dist/index.js";
+import { Filefish, Asset } from "filefish";
 import { simpleGit, ResetMode, FetchResult } from "simple-git";
 import { Chapter, ChapterContentType } from "./content/chapter.js";
 import { Course, CourseContentType, CourseEntry } from "./content/course.js";
@@ -7,8 +7,9 @@ import { Lesson, LessonContentType } from "./content/lesson.js";
 import { RootEntry, Root, RootContentType } from "./content/root.js";
 import { Section, SectionContentType } from "./content/section.js";
 import { Topic, TopicContentType } from "./content/topic.js";
-import { IndexingContext } from "filefish/dist/content-types.js";
-import { KodimCmsIndexingContext, RepoRegistry } from "./indexing-context.js";
+import { KodimCmsIndexer, RepoRegistry } from "./cms-indexer.js";
+import { Indexer } from "filefish/indexer";
+import { Agent, Cursor, agnosticAgent } from "filefish/cursor";
 
 interface ReindexResult {
   fetch: FetchResult;
@@ -27,11 +28,11 @@ export class KodimCms {
 
   public static async load(contentPath: string): Promise<KodimCms> {
     const repoRegistry: RepoRegistry = {};
-    const ff = await filefish<RootEntry>(contentPath, RootContentType, {
+    const ff = await Filefish.create(contentPath, RootContentType, {
       assetsBasePath: '/cms/assets',
-      createIndexingContext(contentId: string): IndexingContext {
-        return new KodimCmsIndexingContext(contentId, [], repoRegistry);
-      }
+      createIndexer(contentId: string, parentContentPath: string[]): Indexer {
+        return new KodimCmsIndexer(contentId, parentContentPath, repoRegistry);
+      },
     });
     return new KodimCms(ff!, repoRegistry);
   }
@@ -40,11 +41,17 @@ export class KodimCms {
     return this.ff.root();
   }
 
-  public async loadAsset(assetPath: string[]): Promise<Asset | null> {
-    const entryPath = assetPath.slice(0, -1);
-    const cursor = this.ff.rootCursor().navigate(...entryPath);
-    const asset = await this.ff.loadAsset(cursor, assetPath.at(-1)!);
+  public rootCursor(agent: Agent): Cursor<RootEntry> {
+    return this.ff.rootCursor(agent);
+  }
 
+  public async loadAsset(agent: Agent, assetPath: string[]): Promise<Asset | null> {
+    const entryPath = assetPath.slice(0, -1);
+    const cursor = this.ff.rootCursor(agent).navigate(...entryPath);
+    if (cursor === null) {
+      return null;
+    }
+    const asset = await this.ff.loadAsset(cursor, assetPath.at(-1)!);
     if (asset === 'not-found') {
       return null;
     }
@@ -52,55 +59,76 @@ export class KodimCms {
     return asset;
   }
 
-  public async loadRoot(): Promise<Root | null> {
-    const root = await this.ff.loadContent(this.ff.rootCursor(), RootContentType);
+  public async loadRoot(agent: Agent): Promise<Root | null> {
+    const root = await this.ff.loadContent(this.ff.rootCursor(agent), RootContentType);
     return root.getOrElse(null);
   }
 
-  public async loadTopic(topicId: string): Promise<Topic | null> {
-    const topic = await this.ff.loadContent(
-      this.ff.rootCursor().navigate(topicId), TopicContentType
-    );
+  public async loadTopic(agent: Agent, topicId: string): Promise<Topic | null> {
+    const topicCursor = this.ff.rootCursor(agent).navigate(topicId);
+    if (topicCursor === null) {
+      return null;
+    }
+
+    const topic = await this.ff.loadContent(topicCursor, TopicContentType);
     return topic.getOrElse(null);
   }
 
-  public async loadCourse(topicId: string, courseId: string): Promise<Course | null> {
-    const course = await this.ff.loadContent(
-      this.ff.rootCursor().navigate(topicId, courseId), CourseContentType,
-    );
+  public async loadCourse(agent: Agent, topicId: string, courseId: string): Promise<Course | null> {
+    const courseCursor = this.ff.rootCursor(agent).navigate(topicId, courseId);
+    if (courseCursor === null) {
+      return null;
+    }
+
+    const course = await this.ff.loadContent(courseCursor, CourseContentType);
     return course.getOrElse(null);
   }
 
   public async loadChapter(
-    topicId: string, courseId: string, chapterId: string
+    agent: Agent, topicId: string, courseId: string, chapterId: string
   ): Promise<Chapter | null> {
-    const chapter = await this.ff.loadContent(
-      this.ff.rootCursor().navigate(topicId, courseId, chapterId), ChapterContentType,
-    );
+    const chapterCursor = this.ff.rootCursor(agent).navigate(topicId, courseId, chapterId);
+    if (chapterCursor === null) {
+      return null;
+    }
 
+    const chapter = await this.ff.loadContent(chapterCursor, ChapterContentType);
     return chapter.getOrElse(null);
   }
 
   public async loadLesson(
-    topicId: string, courseId: string, chapterId: string, lessonId: string
+    agent: Agent, topicId: string, courseId: string, chapterId: string, lessonId: string
   ): Promise<Lesson | null> {
-    const lesson = await this.ff.loadContent(
-      this.ff.rootCursor().navigate(topicId, courseId, chapterId, lessonId), LessonContentType,
-    );
+    const lessonCursor = this.ff.rootCursor(agent).navigate(topicId, courseId, chapterId, lessonId);
+    if (lessonCursor === null) {
+      return null;
+    }
+    const lesson = await this.ff.loadContent(lessonCursor, LessonContentType);
     return lesson.getOrElse(null);
   }
 
   public async loadSection(
-    topicId: string, courseId: string, chapterId: string, lessonId: string, sectionId: string,
+    agent: Agent,
+    topicId: string,
+    courseId: string,
+    chapterId: string,
+    lessonId: string,
+    sectionId: string,
   ): Promise<Section | null> {
-    const section = await this.ff.loadContent(
-      this.ff.rootCursor().navigate(topicId, courseId, chapterId, lessonId, sectionId),
-      SectionContentType,
+    const sectionCursor = this.ff.rootCursor(agent).navigate(
+      topicId, courseId, chapterId, lessonId, sectionId
     );
+    
+    if (sectionCursor === null) {
+      return null;
+    }
+
+    const section = await this.ff.loadContent(sectionCursor, SectionContentType);
     return section.getOrElse(null);
   }
 
   public async loadExercise(
+    agent: Agent,
     topicId: string,
     courseId: string,
     chapterId: string,
@@ -108,10 +136,15 @@ export class KodimCms {
     sectionId: string,
     exerciseId: string,
   ): Promise<Exercise | null> {
-    const exercise = await this.ff.loadContent(
-      this.ff.rootCursor().navigate(topicId, courseId, chapterId, lessonId, sectionId, exerciseId),
-      ExerciseContentType,
+    const exerciseCursor = this.ff.rootCursor(agent).navigate(
+      topicId, courseId, chapterId, lessonId, sectionId, exerciseId,
     );
+
+    if (exerciseCursor === null) {
+      return null;
+    }
+
+    const exercise = await this.ff.loadContent(exerciseCursor, ExerciseContentType);
     return exercise.getOrElse(null);
   }
 
@@ -135,13 +168,13 @@ export class KodimCms {
     
     const statuses = await Promise.all(
       repoRecords.map(async (repoRecord) => {
-        const cursor = this.ff.rootCursor().navigate(...repoRecord.contentPath);
-        if (!cursor.isOk()) {
+        const cursor = this.ff.rootCursor(agnosticAgent).navigate(...repoRecord.contentPath);
+        if (cursor === null) {
           return 'not-found';
         }
 
         const result = await this.ff.reindex(cursor, repoRecord.contentType);
-        if (result === 'not-found' || result === 'mismatch') {
+        if (result === 'not-found' || result === 'wrong-content-type') {
           return 'not-found';
         }
         

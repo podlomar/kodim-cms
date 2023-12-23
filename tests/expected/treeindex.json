@@ -1,0 +1,234 @@
+{
+  "contentId": "kodim/root",
+  "name": "",
+  "title": "content",
+  "fsNode": {
+    "type": "folder",
+    "path": "/home/podlomar/work/kodim/kodim-cms/tests/content",
+    "fileName": "content",
+    "ext": ""
+  },
+  "data": {},
+  "type": "parent",
+  "subEntries": [
+    {
+      "contentId": "kodim/topic",
+      "name": "spravne",
+      "title": "Správné formátování",
+      "fsNode": {
+        "type": "folder",
+        "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne",
+        "fileName": "spravne",
+        "ext": ""
+      },
+      "data": {
+        "heading": "Správně zformátovaný obsah",
+        "lead": "Správně zformátovaný obsah je klíčovým prvkem ve světě psaného a tištěného textu, stejně jako v digitálním prostředí. Tento koncept se týká způsobu, jakým jsou informace, text a média prezentovány a uspořádány, aby byly snadno čitelné, esteticky příjemné a efektivní ve sdělení svého obsahu.",
+        "image": "spravne.svg",
+        "mask": "spravne-mask.svg"
+      },
+      "type": "parent",
+      "subEntries": [
+        {
+          "contentId": "kodim/course",
+          "name": "kouzelna-kucharka",
+          "title": "Kouzelná kuchařka pro lenochy",
+          "fsNode": {
+            "type": "folder",
+            "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka",
+            "fileName": "kouzelna-kucharka",
+            "ext": ""
+          },
+          "data": {
+            "lead": "Zapomeňte na komplikované hodiny strávené v kuchyni, s naší kuchařkou budete připravovat lahodná jídla a nápoje tak snadno, že si budete připadat jako mágové ve světě kulinářského umění.",
+            "image": "cookbook.svg"
+          },
+          "type": "parent",
+          "assets": [
+            "cookbook.svg"
+          ],
+          "subEntries": [
+            {
+              "type": "parent",
+              "contentId": "kodim/chapter",
+              "name": "lekce",
+              "title": "",
+              "fsNode": {
+                "type": "folder",
+                "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka",
+                "fileName": "kouzelna-kucharka",
+                "ext": ""
+              },
+              "data": {
+                "lead": ""
+              },
+              "subEntries": [
+                {
+                  "contentId": "kodim/lesson",
+                  "data": {
+                    "lead": "Důležité tipy a triky, jak uvařit vodu bezpečně a bez zbytečného stresu. Naučíme vás správným postupům, které zabezpečí, že vaše voda bude vždy chutná, čerstvá a oku lahodící."
+                  },
+                  "fsNode": {
+                    "ext": "",
+                    "fileName": "voda-bez-rizika",
+                    "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka/voda-bez-rizika",
+                    "type": "folder"
+                  },
+                  "name": "voda-bez-rizika",
+                  "subEntries": [
+                    {
+                      "assets": [
+                        "boil.jpg"
+                      ],
+                      "contentId": "kodim/section",
+                      "data": {},
+                      "fsNode": {
+                        "ext": ".md",
+                        "fileName": "vyber-nadobi",
+                        "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka/voda-bez-rizika/vyber-nadobi.md",
+                        "type": "file"
+                      },
+                      "name": "vyber-nadobi",
+                      "subEntries": [],
+                      "title": "Bezpečný výběr nádobí a materiálů",
+                      "type": "parent"
+                    },
+                    {
+                      "assets": [],
+                      "contentId": "kodim/section",
+                      "data": {},
+                      "fsNode": {
+                        "ext": ".md",
+                        "fileName": "kontrola",
+                        "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka/voda-bez-rizika/kontrola.md",
+                        "type": "file"
+                      },
+                      "name": "kontrola",
+                      "subEntries": [],
+                      "title": "kontrola",
+                      "type": "parent"
+                    },
+                    {
+                      "assets": [],
+                      "contentId": "kodim/section",
+                      "data": {},
+                      "fsNode": {
+                        "ext": ".md",
+                        "fileName": "cv-vareni-vody",
+                        "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka/voda-bez-rizika/cv-vareni-vody.md",
+                        "type": "file"
+                      },
+                      "name": "cv-vareni-vody",
+                      "subEntries": [
+                        {
+                          "assets": [],
+                          "contentId": "kodim/exercise",
+                          "data": {
+                            "demand": 1,
+                            "lead": "Vybereme hrnec a nádobí pro vaření vody.",
+                            "solutionAccess": "allow"
+                          },
+                          "fsNode": {
+                            "ext": ".md",
+                            "fileName": "vyber-nadobi",
+                            "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka/voda-bez-rizika/cviceni/vyber-nadobi.md",
+                            "type": "file"
+                          },
+                          "name": "vyber-nadobi",
+                          "title": "Výběr správného hrnce a nádobí",
+                          "type": "leaf"
+                        }
+                      ],
+                      "title": "Cvičení: Vaření vody",
+                      "type": "parent"
+                    }
+                  ],
+                  "title": "Jak uvařit vodu bez rizika",
+                  "type": "parent"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "contentId": "kodim/course",
+          "name": "pruvodce-vesmirem",
+          "title": "Bláznivý Průvodce Vesmírem",
+          "fsNode": {
+            "type": "folder",
+            "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/pruvodce-vesmirem",
+            "fileName": "pruvodce-vesmirem",
+            "ext": ""
+          },
+          "data": {
+            "lead": "Tento kurz vás vezme na neuvěřitelnou cestu vesmírem, kde budete objevovat tajemství černých děr, potkávat mimozemské bytosti a učit se, jak ve vesmíru přežít a zároveň se bavit.",
+            "image": "universe.svg"
+          },
+          "type": "parent",
+          "subEntries": [
+            {
+              "type": "parent",
+              "contentId": "kodim/chapter",
+              "name": "lekce",
+              "fsNode": {
+                "type": "folder",
+                "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/pruvodce-vesmirem",
+                "fileName": "pruvodce-vesmirem",
+                "ext": ""
+              },
+              "subEntries": [],
+              "title": "",
+              "data": {
+                "lead": ""
+              }
+            }
+          ],
+          "assets": [
+            "universe.svg"
+          ]
+        },
+        {
+          "contentId": "kodim/course",
+          "name": "boby",
+          "title": "Úžasné Dobrodružství s Čarodějnou Boby",
+          "fsNode": {
+            "type": "folder",
+            "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/boby",
+            "fileName": "boby",
+            "ext": ""
+          },
+          "data": {
+            "lead": "Od lekce o létání na koštěti až po setkání s kouzelnými bytostmi, budete se učit, jak ovládat kouzla, bavit se a vytvářet vlastní magické příběhy. Připravte se na nekonečné kouzla a smích.",
+            "image": "witch.svg"
+          },
+          "type": "parent",
+          "subEntries": [
+            {
+              "type": "parent",
+              "contentId": "kodim/chapter",
+              "name": "lekce",
+              "fsNode": {
+                "type": "folder",
+                "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/boby",
+                "fileName": "boby",
+                "ext": ""
+              },
+              "subEntries": [],
+              "title": "",
+              "data": {
+                "lead": ""
+              }
+            }
+          ],
+          "assets": [
+            "witch.svg"
+          ]
+        }
+      ],
+      "assets": [
+        "spravne.svg",
+        "spravne-mask.svg"
+      ]
+    }
+  ]
+}

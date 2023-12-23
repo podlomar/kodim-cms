@@ -1,20 +1,18 @@
-import { OkCursor } from "filefish/dist/cursor.js";
-import { IndexEntry } from "filefish/dist/treeindex.js";
+import { Cursor } from "filefish/cursor";
+import { IndexEntry } from "filefish/indexer";
 import { Crumbs, crumbsFromCursor } from "./crumbs.js";
 
-export interface BaseShallowContent {
+export interface BaseNavItem {
   readonly name: string;
   readonly title: string;
   readonly path: string;
 }
 
-export interface BaseContent extends BaseShallowContent {
+export interface BaseContent extends BaseNavItem {
   readonly crumbs: Crumbs;
 }
 
-export const buildBaseShallowContent = (
-  cursor: OkCursor<IndexEntry>
-): BaseShallowContent => {
+export const buildBaseNavItem = (cursor: Cursor<IndexEntry>): BaseNavItem => {
   const entry = cursor.entry();
   return {
     name: entry.name,
@@ -23,9 +21,9 @@ export const buildBaseShallowContent = (
   };
 };
 
-export const buildBaseContent = (cursor: OkCursor<IndexEntry>): BaseContent => {
+export const buildBaseContent = (cursor: Cursor): BaseContent => {
   return {
-    ...buildBaseShallowContent(cursor),
+    ...buildBaseNavItem(cursor),
     crumbs: crumbsFromCursor(cursor),
   };
 };

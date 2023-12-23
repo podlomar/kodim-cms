@@ -1,4 +1,4 @@
-import { Cursor } from "filefish/dist/cursor.js";
+import { Cursor } from "filefish/cursor";
 import { ChapterContentType } from "./chapter.js";
 
 export interface CrumbItem {
@@ -12,9 +12,9 @@ export const crumbsFromCursor = (cursor: Cursor): Crumbs => {
   const crumbs: Crumbs = [];
   
   let parent = cursor.parent();
-  while (parent.isOk()) {
+  while (parent !== null) {
     const entry = parent.entry();
-    if (ChapterContentType.fits(parent) && entry.name === 'lekce') {
+    if (ChapterContentType.fitsCursor(parent) && entry.name === 'lekce') {
       parent = parent.parent();
       continue;
     }  

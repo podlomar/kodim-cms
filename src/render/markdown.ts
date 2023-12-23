@@ -1,17 +1,17 @@
 import { SectionBlock, SectionContentType, SectionEntry } from "../content/section.js";
 import { RootContent, Text } from "hast";
-import { LoadingContext } from "filefish/dist/content-types.js";
-import { OkCursor } from "filefish/dist/cursor.js";
-import { Exercise, ExerciseContentType, ExerciseEntry } from "../content/exercise.js";
+import { Loader } from "filefish/loader";
+import { Cursor } from "filefish/cursor";
+import { Exercise, ExerciseContentType, ExerciseEntry, exerciseNavItem } from "../content/exercise.js";
 import { MarkdownSource } from "./markdown-source.js";
 import { FsNode } from "fs-inquire";
 import { buildBaseContent } from "../content/base.js";
 
 export const processSection = async (
-  file: string, cursor: OkCursor<SectionEntry>, context: LoadingContext,
+  file: string, cursor: Cursor<SectionEntry>, loader: Loader,
 ): Promise<SectionBlock[]> => {
   const source = await MarkdownSource.fromFile(file);
-  const root = await source.process(cursor, SectionContentType, context);
+  const root = await source.process(cursor, SectionContentType, loader);
   const blocks: SectionBlock[] = [];
 
   for(const node of root.children) {
@@ -28,19 +28,15 @@ export const processSection = async (
       const content = (node.children[0] as Text).value as string;
       const name = content.trim().split('/').at(-1)!;
       const excCursor = cursor.navigate(name);
-      if (!excCursor.isOk()) {
+      if (excCursor === null) {
         continue;
       }
 
-      const excResult = await excCursor.loadShallow(ExerciseContentType, context);
-      if (excResult.isFail()) {
-        continue;
-      }
-
+      const exerciseNav = exerciseNavItem(excCursor as Cursor<ExerciseEntry>);
       if (lastBlock === undefined || lastBlock.type !== 'excs') {
-        blocks.push({ type: 'excs', excs: [excResult.get()] });
+        blocks.push({ type: 'excs', excs: [exerciseNav] });
       } else {
-        lastBlock.excs.push(excResult.get());
+        lastBlock.excs.push(exerciseNav);
       }
       continue;
     }
@@ -62,15 +58,15 @@ export const processSection = async (
 };
 
 export const processExercise = async (
-  fsNode: FsNode, cursor: OkCursor<ExerciseEntry>, context: LoadingContext,
+  fsNode: FsNode, cursor: Cursor<ExerciseEntry>, loader: Loader,
 ): Promise<Exercise> => {
   const filePath = fsNode.type === 'file'
     ? fsNode.path
     : fsNode.path + '/exercise.md';
   
-  const entry = cursor.entry() as ExerciseEntry;
+  const entry = cursor.entry();
   const source = await MarkdownSource.fromFile(filePath);
-  const root = await source.process(cursor, ExerciseContentType, context);
+  const root = await source.process(cursor, ExerciseContentType, loader);
   
   const rootChildren: RootContent[] = [];
   let solution: RootContent | null = null;

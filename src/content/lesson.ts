@@ -1,20 +1,20 @@
 import path from 'path';
 import { promises as fs } from 'fs';
 import yaml from 'yaml';
-import { InnerEntry } from 'filefish/dist/treeindex.js';
-import { IndexingContext, LoadingContext, contentType } from 'filefish/dist/content-types.js';
+import { Indexer, ParentEntry } from 'filefish/indexer';
+import { defineContentType } from 'filefish/content-type';
 import { folder, FolderNode } from 'fs-inquire';
-import { OkCursor } from 'filefish/dist/cursor.js';
-import { SectionContentType, SectionEntry, ShallowSection } from './section.js';
-import { BaseContent, BaseShallowContent, buildBaseContent } from './base.js';
-import { LoadError } from 'filefish/dist/errors.js';
+import { Cursor } from 'filefish/cursor';
+import { SectionContentType, SectionEntry, sectionNavItem, SectionNavItem } from './section.js';
+import { BaseContent, BaseNavItem, buildBaseContent } from './base.js';
+import { LoadError, Loader } from 'filefish/loader';
 import { Result } from 'monadix/result';
 
 export interface LessonData {
   lead: string,
 }
 
-export type LessonEntry = InnerEntry<SectionEntry, LessonData>;
+export type LessonEntry = ParentEntry<SectionEntry, LessonData>;
 
 interface EntryFile {
   title: string,
@@ -22,18 +22,29 @@ interface EntryFile {
   sections: string[];
 }
 
-export interface ShallowLesson extends BaseShallowContent, LessonData {
+export interface LessonNavItem extends BaseNavItem, LessonData {
   num: number,
 };
 
-export interface Lesson extends ShallowLesson, BaseContent {
-  sections: ShallowSection[]
-  prev: ShallowLesson | null,
-  next: ShallowLesson | null,
+export interface Lesson extends LessonNavItem, BaseContent {
+  sections: SectionNavItem[]
+  prev: LessonNavItem | null,
+  next: LessonNavItem | null,
 }
 
-export const LessonContentType = contentType('kodim/lesson', {
-  async indexOne(folderNode: FolderNode, context: IndexingContext): Promise<LessonEntry> {
+export const lessonNavItem = (cursor: Cursor<LessonEntry>): LessonNavItem => {
+  const entry = cursor.entry();
+  return {
+    path: cursor.contentPath(),
+    num: cursor.pos() + 1,
+    name: entry.name,
+    title: entry.title,
+    lead: entry.data.lead,
+  };
+};
+
+export const LessonContentType = defineContentType('kodim/lesson', {
+  async indexNode(folderNode: FolderNode, indexer: Indexer): Promise<LessonEntry> {
     const entryFileContent = await fs.readFile(
       path.resolve(folderNode.path, 'entry.yml'), 'utf-8'
     );
@@ -46,44 +57,27 @@ export const LessonContentType = contentType('kodim/lesson', {
       .getOrThrow();
 
     const data = { lead: entryFile.lead };
-    const subEntries = await context.indexSubEntries(
-      sectionFiles, folderNode.fileName, SectionContentType,
-    );
+    const subEntries = await indexer.indexChildren(sectionFiles, SectionContentType);
     return {
-      ...context.buildInnerEntry(folderNode, data, subEntries),
+      ...indexer.buildParentEntry(folderNode, data, subEntries),
       title: entryFile.title,
     };
   },
-  async loadOne(
-    cursor: OkCursor<LessonEntry>, context: LoadingContext
+
+  async loadContent(
+    cursor: Cursor<LessonEntry>, loader: Loader,
   ): Promise<Result<Lesson, LoadError>> {
     const entry = cursor.entry();
-    const prev = await cursor.prevSibling().loadShallow(LessonContentType, context);
-    const next = await cursor.nextSibling().loadShallow(LessonContentType, context);
-
-    const sections = Result.collectSuccess(
-      await SectionContentType.loadShallowMany(cursor.children(), context)
-    );
+    const prevSibling = cursor.prevSibling();
+    const nextSibling = cursor.nextSibling();
     
     return Result.success({
       ...buildBaseContent(cursor),
       num: cursor.pos() + 1,
       lead: entry.data.lead,
-      sections,
-      prev: prev.getOrElse(null),
-      next: next.getOrElse(null),
+      sections: cursor.children().map((c) => sectionNavItem(c)),
+      prev: prevSibling === null ? null : lessonNavItem(prevSibling),
+      next: nextSibling === null ? null : lessonNavItem(nextSibling),
     });
   },
-  async loadShallowOne(
-    cursor: OkCursor<LessonEntry>
-  ): Promise<Result<ShallowLesson, LoadError>> {
-    const entry = cursor.entry();
-    return Result.success({
-      path: cursor.contentPath(),
-      num: cursor.pos() + 1,
-      name: entry.name,
-      title: entry.title,
-      lead: entry.data.lead,
-    });
-  }
 });

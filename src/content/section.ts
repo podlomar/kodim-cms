@@ -1,18 +1,17 @@
-import path from 'path';
-import { InnerEntry } from 'filefish/dist/treeindex.js';
-import { IndexingContext, LoadingContext, contentType } from 'filefish/dist/content-types.js';
+import { Indexer, ParentEntry } from 'filefish/indexer';
+import { defineContentType } from 'filefish/content-type';
 import { FileNode, folder, fsNode } from 'fs-inquire';
 import { toString as mdastToString } from 'mdast-util-to-string'
-import { OkCursor } from 'filefish/dist/cursor.js';
-import { ExerciseContentType, ExerciseEntry, ShallowExercise } from './exercise.js';
+import { Cursor } from 'filefish/cursor';
+import { ExerciseContentType, ExerciseEntry, ExerciseNavItem } from './exercise.js';
 import { processSection } from '../render/markdown.js';
 import { Root as HastRoot } from 'hast';
 import { MarkdownSource } from '../render/markdown-source.js';
-import { BaseContent, BaseShallowContent, buildBaseContent } from './base.js';
-import { LoadError } from 'filefish/dist/errors.js';
+import { BaseContent, BaseNavItem, buildBaseContent } from './base.js';
+import { LoadError, Loader } from 'filefish/loader';
 import { Result } from 'monadix/result';
 
-export type SectionEntry = InnerEntry<ExerciseEntry>;
+export type SectionEntry = ParentEntry<ExerciseEntry>;
 
 interface SectionFile {
   title?: string;
@@ -20,7 +19,7 @@ interface SectionFile {
   excs: string[];
 }
 
-export type ShallowSection = BaseShallowContent;
+export type SectionNavItem = BaseNavItem;
 
 export interface TextBlock {
   type: 'hast',
@@ -29,15 +28,15 @@ export interface TextBlock {
 
 export interface ExerciseBlock {
   type: 'excs',
-  excs: ShallowExercise[],
+  excs: ExerciseNavItem[],
 }
 
 export type SectionBlock = TextBlock | ExerciseBlock;
 
-export interface Section extends ShallowSection, BaseContent {
+export interface Section extends SectionNavItem, BaseContent {
   blocks: SectionBlock[],
-  prev: ShallowSection | null,
-  next: ShallowSection | null,
+  prev: SectionNavItem | null,
+  next: SectionNavItem | null,
 }
 
 export const indexSection = async (file: string): Promise<SectionFile | undefined> => {
@@ -74,8 +73,17 @@ export const indexSection = async (file: string): Promise<SectionFile | undefine
   }
 };
 
-export const SectionContentType = contentType('kodim/section', {
-  async indexOne(file: FileNode, context: IndexingContext): Promise<SectionEntry> {
+export const sectionNavItem = (cursor: Cursor<SectionEntry>): SectionNavItem => {
+  const entry = cursor.entry();
+  return {
+    path: cursor.contentPath(),
+    name: entry.name,
+    title: entry.title,
+  };
+};
+
+export const SectionContentType = defineContentType('kodim/section', {
+  async indexNode(file: FileNode, indexer: Indexer): Promise<SectionEntry> {
     const sectionFile = await indexSection(file.path);
     const excsNodes = fsNode(file)
       .parent
@@ -84,37 +92,27 @@ export const SectionContentType = contentType('kodim/section', {
       .byPaths(sectionFile?.excs ?? [], '', '.md')
       .getOrThrow();
 
-    const subEntries = await context.indexSubEntries(excsNodes, file.fileName, ExerciseContentType);
-    const baseEntry = context.buildInnerEntry(file, {}, subEntries);
+    const subEntries = await indexer.indexChildren(excsNodes, ExerciseContentType);
+    const baseEntry = indexer.buildParentEntry(file, {}, subEntries);
     return {
       ...baseEntry,
       title: sectionFile?.title ?? baseEntry.title,
       assets: sectionFile?.assets,
     }
   },
-  async loadOne(
-    cursor: OkCursor<SectionEntry>, context: LoadingContext
+  async loadContent(
+    cursor: Cursor<SectionEntry>, loader: Loader,
   ): Promise<Result<Section, LoadError>> {
     const entry = cursor.entry();
-    const prev = await cursor.prevSibling().loadShallow(SectionContentType, context);
-    const next = await cursor.nextSibling().loadShallow(SectionContentType, context);
-    const blocks = await processSection(entry.fsNode.path, cursor, context);
+    const prevSibling = cursor.prevSibling();
+    const nextSibling = cursor.nextSibling();
+    const blocks = await processSection(entry.fsNode.path, cursor, loader);
 
     return Result.success({
       ...buildBaseContent(cursor),
-      prev: prev.getOrElse(null),
-      next: next.getOrElse(null),
+      prev: prevSibling === null ? null : sectionNavItem(prevSibling),
+      next: nextSibling === null ? null : sectionNavItem(nextSibling),
       blocks,
     });
   },
-  async loadShallowOne(
-    cursor: OkCursor<SectionEntry>
-  ): Promise<Result<ShallowSection, LoadError>> {
-    const entry = cursor.entry();
-    return Result.success({
-      path: cursor.contentPath(),
-      name: entry.name,
-      title: entry.title,
-    });
-  }
 });

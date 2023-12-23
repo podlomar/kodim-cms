@@ -13,9 +13,10 @@ import { selectAll } from "unist-util-select";
 import { selectAll as hastSelectAll } from 'hast-util-select';
 import { Root, Content } from "mdast";
 import { Root as HastRoot, Element } from "hast";
-import { OkCursor } from 'filefish/dist/cursor.js';
-import { ContentType, LoadingContext } from 'filefish/dist/content-types.js';
-import { IndexEntry } from 'filefish/dist/treeindex.js';
+import { Cursor } from 'filefish/cursor';
+import { ContentType } from 'filefish/content-type';
+import { IndexEntry } from 'filefish/indexer';
+import { Loader } from 'filefish/loader';
 
 const unifiedProcessor = unified()
   .use(parse)
@@ -87,9 +88,9 @@ export class MarkdownSource {
   }
 
   public async process(
-    cursor: OkCursor<IndexEntry>,
-    contentType: ContentType,
-    context: LoadingContext,
+    cursor: Cursor,
+    contentType: ContentType<any, any, any>,
+    loader: Loader,
   ): Promise<HastRoot> {
     const hast = await unifiedProcessor.run(this.root);
     const assetLinks = hast.children
@@ -108,7 +109,7 @@ export class MarkdownSource {
         continue;
       }
 
-      const assetPath = contentType.buildAssetPath(cursor, url.slice(7), context);
+      const assetPath = contentType.buildAssetPath(cursor, url.slice(7), loader);
       
       if (link.properties!.src !== undefined) {
         link.properties!.src = assetPath;

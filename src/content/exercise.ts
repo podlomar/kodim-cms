@@ -1,14 +1,14 @@
 import path from 'path';
-import { LeafEntry } from 'filefish/dist/treeindex.js';
-import { IndexingContext, LoadingContext, contentType } from 'filefish/dist/content-types.js';
+import { Indexer, LeafEntry } from 'filefish/indexer';
+import { defineContentType } from 'filefish/content-type';
 import { FsNode } from 'fs-inquire';
-import { OkCursor } from 'filefish/dist/cursor.js';
+import { Cursor } from 'filefish/cursor';
 import { Root as HastRoot } from 'hast';
 import { processExercise } from '../render/markdown.js';
 import { MarkdownSource } from '../render/markdown-source.js';
-import { LoadError } from 'filefish/dist/errors.js';
+import { LoadError, Loader } from 'filefish/loader';
 import { Result } from 'monadix/result';
-import { BaseContent, BaseShallowContent } from './base.js';
+import { BaseContent, BaseNavItem } from './base.js';
 
 export type Demand = 1 | 2 | 3 | 4 | 5;
 
@@ -23,11 +23,11 @@ export type ExerciseEntry = LeafEntry<ExerciseData & {
   solutionAccess: SolutionAccess,
 }>;
 
-export interface ShallowExercise extends BaseShallowContent, ExerciseData {
+export interface ExerciseNavItem extends BaseNavItem, ExerciseData {
   num: number;
 }
 
-export interface Exercise extends BaseContent, ShallowExercise {
+export interface Exercise extends BaseContent, ExerciseNavItem {
   assign: HastRoot,
   solution: HastRoot | 'locked' | 'none',
 }
@@ -57,8 +57,20 @@ const indexExercise = async (fsNode: FsNode): Promise<ExerciseFile> => {
   };
 }
 
-export const ExerciseContentType = contentType<FsNode, ExerciseEntry, Exercise, ShallowExercise>('kodim/exercise', {
-  async indexOne(node: FsNode, context: IndexingContext): Promise<ExerciseEntry> {
+export const exerciseNavItem = (cursor: Cursor<ExerciseEntry>): ExerciseNavItem => {
+  const entry = cursor.entry();
+  return {
+    path: cursor.contentPath(),
+    name: entry.name,
+    title: entry.title,
+    lead: entry.data.lead,
+    demand: entry.data.demand,
+    num: cursor.pos() + 1,
+  };
+}
+
+export const ExerciseContentType = defineContentType('kodim/exercise', {
+  async indexNode(node: FsNode, indexer: Indexer): Promise<ExerciseEntry> {
     const exerciseFile = await indexExercise(node);
 
     const data = {
@@ -68,28 +80,15 @@ export const ExerciseContentType = contentType<FsNode, ExerciseEntry, Exercise, 
     };
 
     return {
-      ...context.buildLeafEntry(node, data),
+      ...indexer.buildLeafEntry(node, data),
       title: exerciseFile.title,
       assets: exerciseFile.assets,
     }
   },
-  async loadOne(
-    cursor: OkCursor<ExerciseEntry>, context: LoadingContext
+  async loadContent(
+    cursor: Cursor<ExerciseEntry>, loader: Loader,
   ): Promise<Result<Exercise, LoadError>> {
     const entry = cursor.entry();
-    return Result.success(await processExercise(entry.fsNode, cursor, context));
+    return Result.success(await processExercise(entry.fsNode, cursor, loader));
   },
-  async loadShallowOne(
-    cursor: OkCursor<ExerciseEntry>
-  ): Promise<Result<ShallowExercise, LoadError>> {
-    const entry = cursor.entry();
-    return Result.success({
-      path: cursor.contentPath(),
-      name: entry.name,
-      title: entry.title,
-      lead: entry.data.lead,
-      demand: entry.data.demand,
-      num: cursor.pos() + 1,
-    });
-  }
 });
