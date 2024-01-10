@@ -20,7 +20,7 @@ export class KodimCmsIndexer extends FilefishIndexer {
   }
 
   public createChild(contentId: string, name: string): KodimCmsIndexer {
-    return new KodimCmsIndexer(contentId, [...this.contentPath, name], this.repoRegistry);
+    return new KodimCmsIndexer(contentId, [...this.parentContentPath, name], this.repoRegistry);
   }
 
   public registerRepo(

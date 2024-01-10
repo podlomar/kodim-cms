@@ -1,43 +1,27 @@
-import path from 'path';
-import { promises as fs } from 'fs';
-import yaml from 'yaml';
 import { ParentEntry, Indexer } from 'filefish/indexer';
 import { defineContentType } from 'filefish/content-type';
-import { folder, FolderNode } from 'fs-inquire';
 import { Cursor } from 'filefish/cursor';
-import { Topic, TopicContentType, TopicEntry } from './topic.js';
+import { Topic, TopicContentType, TopicEntry, TopicSource } from './topic.js';
 import { Result } from "monadix/result";
 import { Loader } from 'filefish/loader';
 
-interface EntryFile {
-  topics: string[];
+export interface RootSource {
+  readonly topics: TopicSource[];
 }
 
-export type RootEntry = ParentEntry<TopicEntry>;
+export type RootEntry = ParentEntry<RootSource, TopicEntry>;
 
 export interface Root {
-  topics: Topic[];
+  readonly topics: Topic[];
 }
 
 export const RootContentType = defineContentType('kodim/root', {
-  async indexNode(folderNode: FolderNode, indexer: Indexer): Promise<RootEntry> {
-    const entryFileContent = await fs.readFile(
-      path.resolve(folderNode.path, 'entry.yml'), 'utf-8'
+  async index(source: RootSource, indexer: Indexer): Promise<RootEntry> {
+    const subEntries = await indexer.indexChildren(
+      '', source.topics, TopicContentType
     );
-    const entryFile = yaml.parse(entryFileContent) as EntryFile;
     
-    const topicFolders = folder(folderNode)
-      .select
-      .folders
-      .byPaths(entryFile.topics)
-      .getOrThrow();
-
-    const subEntries = await indexer.indexChildren(topicFolders, TopicContentType);
-  
-    return {
-      ...indexer.buildParentEntry(folderNode, {}, subEntries),
-      name: '',
-    };
+    return indexer.buildParentEntry('', source, 'public', {}, subEntries);
   },
 
   async loadContent(

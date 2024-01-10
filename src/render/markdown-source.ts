@@ -15,7 +15,6 @@ import { Root, Content } from "mdast";
 import { Root as HastRoot, Element } from "hast";
 import { Cursor } from 'filefish/cursor';
 import { ContentType } from 'filefish/content-type';
-import { IndexEntry } from 'filefish/indexer';
 import { Loader } from 'filefish/loader';
 
 const unifiedProcessor = unified()
@@ -105,16 +104,12 @@ export class MarkdownSource {
         continue;
       }
 
-      if (!url.startsWith('assets/')) {
-        continue;
-      }
-
-      const assetPath = contentType.buildAssetPath(cursor, url.slice(7), loader);
+      const assetUrlPath = loader.buildAssetUrlPath(cursor, url.slice(7));
       
       if (link.properties!.src !== undefined) {
-        link.properties!.src = assetPath;
+        link.properties!.src = assetUrlPath;
       } else if (link.properties!.href !== undefined) {
-        link.properties!.href = assetPath;
+        link.properties!.href = assetUrlPath;
       }
     }
     

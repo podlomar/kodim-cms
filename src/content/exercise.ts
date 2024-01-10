@@ -14,13 +14,13 @@ export type Demand = 1 | 2 | 3 | 4 | 5;
 
 export type SolutionAccess = 'allow' | 'lock' | 'hide';
 
-export interface ExerciseData {
-  lead: string,
-  demand: Demand,
+export type ExerciseData = {
+  readonly lead: string,
+  readonly demand: Demand,
 }
 
-export type ExerciseEntry = LeafEntry<ExerciseData & {
-  solutionAccess: SolutionAccess,
+export type ExerciseEntry = LeafEntry<FsNode, ExerciseData & {
+  readonly solutionAccess: SolutionAccess,
 }>;
 
 export interface ExerciseNavItem extends BaseNavItem, ExerciseData {
@@ -63,32 +63,38 @@ export const exerciseNavItem = (cursor: Cursor<ExerciseEntry>): ExerciseNavItem 
     path: cursor.contentPath(),
     name: entry.name,
     title: entry.title,
-    lead: entry.data.lead,
-    demand: entry.data.demand,
+    lead: entry.attrs.lead,
+    demand: entry.attrs.demand,
     num: cursor.pos() + 1,
   };
 }
 
 export const ExerciseContentType = defineContentType('kodim/exercise', {
-  async indexNode(node: FsNode, indexer: Indexer): Promise<ExerciseEntry> {
-    const exerciseFile = await indexExercise(node);
+  async index(source: FsNode, indexer: Indexer): Promise<ExerciseEntry> {
+    const exerciseFile = await indexExercise(source);
 
-    const data = {
+    const attrs = {
       lead: exerciseFile.lead ?? 'no-lead',
       demand: exerciseFile.demand,
       solutionAccess: exerciseFile.solutionAccess ?? 'allow',
     };
 
     return {
-      ...indexer.buildLeafEntry(node, data),
+      ...indexer.buildLeafEntry(source.fileName, source, 'protected', attrs),
       title: exerciseFile.title,
-      assets: exerciseFile.assets,
+      assets: {
+        folder: source.type === 'file'
+          ? path.resolve(source.path, '../assets')
+          : path.resolve(source.path, 'assets'),
+        names: exerciseFile.assets,
+      },
     }
   },
+  
   async loadContent(
     cursor: Cursor<ExerciseEntry>, loader: Loader,
   ): Promise<Result<Exercise, LoadError>> {
     const entry = cursor.entry();
-    return Result.success(await processExercise(entry.fsNode, cursor, loader));
+    return Result.success(await processExercise(entry.source, cursor, loader));
   },
 });

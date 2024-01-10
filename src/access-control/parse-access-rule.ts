@@ -1,4 +1,8 @@
+import dayjs, { Dayjs } from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat.js';
 import { Result } from 'monadix/result';
+
+dayjs.extend(customParseFormat)
 
 type PropertyValue = string | number | boolean | null;
 
@@ -61,6 +65,23 @@ export class Tokenizer {
     return new Tokenizer(this.input, index, this.value);
   }
 
+  public readWs(): Tokenizer {
+    if (!this.isReady()) {
+      return this;
+    }
+    
+    let index = this.index;
+    while (index < this.input.length && this.input[index].match(/\s/) !== null) {
+      index++;
+    }
+
+    if (index === this.index) {
+      return this.fail();
+    }
+
+    return new Tokenizer(this.input, index, this.input.slice(this.index, index));
+  }
+
   private match(pattern: RegExp): Tokenizer {
     if (!this.isReady()) {
       return this;
@@ -77,7 +98,7 @@ export class Tokenizer {
 
     return this.success(this.index + match[0].length, match[0]);
   }
-  
+
   public readChar(...chars: string[]): Tokenizer {
     if (!this.isReady()) {
       return this;
@@ -94,8 +115,26 @@ export class Tokenizer {
     return this.fail();
   }
   
+  public readText(...texts: string[]): Tokenizer {
+    if (!this.isReady()) {
+      return this;
+    }
+    
+    if (this.isEof()) {
+      return this.fail();
+    }
+    
+    for (const text of texts) {
+      if (this.input.slice(this.index).startsWith(text)) {
+        return this.success(this.index + text.length, text);
+      }
+    }
+  
+    return this.fail();
+  }
+
   public readIdent(): Tokenizer {
-    return this.match(/^[a-zA-Z_][a-zA-Z0-9_]*/);
+    return this.match(/^[a-zA-Z_][a-zA-Z0-9_-]*/);
   }
   
   public readStars(): Tokenizer {
@@ -134,6 +173,23 @@ export class Tokenizer {
 
   public readNumber(): Tokenizer {
     return this.match(/^[+-]?(\d+(\.\d*)?|\.\d+)/);
+  }
+
+  public readDatetime(): Tokenizer {
+    if (!this.isReady()) {
+      return this;
+    }
+    
+    if (this.isEof()) {
+      return this.fail();
+    }
+    
+    const [datetime] = this.input.slice(this.index).match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/) ?? [];
+    if (datetime === undefined) {
+      return this.fail();
+    }
+    
+    return this.success(this.index + datetime.length, datetime);
   }
 };
 
@@ -273,12 +329,98 @@ const parseEntryPattern = (tokenizer: Tokenizer): ParseResult<EntryPattern> => {
   };
 }
 
-export type EntryQuery = EntryPattern[];
+export interface AccessRule {
+  after: Dayjs | null,
+  until: Dayjs | null,
+  query: EntryPattern[],
+};
 
-export const parseEntryQuery = (input: string): Result<EntryQuery, string> => {
+const parseTimeLimits = (tokenizer: Tokenizer): ParseResult<[Dayjs | null, Dayjs | null]> => {
+  let t = tokenizer.readText('after', 'until');
+  if (!t.isReady()) {
+    return {
+      success: true,
+      value: [null, null],
+      tokenizer,
+    };
+  }
+  
+  const anchor1 = t.value;
+  t = t.readWs().readDatetime();
+  if (!t.isReady()) {
+    return {
+      success: false,
+      error: `Expected datetime after '${anchor1}'`,
+      index: tokenizer.index,
+    }
+  }
+
+  const datetime1 = dayjs(t.value, 'YYYY-MM-DDTHH:mm', true);
+  if (!datetime1.isValid()) {
+    return {
+      success: false,
+      error: `Invalid datetime ${t.value} after '${anchor1}'`,
+      index: tokenizer.index,
+    }
+  }
+
+  if (anchor1 === 'until') {
+    return {
+      success: true,
+      value: [null, datetime1],
+      tokenizer: t,
+    }
+  }
+
+  let u = t.readWs().readText('until');
+  if (!u.isReady()) {
+    return {
+      success: true,
+      value: [datetime1, null],
+      tokenizer: t,
+    };
+  }
+
+  t = u;
+  
+  const anchor2 = t.value;
+  t = t.readWs().readDatetime();
+  if (!t.isReady()) {
+    return {
+      success: false,
+      error: `Expected datetime after '${anchor2}'`,
+      index: tokenizer.index,
+    }
+  }
+
+  const datetime2 = dayjs(t.value, 'YYYY-MM-DDTHH:mm', true);
+  if (!datetime2.isValid()) {
+    return {
+      success: false,
+      error: `Invalid datetime ${t.value} after '${anchor2}'`,
+      index: tokenizer.index,
+    }
+  }
+
+  return {
+    success: true,
+    value: [datetime1, datetime2],
+    tokenizer: t,
+  }
+};
+
+export const parseAccessRule = (input: string): Result<AccessRule, string> => {
   const query: EntryPattern[] = [];
   let t = Tokenizer.start(input).skipWs();
   
+  const timeLimitsResult = parseTimeLimits(t);
+  if (timeLimitsResult.success === false) {
+    return Result.fail(timeLimitsResult.error);
+  }
+
+  const [after, until] = timeLimitsResult.value;
+  t = timeLimitsResult.tokenizer.skipWs();
+
   while (!t.isEof()) {
     const entryResult = parseEntryPattern(t);
     if (entryResult.success === false) {
@@ -289,5 +431,5 @@ export const parseEntryQuery = (input: string): Result<EntryQuery, string> => {
     t = entryResult.tokenizer.skipWs();
   }
 
-  return Result.success(query);
+  return Result.success({ after, until, query });
 }

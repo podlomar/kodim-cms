@@ -4,7 +4,7 @@ import { Chapter, ChapterContentType } from "./content/chapter.js";
 import { Course, CourseContentType, CourseEntry } from "./content/course.js";
 import { Exercise, ExerciseContentType } from "./content/exercise.js";
 import { Lesson, LessonContentType } from "./content/lesson.js";
-import { RootEntry, Root, RootContentType } from "./content/root.js";
+import { RootEntry, Root, RootContentType, RootSource } from "./content/root.js";
 import { Section, SectionContentType } from "./content/section.js";
 import { Topic, TopicContentType } from "./content/topic.js";
 import { KodimCmsIndexer, RepoRegistry } from "./cms-indexer.js";
@@ -26,9 +26,9 @@ export class KodimCms {
     this.repoRegistry = repoRegistry;
   }
 
-  public static async load(contentPath: string): Promise<KodimCms> {
+  public static async load(rootSource: RootSource): Promise<KodimCms> {
     const repoRegistry: RepoRegistry = {};
-    const ff = await Filefish.create(contentPath, RootContentType, {
+    const ff = await Filefish.create(rootSource, RootContentType, {
       assetsBasePath: '/cms/assets',
       createIndexer(contentId: string, parentContentPath: string[]): Indexer {
         return new KodimCmsIndexer(contentId, parentContentPath, repoRegistry);

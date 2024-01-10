@@ -1,92 +1,95 @@
-import path from 'path';
-import { promises as fs } from 'fs';
-import yaml from 'yaml';
 import { ParentEntry } from 'filefish/indexer';
 import { defineContentType } from 'filefish/content-type';
-import { folder, FolderNode } from 'fs-inquire';
 import { Cursor } from 'filefish/cursor';
-import { CourseContentType, CourseEntry, CourseNavItem, courseNavItem } from './course.js';
-import { Result, Success } from 'monadix/result';
+import { 
+  CourseContentType,
+  CourseEntry,
+  CourseNavItem,
+  CourseSource,
+  Organization,
+  courseNavItem,
+} from './course.js';
+import { Result } from 'monadix/result';
 import { BaseContent, buildBaseContent } from './base.js';
 import { Indexer } from 'filefish/indexer';
 import { Loader, LoadError } from 'filefish/loader';
 import { KodimCmsIndexer } from '../cms-indexer.js';
+import { createFolderNode } from 'fs-inquire/dist/fsnodes.js';
 
-export interface TopicData {
+export type TopicData = {
   heading: string,
-  image: string,
-  mask: string,
   lead: string,
 };
-
-export type TopicEntry = ParentEntry<CourseEntry, TopicData>;
-
-interface CourseDef {
-  path: string;
-  repoUrl: string;
-  repoFolder: string;
-}
-
-interface TopicEntryFile {
-  title: string,
-  heading: string,
-  image: string,
-  mask: string,
-  lead: string,
-  courses: CourseDef[],
-}
 
 export interface Topic extends BaseContent, TopicData {
   courses: CourseNavItem[],
 }
 
-export const TopicContentType = defineContentType('kodim/topic', {
-  async indexNode(folderNode: FolderNode, indexer: Indexer): Promise<TopicEntry> {
-    const kodimCmsIndexer = indexer as KodimCmsIndexer;
-    const entryFileContent = await fs.readFile(
-      path.resolve(folderNode.path, 'entry.yml'), 'utf-8'
-    );
-    const entryFile = yaml.parse(entryFileContent) as TopicEntryFile;
-    
-    const courseFolders = folder(folderNode)
-      .select
-      .folders
-      .byPaths(entryFile.courses.map(course => course.path))
-      .getOrThrow();
+export interface TopicSource {
+  name: string,
+  title: string,
+  heading: string,
+  lead: string,
+  courses: CourseDef[],
+}
 
-    const imageName = entryFile.image.startsWith('assets/')
-      ? entryFile.image.slice(7)
-      : null;
+export type TopicEntry = ParentEntry<TopicSource, CourseEntry, TopicData>;
+
+export interface CourseDef {
+  name: string;
+  folder: string;
+  topic: string | null;
+  organization: Organization
+  repoUrl: string | null;
+  repoFolder: string | null;
+}
+
+export const TopicContentType = defineContentType('kodim/topic', {
+  async index(source: TopicSource, indexer: Indexer): Promise<TopicEntry> {
+    const kodimCmsIndexer = indexer as KodimCmsIndexer;    
+    const courseSources: CourseSource[] = source.courses.reduce(
+      (acc: CourseSource[], def: CourseDef) => {
+        const result = createFolderNode(def.folder);
+        if (!result.isSuccess()) {
+          return acc;
+        }
+
+        const folderNode = result.get();
+        return [...acc, {
+          name: def.name,
+          folderNode,
+          topic: def.topic,
+          repoUrl: def.repoUrl,
+          repoFolder: def.repoFolder,
+          organization: def.organization,
+        }];
+      }, 
+      [],
+    );
     
-    const maskName = entryFile.mask.startsWith('assets/')
-      ? entryFile.mask.slice(7)
-      : null;
-    
-    for (let i = 0; i < entryFile.courses.length; i++) {
-      const def = entryFile.courses[i];
-      const courseFolder = courseFolders[i];
+    for (let i = 0; i < courseSources.length; i++) {
+      const courseSource = courseSources[i];
+      if (courseSource.repoUrl === null) {
+        continue;
+      }
+
       kodimCmsIndexer.registerRepo(
-        entryFile.courses[i].repoUrl,
-        path.resolve(folderNode.path, def.repoFolder),
-        [...indexer.contentPath.slice(1), folderNode.fileName, courseFolder.fileName],
+        courseSource.repoUrl,
+        courseSource.repoFolder ?? courseSource.folderNode.path,
+        [source.name, courseSource.name],
         CourseContentType,
       );
     }
 
     const data = {
-      heading: entryFile.heading,
-      lead: entryFile.lead,
-      image: imageName ?? '',
-      mask: maskName ?? '',
+      heading: source.heading,
+      lead: source.lead,
     };
-    
-    const subEntries = await indexer.indexChildren(courseFolders, CourseContentType);
-    const assets = [imageName, maskName].filter((name): name is string => name !== null);
 
+    const subEntries = await indexer.indexChildren(source.name, courseSources, CourseContentType);
     return {
-      ...indexer.buildParentEntry(folderNode, data, subEntries),
-      title: entryFile.title,
-      assets,
+      ...indexer.buildParentEntry(source.name, source, 'public', data, subEntries),
+      title: source.title,
     };
   },
 
@@ -96,10 +99,8 @@ export const TopicContentType = defineContentType('kodim/topic', {
     const entry = cursor.entry();
     return Result.success({
       ...buildBaseContent(cursor),
-      lead: entry.data.lead,
-      heading: entry.data.heading,
-      image: TopicContentType.buildAssetPath(cursor, entry.data.image, loader),
-      mask: TopicContentType.buildAssetPath(cursor, entry.data.mask, loader),
+      lead: entry.attrs.lead,
+      heading: entry.attrs.heading,
       courses: cursor.children().map((c) => courseNavItem(c, loader)),
     });
   },

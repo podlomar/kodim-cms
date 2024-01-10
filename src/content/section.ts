@@ -1,4 +1,5 @@
-import { Indexer, ParentEntry } from 'filefish/indexer';
+import path from 'node:path';
+import { EntryAccess, Indexer, ParentEntry } from 'filefish/indexer';
 import { defineContentType } from 'filefish/content-type';
 import { FileNode, folder, fsNode } from 'fs-inquire';
 import { toString as mdastToString } from 'mdast-util-to-string'
@@ -11,10 +12,12 @@ import { BaseContent, BaseNavItem, buildBaseContent } from './base.js';
 import { LoadError, Loader } from 'filefish/loader';
 import { Result } from 'monadix/result';
 
-export type SectionEntry = ParentEntry<ExerciseEntry>;
+
+export type SectionEntry = ParentEntry<FileNode, ExerciseEntry>;
 
 interface SectionFile {
   title?: string;
+  access?: EntryAccess;
   assets: string[];
   excs: string[];
 }
@@ -83,21 +86,26 @@ export const sectionNavItem = (cursor: Cursor<SectionEntry>): SectionNavItem => 
 };
 
 export const SectionContentType = defineContentType('kodim/section', {
-  async indexNode(file: FileNode, indexer: Indexer): Promise<SectionEntry> {
-    const sectionFile = await indexSection(file.path);
-    const excsNodes = fsNode(file)
+  async index(source: FileNode, indexer: Indexer): Promise<SectionEntry> {
+    const sectionFile = await indexSection(source.path);
+    const excsNodes = fsNode(source)
       .parent
       .select
       .nodes
       .byPaths(sectionFile?.excs ?? [], '', '.md')
       .getOrThrow();
 
-    const subEntries = await indexer.indexChildren(excsNodes, ExerciseContentType);
-    const baseEntry = indexer.buildParentEntry(file, {}, subEntries);
+    const access = sectionFile?.access ?? 'protected';
+    const subEntries = await indexer.indexChildren(source.fileName, excsNodes, ExerciseContentType);
+    const baseEntry = indexer.buildParentEntry(source.fileName, source, access, {}, subEntries);
+    
     return {
       ...baseEntry,
       title: sectionFile?.title ?? baseEntry.title,
-      assets: sectionFile?.assets,
+      assets: {
+        folder: path.resolve(source.path, '../assets'),
+        names: sectionFile?.assets ?? [],
+      },
     }
   },
   async loadContent(
@@ -106,7 +114,7 @@ export const SectionContentType = defineContentType('kodim/section', {
     const entry = cursor.entry();
     const prevSibling = cursor.prevSibling();
     const nextSibling = cursor.nextSibling();
-    const blocks = await processSection(entry.fsNode.path, cursor, loader);
+    const blocks = await processSection(entry.source.path, cursor, loader);
 
     return Result.success({
       ...buildBaseContent(cursor),

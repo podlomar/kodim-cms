@@ -1,17 +1,31 @@
 import { Agent, Cursor } from "filefish/cursor";
-import { EntryQuery } from "./parse-entry-query.js";
-import { matchQuery } from "./match-query.js";
+import { AccessRule, parseAccessRule } from "./parse-access-rule.js";
+import { matchAccessRule } from "./match-access-rule.js";
+import { Result } from "monadix/result";
 
-export const claimsAgent = (quries: EntryQuery[]): Agent => {
-  return {
-    getPermission: (cursor: Cursor): 'open' | 'locked' => {
-      for (const q of quries) {
-        if(matchQuery(cursor, q)) {
-          return 'open';
-        }
-      }
+export class ClaimsAgent implements Agent {
+  private readonly rules: AccessRule[];
 
-      return 'locked';
-    }
+  public constructor(rules: string[]) {
+    console.log('parsedRule', parseAccessRule(rules[0]));
+    this.rules = Result.collectSuccess(rules.map(parseAccessRule));
   }
-};
+
+  public getPermission(cursor: Cursor): 'open' | 'locked' {
+    for (const rule of this.rules) {
+      if(matchAccessRule(cursor, rule)) {
+        return 'open';
+      }
+    }
+
+    return 'locked';
+  }
+}
+
+export class PublicAgent implements Agent {
+  public getPermission(): 'open' | 'locked' {
+    return 'locked';
+  }
+}
+
+export type CmsAgent = ClaimsAgent | PublicAgent;

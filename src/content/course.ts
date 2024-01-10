@@ -6,103 +6,122 @@ import { defineContentType } from 'filefish/content-type';
 import { folder, FolderNode } from 'fs-inquire';
 import { ChapterContentType, ChapterEntry, ChapterNavItem, chapterNavItem } from './chapter.js';
 import { Cursor } from 'filefish/cursor';
-import { LessonContentType, LessonEntry, LessonNavItem } from './lesson.js';
-import { TopicContentType, TopicEntry } from './topic.js';
+import { LessonContentType } from './lesson.js';
 import { Result } from 'monadix/result';
 import { BaseContent, BaseNavItem, buildBaseContent, buildBaseNavItem } from './base.js';
 import { LoadError, Loader } from 'filefish/loader';
 
-export interface CourseData {
-  readonly lead: string,
-  readonly image: string,
+export type Organization = 'kodim' | 'czechitas';
+
+export type CourseSource = {
+  readonly name: string,
+  readonly folderNode: FolderNode,
+  readonly repoUrl: string | null,
+  readonly repoFolder: string | null,
+  readonly topic: string | null,
+  readonly organization: Organization,
 }
 
-export type CourseEntry = ParentEntry<ChapterEntry, CourseData>;
-
-interface EntryFile {
-  readonly title: string,
+export type CourseData = {
   readonly lead: string,
   readonly image: string,
+  readonly organization: Organization,
+  readonly topic: string | null,
+}
+
+export type CourseEntry = ParentEntry<CourseSource, ChapterEntry, CourseData>;
+
+interface EntryFile {
+  readonly title?: string,
+  readonly lead?: string,
+  readonly image?: string,
   readonly chapters?: string[];
   readonly lessons?: string[];
 }
 
-export interface CourseNavItem extends BaseNavItem, CourseData {
-  readonly topicMask: string;
-}
+export interface CourseNavItem extends BaseNavItem, CourseData {};
 
 export interface Course extends CourseNavItem, BaseContent {
   chapters: ChapterNavItem[];
 }
 
 export const courseNavItem = (cursor: Cursor<CourseEntry>, loader: Loader): CourseNavItem => {
-  const parentCursor = cursor.parent() as Cursor<TopicEntry>;
-  const topicEntry = parentCursor.entry();
   const entry = cursor.entry();
     
   return {
     ...buildBaseNavItem(cursor),
-    lead: entry.data.lead,
-    image: CourseContentType.buildAssetPath(cursor, entry.data.image, loader),
-    topicMask: TopicContentType.buildAssetPath(parentCursor, topicEntry.data.mask, loader),
+    lead: entry.attrs.lead,
+    image: loader.buildAssetUrlPath(cursor, entry.attrs.image),
+    organization: entry.attrs.organization,
+    topic: entry.attrs.topic,
   };
 };
 
 export const CourseContentType = defineContentType('kodim/course', {
-  async indexNode(folderNode: FolderNode, indexer: Indexer): Promise<CourseEntry> {
+  async index(source: CourseSource, indexer: Indexer): Promise<CourseEntry> {
     const entryFileContent = await fs.readFile(
-      path.resolve(folderNode.path, 'entry.yml'), 'utf-8'
+      path.resolve(source.folderNode.path, 'entry.yml'), 'utf-8'
     );
     const entryFile = yaml.parse(entryFileContent) as EntryFile;
     const names = entryFile.chapters ?? entryFile.lessons ?? [];
-    const folders = folder(folderNode)
+    const folders = folder(source.folderNode)
       .select
       .folders
       .byPaths(names)
       .getOrThrow();
 
-    const imageName = entryFile.image.startsWith('assets/')
-      ? entryFile.image.slice(7)
-      : null;
+    const image = entryFile.image === undefined
+      ? null
+      : entryFile.image.startsWith('assets/')
+        ? entryFile.image.slice(7)
+        : null;
 
     const data: CourseData = {
-      lead: entryFile.lead,
-      image: imageName ?? '',
+      lead: entryFile.lead ?? '',
+      image: image ?? 'uknown',
+      organization: source.organization,
+      topic: source.topic,
     };
 
-    const subEntries = entryFile.lessons === undefined
-      ? await indexer.indexChildren(folders, ChapterContentType)
+    const subEntries: ChapterEntry[] = entryFile.lessons === undefined
+      ? await indexer.indexChildren(source.name, folders, ChapterContentType)
       : [{
         type: 'parent' as const,
         contentId: ChapterContentType.contentId,
         name: 'lekce',
-        fsNode: folderNode,
-        subEntries: await indexer.indexChildren(folders, LessonContentType),
+        source: source.folderNode,
+        access: 'public',
+        subEntries: await indexer.indexChildren(source.name, folders, LessonContentType),
         title: '',
-        data: {
+        attrs: {
           lead: ''
         },
       }];
 
+    const assets = data.image === null
+      ? undefined
+      : {
+        folder: path.resolve(source.folderNode.path, 'assets'),
+        names: [data.image],
+      };
+
     return {
-      ...indexer.buildParentEntry(folderNode, data, subEntries),
-      title: entryFile.title,
-      assets: imageName === null ? undefined : [imageName],
+      ...indexer.buildParentEntry(source.name, source, 'public', data, subEntries),
+      title: entryFile.title ?? source.name,
+      assets,
     };
   },
 
   async loadContent(
     cursor: Cursor<CourseEntry>, loader: Loader,
   ): Promise<Result<Course, LoadError>>  {
-    const parentCursor = cursor.parent() as Cursor<TopicEntry>;
-    const topicEntry = parentCursor.entry();
     const entry = cursor.entry();
-
     return Result.success({
       ...buildBaseContent(cursor),
-      lead: entry.data.lead,
-      image: CourseContentType.buildAssetPath(cursor, entry.data.image, loader),
-      topicMask: TopicContentType.buildAssetPath(parentCursor, topicEntry.data.mask, loader),
+      lead: entry.attrs.lead,
+      image: loader.buildAssetUrlPath(cursor, entry.attrs.image),
+      organization: entry.attrs.organization,
+      topic: entry.attrs.topic,
       chapters: cursor.children().map((c) => chapterNavItem(c)),
     });
   },

@@ -1,7 +1,7 @@
 import path from 'path';
 import { promises as fs } from 'fs';
 import yaml from 'yaml';
-import { ParentEntry, Indexer } from 'filefish/indexer';
+import { ParentEntry, Indexer, EntryAccess } from 'filefish/indexer';
 import { defineContentType } from 'filefish/content-type';
 import { folder, FolderNode } from 'fs-inquire';
 import { Cursor } from 'filefish/cursor';
@@ -10,11 +10,11 @@ import { BaseContent, BaseNavItem, buildBaseContent } from './base.js';
 import { LoadError, Loader } from 'filefish/loader';
 import { Result } from 'monadix/result';
 
-export interface ChapterData {
+export type ChapterData = {
   readonly lead: string;
 }
 
-export type ChapterEntry = ParentEntry<LessonEntry, ChapterData>;
+export type ChapterEntry = ParentEntry<FolderNode, LessonEntry, ChapterData>;
 
 interface EntryFile {
   title: string,
@@ -34,18 +34,18 @@ export const chapterNavItem = (cursor: Cursor<ChapterEntry>): ChapterNavItem => 
     path: cursor.contentPath(),
     name: entry.name,
     title: entry.title,
-    lead: entry.data.lead,
+    lead: entry.attrs.lead,
   };
 };
 
 export const ChapterContentType = defineContentType('kodim/chapter', {
-  async indexNode(folderNode: FolderNode, indexer: Indexer): Promise<ChapterEntry> {
+  async index(source: FolderNode, indexer: Indexer): Promise<ChapterEntry> {
     const entryFileContent = await fs.readFile(
-      path.resolve(folderNode.path, 'entry.yml'), 'utf-8'
+      path.resolve(source.path, 'entry.yml'), 'utf-8'
     );
     const entryFile = yaml.parse(entryFileContent) as EntryFile;
     
-    const lessonFolders = folder(folderNode)
+    const lessonFolders = folder(source)
       .select
       .folders
       .byPaths(entryFile.lessons)
@@ -55,9 +55,9 @@ export const ChapterContentType = defineContentType('kodim/chapter', {
       lead: entryFile.lead,
     };
 
-    const subEntries = await indexer.indexChildren(lessonFolders, LessonContentType);
+    const subEntries = await indexer.indexChildren(source.fileName, lessonFolders, LessonContentType);
     return {
-      ...indexer.buildParentEntry(folderNode, data, subEntries),
+      ...indexer.buildParentEntry(source.fileName, source, 'public', data, subEntries),
       title: entryFile.title,
     }
   },
@@ -68,7 +68,7 @@ export const ChapterContentType = defineContentType('kodim/chapter', {
     const entry = cursor.entry();
     return Result.success({
       ...buildBaseContent(cursor),
-      lead: entry.data.lead,
+      lead: entry.attrs.lead,
       lessons: cursor.children().map((c) => lessonNavItem(c))
     });
   },

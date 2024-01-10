@@ -90,16 +90,16 @@ export const processExercise = async (
   
   return {
     ...buildBaseContent(cursor),
-    lead: entry.data.lead,
-    demand: entry.data.demand,
+    lead: entry.attrs.lead,
+    demand: entry.attrs.demand,
     num: cursor.pos() + 1,
     assign: {
       ...root,
       children: rootChildren,
     },
-    solution: solution === null || entry.data.solutionAccess === 'hide'
+    solution: solution === null || entry.attrs.solutionAccess === 'hide'
       ? 'none'
-      : entry.data.solutionAccess === 'lock'
+      : entry.attrs.solutionAccess === 'lock'
         ? 'locked'
         : {
           type: 'root',

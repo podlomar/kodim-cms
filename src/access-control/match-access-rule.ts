@@ -1,5 +1,6 @@
+import dayjs from "dayjs";
 import { IndexEntry } from "filefish/indexer";
-import { EntryPattern, EntryQuery } from "./parse-entry-query.js";
+import { EntryPattern, AccessRule } from "./parse-access-rule.js";
 import { Cursor } from "filefish/cursor";
 
 export const matchEntry = (entry: IndexEntry, pattern: EntryPattern): boolean => {
@@ -12,7 +13,7 @@ export const matchEntry = (entry: IndexEntry, pattern: EntryPattern): boolean =>
   }
 
   const filter = pattern.filter;
-  const propValue = entry.data[filter.name];
+  const propValue = entry.attrs[filter.name];
 
   if (filter.op === '=') {
     return propValue === filter.value;
@@ -57,9 +58,26 @@ export const matchEntry = (entry: IndexEntry, pattern: EntryPattern): boolean =>
   return false;
 }
 
-export const matchQuery = (cursor: Cursor, query: EntryQuery): boolean => {
+export const matchAccessRule = (cursor: Cursor, rule: AccessRule): boolean => {
+  const today = dayjs();
+
+  if (rule.after !== null && today.isBefore(rule.after)) {
+    return false;
+  }
+  
+  if (rule.until !== null && today.isAfter(rule.until)) {
+    return false;
+  }
+
+  // FIXME: Accomodate for ** in the query
   const entryPath = cursor.path();
+  const query = [{ name: '', filter: null }, ...rule.query];
+  
   for (let i = 0; i < query.length; i++) {
+    if (entryPath.length <= i) {
+      return false;
+    }
+
     const patternPart = query[i];
     const pathItem = entryPath[i];
 
