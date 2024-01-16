@@ -40,8 +40,10 @@ export interface CourseDef {
   folder: string;
   topic: string | null;
   organization: Organization
-  repoUrl: string | null;
-  repoFolder: string | null;
+  repo: {
+    url: string;
+    folder: string;
+  } | null;
 }
 
 export const TopicContentType = defineContentType('kodim/topic', {
@@ -59,8 +61,7 @@ export const TopicContentType = defineContentType('kodim/topic', {
           name: def.name,
           folderNode,
           topic: def.topic,
-          repoUrl: def.repoUrl,
-          repoFolder: def.repoFolder,
+          repo: def.repo,
           organization: def.organization,
         }];
       }, 
@@ -69,13 +70,13 @@ export const TopicContentType = defineContentType('kodim/topic', {
     
     for (let i = 0; i < courseSources.length; i++) {
       const courseSource = courseSources[i];
-      if (courseSource.repoUrl === null) {
+      if (courseSource.repo === null) {
         continue;
       }
 
       kodimCmsIndexer.registerRepo(
-        courseSource.repoUrl,
-        courseSource.repoFolder ?? courseSource.folderNode.path,
+        courseSource.repo.url,
+        courseSource.repo.folder,
         [source.name, courseSource.name],
         CourseContentType,
       );

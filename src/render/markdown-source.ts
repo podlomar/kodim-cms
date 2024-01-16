@@ -100,7 +100,7 @@ export class MarkdownSource {
 
     for (const link of assetLinks) {
       const url = link.properties!.href ?? link.properties!.src;
-      if (typeof url !== 'string') {
+      if (typeof url !== 'string' || !url.startsWith('assets/')) {
         continue;
       }
 

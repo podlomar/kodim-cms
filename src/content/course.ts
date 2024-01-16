@@ -16,8 +16,10 @@ export type Organization = 'kodim' | 'czechitas';
 export type CourseSource = {
   readonly name: string,
   readonly folderNode: FolderNode,
-  readonly repoUrl: string | null,
-  readonly repoFolder: string | null,
+  readonly repo: {
+    readonly url: string,
+    readonly folder: string,
+  } | null,
   readonly topic: string | null,
   readonly organization: Organization,
 }
