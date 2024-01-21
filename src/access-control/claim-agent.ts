@@ -7,7 +7,6 @@ export class ClaimsAgent implements Agent {
   private readonly rules: AccessRule[];
 
   public constructor(rules: string[]) {
-    console.log('parsedRule', parseAccessRule(rules[0]));
     this.rules = Result.collectSuccess(rules.map(parseAccessRule));
   }
 

@@ -17,7 +17,6 @@ import { KodimCmsIndexer } from '../cms-indexer.js';
 import { createFolderNode } from 'fs-inquire/dist/fsnodes.js';
 
 export type TopicData = {
-  heading: string,
   lead: string,
 };
 
@@ -28,7 +27,6 @@ export interface Topic extends BaseContent, TopicData {
 export interface TopicSource {
   name: string,
   title: string,
-  heading: string,
   lead: string,
   courses: CourseDef[],
 }
@@ -83,7 +81,6 @@ export const TopicContentType = defineContentType('kodim/topic', {
     }
 
     const data = {
-      heading: source.heading,
       lead: source.lead,
     };
 
@@ -101,7 +98,6 @@ export const TopicContentType = defineContentType('kodim/topic', {
     return Result.success({
       ...buildBaseContent(cursor),
       lead: entry.attrs.lead,
-      heading: entry.attrs.heading,
       courses: cursor.children().map((c) => courseNavItem(c, loader)),
     });
   },
