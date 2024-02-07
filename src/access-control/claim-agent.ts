@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { Agent, Cursor } from "filefish/cursor";
 import { AccessRule, parseAccessRule } from "./parse-access-rule.js";
 import { matchAccessRule } from "./match-access-rule.js";
@@ -11,8 +12,9 @@ export class ClaimsAgent implements Agent {
   }
 
   public getPermission(cursor: Cursor): 'open' | 'locked' {
+    const now = dayjs();
     for (const rule of this.rules) {
-      if(matchAccessRule(cursor, rule)) {
+      if(matchAccessRule(cursor, rule, now)) {
         return 'open';
       }
     }

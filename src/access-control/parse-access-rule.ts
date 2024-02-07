@@ -307,6 +307,14 @@ const parseEntryPattern = (tokenizer: Tokenizer): ParseResult<EntryPattern> => {
   }
 
   t = nameResult.tokenizer.skipWs();
+  if (nameResult.value === '**' && !t.isEof()) {
+    return {
+      success: false,
+      error: 'Unexpected token after "**"',
+      index: t.index,
+    };
+  }
+  
   const filterResult = parsePropertyFilter(t);
   if (filterResult.success === false) {
     return {
@@ -330,13 +338,13 @@ const parseEntryPattern = (tokenizer: Tokenizer): ParseResult<EntryPattern> => {
 }
 
 export interface AccessRule {
-  after: Dayjs | null,
+  since: Dayjs | null,
   until: Dayjs | null,
   query: EntryPattern[],
 };
 
 const parseTimeLimits = (tokenizer: Tokenizer): ParseResult<[Dayjs | null, Dayjs | null]> => {
-  let t = tokenizer.readText('after', 'until');
+  let t = tokenizer.readText('since', 'until');
   if (!t.isReady()) {
     return {
       success: true,
@@ -418,7 +426,7 @@ export const parseAccessRule = (input: string): Result<AccessRule, string> => {
     return Result.fail(timeLimitsResult.error);
   }
 
-  const [after, until] = timeLimitsResult.value;
+  const [since, until] = timeLimitsResult.value;
   t = timeLimitsResult.tokenizer.skipWs();
 
   while (!t.isEof()) {
@@ -429,7 +437,11 @@ export const parseAccessRule = (input: string): Result<AccessRule, string> => {
 
     query.push(entryResult.value);
     t = entryResult.tokenizer.skipWs();
+
+    if (entryResult.value.name === '**') {
+      break;
+    }
   }
 
-  return Result.success({ after, until, query });
+  return Result.success({ since, until, query });
 }

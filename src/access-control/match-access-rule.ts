@@ -1,10 +1,14 @@
-import dayjs from "dayjs";
+import { Dayjs } from "dayjs";
 import { IndexEntry } from "filefish/indexer";
 import { EntryPattern, AccessRule } from "./parse-access-rule.js";
 import { Cursor } from "filefish/cursor";
 
 export const matchEntry = (entry: IndexEntry, pattern: EntryPattern): boolean => {
-  if (pattern.name !== entry.name && pattern.name !== '*') {
+  if (
+    pattern.name !== entry.name &&
+    pattern.name !== '*' &&
+    pattern.name !== '**'
+  ) {
     return false;
   }
 
@@ -58,33 +62,37 @@ export const matchEntry = (entry: IndexEntry, pattern: EntryPattern): boolean =>
   return false;
 }
 
-export const matchAccessRule = (cursor: Cursor, rule: AccessRule): boolean => {
-  const today = dayjs();
-
-  if (rule.after !== null && today.isBefore(rule.after)) {
+export const matchAccessRule = (cursor: Cursor, rule: AccessRule, time: Dayjs): boolean => {
+  if (rule.since !== null && time.isBefore(rule.since)) {
     return false;
   }
   
-  if (rule.until !== null && today.isAfter(rule.until)) {
+  if (rule.until !== null && time.isAfter(rule.until)) {
     return false;
   }
 
-  // FIXME: Accomodate for ** in the query
   const entryPath = cursor.path();
   const query = [{ name: '', filter: null }, ...rule.query];
-  
-  for (let i = 0; i < query.length; i++) {
-    if (entryPath.length <= i) {
-      return false;
-    }
 
-    const patternPart = query[i];
-    const pathItem = entryPath[i];
+  let patternIndex = 0;
+  let pathIndex = 0;
+  while (patternIndex < query.length) {
+    const patternPart = query[patternIndex];
+    const pathItem = entryPath[pathIndex];
+
+    if (pathItem === undefined) {
+      return patternPart.name === '**';
+    }
 
     if (!matchEntry(pathItem.entry, patternPart)) {
       return false;
     }
+
+    if (patternPart.name !== '**') {
+      patternIndex++;
+    }
+    pathIndex++;
   }
 
-  return true;
+  return pathIndex === entryPath.length;
 };

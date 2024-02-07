@@ -2,30 +2,77 @@
   "contentId": "kodim/root",
   "name": "",
   "title": "content",
-  "fsNode": {
-    "type": "folder",
-    "path": "/home/podlomar/work/kodim/kodim-cms/tests/content",
-    "fileName": "content",
-    "ext": ""
+  "access": "public",
+  "source": {
+    "topics": [
+      {
+        "name": "spravne",
+        "title": "Správné formátování",
+        "lead": "Správně zformátovaný obsah je klíčovým prvkem ve světě psaného a tištěného textu, stejně jako v digitálním prostředí. Tento koncept se týká způsobu, jakým jsou informace, text a média prezentovány a uspořádány, aby byly snadno čitelné, esteticky příjemné a efektivní ve sdělení svého obsahu",
+        "courses": [
+          {
+            "name": "kouzelna-kucharka",
+            "folder": "./tests/content/kouzla/kouzelna-kucharka",
+            "topic": "spravne",
+            "organization": null,
+            "repo": null
+          },
+          {
+            "name": "boby",
+            "folder": "./tests/content/kouzla/boby",
+            "topic": "spravne",
+            "organization": null,
+            "repo": null
+          },
+          {
+            "name": "pruvodce-vesmirem",
+            "folder": "./tests/content/pruvodce-vesmirem",
+            "topic": "spravne",
+            "organization": null,
+            "repo": null
+          }
+        ]
+      }
+    ]
   },
-  "data": {},
+  "attrs": {},
   "type": "parent",
   "subEntries": [
     {
       "contentId": "kodim/topic",
       "name": "spravne",
       "title": "Správné formátování",
-      "fsNode": {
-        "type": "folder",
-        "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne",
-        "fileName": "spravne",
-        "ext": ""
+      "access": "public",
+      "source": {
+        "name": "spravne",
+        "title": "Správné formátování",
+        "lead": "Správně zformátovaný obsah je klíčovým prvkem ve světě psaného a tištěného textu, stejně jako v digitálním prostředí. Tento koncept se týká způsobu, jakým jsou informace, text a média prezentovány a uspořádány, aby byly snadno čitelné, esteticky příjemné a efektivní ve sdělení svého obsahu",
+        "courses": [
+          {
+            "name": "kouzelna-kucharka",
+            "folder": "./tests/content/kouzla/kouzelna-kucharka",
+            "topic": "spravne",
+            "organization": null,
+            "repo": null
+          },
+          {
+            "name": "boby",
+            "folder": "./tests/content/kouzla/boby",
+            "topic": "spravne",
+            "organization": null,
+            "repo": null
+          },
+          {
+            "name": "pruvodce-vesmirem",
+            "folder": "./tests/content/pruvodce-vesmirem",
+            "topic": "spravne",
+            "organization": null,
+            "repo": null
+          }
+        ]
       },
-      "data": {
-        "heading": "Správně zformátovaný obsah",
-        "lead": "Správně zformátovaný obsah je klíčovým prvkem ve světě psaného a tištěného textu, stejně jako v digitálním prostředí. Tento koncept se týká způsobu, jakým jsou informace, text a média prezentovány a uspořádány, aby byly snadno čitelné, esteticky příjemné a efektivní ve sdělení svého obsahu.",
-        "image": "spravne.svg",
-        "mask": "spravne-mask.svg"
+      "attrs": {
+        "lead": "Správně zformátovaný obsah je klíčovým prvkem ve světě psaného a tištěného textu, stejně jako v digitálním prostředí. Tento koncept se týká způsobu, jakým jsou informace, text a média prezentovány a uspořádány, aby byly snadno čitelné, esteticky příjemné a efektivní ve sdělení svého obsahu"
       },
       "type": "parent",
       "subEntries": [
@@ -33,59 +80,77 @@
           "contentId": "kodim/course",
           "name": "kouzelna-kucharka",
           "title": "Kouzelná kuchařka pro lenochy",
-          "fsNode": {
-            "type": "folder",
-            "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka",
-            "fileName": "kouzelna-kucharka",
-            "ext": ""
+          "access": "public",
+          "source": {
+            "folderNode": {
+              "ext": "",
+              "fileName": "kouzelna-kucharka",
+              "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/kouzelna-kucharka",
+              "type": "folder"
+            },
+            "name": "kouzelna-kucharka",
+            "organization": null,
+            "repo": null,
+            "topic": "spravne"
           },
-          "data": {
+          "attrs": {
             "lead": "Zapomeňte na komplikované hodiny strávené v kuchyni, s naší kuchařkou budete připravovat lahodná jídla a nápoje tak snadno, že si budete připadat jako mágové ve světě kulinářského umění.",
+            "organization": null,
+            "topic": "spravne",
             "image": "cookbook.svg"
           },
           "type": "parent",
-          "assets": [
-            "cookbook.svg"
-          ],
+          "assets": {
+            "folder": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/kouzelna-kucharka/assets",
+            "names": [
+              "cookbook.svg"
+            ]
+          },
           "subEntries": [
             {
               "type": "parent",
               "contentId": "kodim/chapter",
               "name": "lekce",
               "title": "",
-              "fsNode": {
+              "access": "public",
+              "source": {
                 "type": "folder",
-                "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka",
+                "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/kouzelna-kucharka",
                 "fileName": "kouzelna-kucharka",
                 "ext": ""
               },
-              "data": {
+              "attrs": {
                 "lead": ""
               },
               "subEntries": [
                 {
                   "contentId": "kodim/lesson",
-                  "data": {
+                  "attrs": {
                     "lead": "Důležité tipy a triky, jak uvařit vodu bezpečně a bez zbytečného stresu. Naučíme vás správným postupům, které zabezpečí, že vaše voda bude vždy chutná, čerstvá a oku lahodící."
                   },
-                  "fsNode": {
+                  "access": "public",
+                  "source": {
                     "ext": "",
                     "fileName": "voda-bez-rizika",
-                    "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka/voda-bez-rizika",
+                    "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/kouzelna-kucharka/voda-bez-rizika",
                     "type": "folder"
                   },
                   "name": "voda-bez-rizika",
                   "subEntries": [
                     {
-                      "assets": [
-                        "boil.jpg"
-                      ],
+                      "assets": {
+                        "folder": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/kouzelna-kucharka/voda-bez-rizika/assets",
+                        "names": [
+                          "boil.jpg"
+                        ]
+                      },
                       "contentId": "kodim/section",
-                      "data": {},
-                      "fsNode": {
+                      "attrs": {},
+                      "access": "protected",
+                      "source": {
                         "ext": ".md",
                         "fileName": "vyber-nadobi",
-                        "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka/voda-bez-rizika/vyber-nadobi.md",
+                        "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/kouzelna-kucharka/voda-bez-rizika/vyber-nadobi.md",
                         "type": "file"
                       },
                       "name": "vyber-nadobi",
@@ -94,13 +159,17 @@
                       "type": "parent"
                     },
                     {
-                      "assets": [],
+                      "assets": {
+                        "folder": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/kouzelna-kucharka/voda-bez-rizika/assets",
+                        "names": []
+                      },
                       "contentId": "kodim/section",
-                      "data": {},
-                      "fsNode": {
+                      "attrs": {},
+                      "access": "protected",
+                      "source": {
                         "ext": ".md",
                         "fileName": "kontrola",
-                        "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka/voda-bez-rizika/kontrola.md",
+                        "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/kouzelna-kucharka/voda-bez-rizika/kontrola.md",
                         "type": "file"
                       },
                       "name": "kontrola",
@@ -109,29 +178,37 @@
                       "type": "parent"
                     },
                     {
-                      "assets": [],
+                      "assets": {
+                        "folder": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/kouzelna-kucharka/voda-bez-rizika/assets",
+                        "names": []
+                      },
                       "contentId": "kodim/section",
-                      "data": {},
-                      "fsNode": {
+                      "attrs": {},
+                      "access": "protected",
+                      "source": {
                         "ext": ".md",
                         "fileName": "cv-vareni-vody",
-                        "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka/voda-bez-rizika/cv-vareni-vody.md",
+                        "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/kouzelna-kucharka/voda-bez-rizika/cv-vareni-vody.md",
                         "type": "file"
                       },
                       "name": "cv-vareni-vody",
                       "subEntries": [
                         {
-                          "assets": [],
+                          "access": "protected",
+                          "assets": {
+                            "folder": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/kouzelna-kucharka/voda-bez-rizika/cviceni/assets",
+                            "names": []
+                          },
                           "contentId": "kodim/exercise",
-                          "data": {
+                          "attrs": {
                             "demand": 1,
                             "lead": "Vybereme hrnec a nádobí pro vaření vody.",
                             "solutionAccess": "allow"
                           },
-                          "fsNode": {
+                          "source": {
                             "ext": ".md",
                             "fileName": "vyber-nadobi",
-                            "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/kouzelna-kucharka/voda-bez-rizika/cviceni/vyber-nadobi.md",
+                            "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/kouzelna-kucharka/voda-bez-rizika/cviceni/vyber-nadobi.md",
                             "type": "file"
                           },
                           "name": "vyber-nadobi",
@@ -154,13 +231,13 @@
           "contentId": "kodim/course",
           "name": "pruvodce-vesmirem",
           "title": "Bláznivý Průvodce Vesmírem",
-          "fsNode": {
+          "source": {
             "type": "folder",
-            "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/pruvodce-vesmirem",
+            "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/pruvodce-vesmirem",
             "fileName": "pruvodce-vesmirem",
             "ext": ""
           },
-          "data": {
+          "attrs": {
             "lead": "Tento kurz vás vezme na neuvěřitelnou cestu vesmírem, kde budete objevovat tajemství černých děr, potkávat mimozemské bytosti a učit se, jak ve vesmíru přežít a zároveň se bavit.",
             "image": "universe.svg"
           },
@@ -170,15 +247,15 @@
               "type": "parent",
               "contentId": "kodim/chapter",
               "name": "lekce",
-              "fsNode": {
+              "source": {
                 "type": "folder",
-                "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/pruvodce-vesmirem",
+                "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/pruvodce-vesmirem",
                 "fileName": "pruvodce-vesmirem",
                 "ext": ""
               },
               "subEntries": [],
               "title": "",
-              "data": {
+              "attrs": {
                 "lead": ""
               }
             }
@@ -191,13 +268,13 @@
           "contentId": "kodim/course",
           "name": "boby",
           "title": "Úžasné Dobrodružství s Čarodějnou Boby",
-          "fsNode": {
+          "source": {
             "type": "folder",
-            "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/boby",
+            "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/boby",
             "fileName": "boby",
             "ext": ""
           },
-          "data": {
+          "attrs": {
             "lead": "Od lekce o létání na koštěti až po setkání s kouzelnými bytostmi, budete se učit, jak ovládat kouzla, bavit se a vytvářet vlastní magické příběhy. Připravte se na nekonečné kouzla a smích.",
             "image": "witch.svg"
           },
@@ -207,15 +284,15 @@
               "type": "parent",
               "contentId": "kodim/chapter",
               "name": "lekce",
-              "fsNode": {
+              "source": {
                 "type": "folder",
-                "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/spravne/kouzla/boby",
+                "path": "/home/podlomar/work/kodim/kodim-cms/tests/content/kouzla/boby",
                 "fileName": "boby",
                 "ext": ""
               },
               "subEntries": [],
               "title": "",
-              "data": {
+              "attrs": {
                 "lead": ""
               }
             }
@@ -224,10 +301,6 @@
             "witch.svg"
           ]
         }
-      ],
-      "assets": [
-        "spravne.svg",
-        "spravne-mask.svg"
       ]
     }
   ]

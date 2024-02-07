@@ -7,7 +7,7 @@ describe('AccessRule parsing', () => {
     const rule = parseAccessRule('/test');
     expect(rule.isSuccess()).to.be.true;
     expect(rule.get()).to.deep.equal({
-      after: null,
+      since: null,
       until: null,
       query: [
         {
@@ -19,14 +19,14 @@ describe('AccessRule parsing', () => {
   });
 
   it('Should parse rule with time range', () => {
-    const ruleResult = parseAccessRule('after 2023-12-21T10:00 until 2023-12-21T20:00 /test');
+    const ruleResult = parseAccessRule('since 2023-12-21T10:00 until 2023-12-21T20:00 /test');
     expect(ruleResult.isSuccess()).to.be.true;
     const rule = ruleResult.get();
 
-    const after = rule.after.toISOString();
+    const since = rule.since.toISOString();
     const until = rule.until.toISOString();
 
-    expect(after).to.equal('2023-12-21T09:00:00.000Z');
+    expect(since).to.equal('2023-12-21T09:00:00.000Z');
     expect(until).to.equal('2023-12-21T19:00:00.000Z');
     expect(rule.query).to.deep.equal([
       {
@@ -36,13 +36,13 @@ describe('AccessRule parsing', () => {
     ]);
   });
 
-  it('Should parse rule with only after time limit', () => {
-    const ruleResult = parseAccessRule('after 2023-12-21T10:00 /test');
+  it('Should parse rule with only since time limit', () => {
+    const ruleResult = parseAccessRule('since 2023-12-21T10:00 /test');
     const rule = ruleResult.get();
 
-    const after = rule.after.toISOString();
+    const since = rule.since.toISOString();
 
-    expect(after).to.equal('2023-12-21T09:00:00.000Z');
+    expect(since).to.equal('2023-12-21T09:00:00.000Z');
     expect(rule.until).to.equal(null);
     expect(rule.query).to.deep.equal([
       {
@@ -59,7 +59,7 @@ describe('AccessRule parsing', () => {
     const until = rule.until.toISOString();
 
     expect(until).to.equal('2023-12-21T19:00:00.000Z');
-    expect(rule.after).to.equal(null);
+    expect(rule.since).to.equal(null);
     expect(rule.query).to.deep.equal([
       {
         name: 'test',
@@ -72,7 +72,7 @@ describe('AccessRule parsing', () => {
     const rule = parseAccessRule('/test[@title="Hello world"]');
     expect(rule.isSuccess()).to.be.true;
     expect(rule.get()).to.deep.equal({
-      after: null,
+      since: null,
       until: null,
       query: [
         {
@@ -91,7 +91,7 @@ describe('AccessRule parsing', () => {
     const rule = parseAccessRule(' /  test [ @title = "Hello world" ]   ');
     expect(rule.isSuccess()).to.be.true;
     expect(rule.get()).to.deep.equal({
-      after: null,
+      since: null,
       until: null,
       query: [
         {
@@ -110,7 +110,7 @@ describe('AccessRule parsing', () => {
     const rule = parseAccessRule('/test[@title=null]');
     expect(rule.isSuccess()).to.be.true;
     expect(rule.get()).to.deep.equal({
-      after: null,
+      since: null,
       until: null,
       query: [
         {
@@ -129,7 +129,7 @@ describe('AccessRule parsing', () => {
     const rule1 = parseAccessRule('/test[@title=true]');
     expect(rule1.isSuccess()).to.be.true;
     expect(rule1.get()).to.deep.equal({
-      after: null,
+      since: null,
       until: null,
       query: [
         {
@@ -146,7 +146,7 @@ describe('AccessRule parsing', () => {
     const rule2 = parseAccessRule('/test[@title=false]');
     expect(rule2.isSuccess()).to.be.true;
     expect(rule2.get()).to.deep.equal({
-      after: null,
+      since: null,
       until: null,
       query: [
         {
@@ -165,7 +165,7 @@ describe('AccessRule parsing', () => {
     const rule1 = parseAccessRule('/test[@title=42]');
     expect(rule1.isSuccess()).to.be.true;
     expect(rule1.get()).to.deep.equal({
-      after: null,
+      since: null,
       until: null,
       query: [
         {
@@ -182,7 +182,7 @@ describe('AccessRule parsing', () => {
     const rule2 = parseAccessRule('/test[@title=-42.15]');
     expect(rule2.isSuccess()).to.be.true;
     expect(rule2.get()).to.deep.equal({
-      after: null,
+      since: null,
       until: null,
       query: [
         {
@@ -199,7 +199,7 @@ describe('AccessRule parsing', () => {
     const rule3 = parseAccessRule('/test[@title=+.15]');
     expect(rule3.isSuccess()).to.be.true;
     expect(rule3.get()).to.deep.equal({
-      after: null,
+      since: null,
       until: null,
       query: [
         {
@@ -218,7 +218,7 @@ describe('AccessRule parsing', () => {
     const rule = parseAccessRule('/test[@title="Hello\\n\\t\\"world\\""]');
     expect(rule.isSuccess()).to.be.true;
     expect(rule.get()).to.deep.equal({
-      after: null,
+      since: null,
       until: null,
       query: [
         {
@@ -237,7 +237,7 @@ describe('AccessRule parsing', () => {
     const rule = parseAccessRule('/test1/test2[@title="Hello world"]/test3[@num=42]');
     expect(rule.isSuccess()).to.be.true;
     expect(rule.get()).to.deep.equal({
-      after: null,
+      since: null,
       until: null,
       query: [
         {
@@ -262,5 +262,30 @@ describe('AccessRule parsing', () => {
         },
       ],
     });
+  });
+
+  it('Should parse rule with double star', () => {
+    const rule = parseAccessRule('/test1/**');
+    expect(rule.isSuccess()).to.be.true;
+    expect(rule.get()).to.deep.equal({
+      since: null,
+      until: null,
+      query: [
+        {
+          name: 'test1',
+          filter: null,
+        },
+        {
+          name: '**',
+          filter: null,
+        },
+      ],
+    });    
+  });
+
+  it('Should allow double star only at the end', () => {
+    const rule = parseAccessRule('/test1/**/test2');
+    expect(rule.isFail()).to.be.true;
+    expect(rule.err()).to.equal('Parse error at 9: Unexpected token after "**"');
   });
 });

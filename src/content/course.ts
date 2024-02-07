@@ -80,7 +80,7 @@ export const CourseContentType = defineContentType('kodim/course', {
 
     const data: CourseData = {
       lead: entryFile.lead ?? '',
-      image: image ?? 'uknown',
+      image: image ?? 'unknown',
       organization: source.organization,
       topic: source.topic,
     };
