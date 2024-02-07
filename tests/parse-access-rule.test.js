@@ -36,6 +36,25 @@ describe('AccessRule parsing', () => {
     ]);
   });
 
+
+  it('Should parse rule with time range in days', () => {
+    const ruleResult = parseAccessRule('since 2023-12-21 until 2023-12-23 /test');
+    expect(ruleResult.isSuccess()).to.be.true;
+    const rule = ruleResult.get();
+    
+    const since = rule.since.toISOString();
+    const until = rule.until.toISOString();
+
+    expect(since).to.equal('2023-12-20T23:00:00.000Z');
+    expect(until).to.equal('2023-12-22T23:00:00.000Z');
+    expect(rule.query).to.deep.equal([
+      {
+        name: 'test',
+        filter: null,
+      },
+    ]);
+  });
+
   it('Should parse rule with only since time limit', () => {
     const ruleResult = parseAccessRule('since 2023-12-21T10:00 /test');
     const rule = ruleResult.get();

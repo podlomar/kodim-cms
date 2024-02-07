@@ -184,7 +184,10 @@ export class Tokenizer {
       return this.fail();
     }
     
-    const [datetime] = this.input.slice(this.index).match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/) ?? [];
+    const [datetime] = this.input.slice(this.index).match(
+      /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?/
+    ) ?? [];
+
     if (datetime === undefined) {
       return this.fail();
     }
@@ -343,6 +346,20 @@ export interface AccessRule {
   query: EntryPattern[],
 };
 
+const stringToDayjs = (input: string): Dayjs | null => {
+  const datetime1 = dayjs(input, 'YYYY-MM-DDTHH:mm', true);
+  if (datetime1.isValid()) {
+    return datetime1;
+  }
+
+  const datetime2 = dayjs(input, 'YYYY-MM-DD', true);
+  if (datetime2.isValid()) {
+    return datetime2;
+  }
+
+  return null;
+}
+
 const parseTimeLimits = (tokenizer: Tokenizer): ParseResult<[Dayjs | null, Dayjs | null]> => {
   let t = tokenizer.readText('since', 'until');
   if (!t.isReady()) {
@@ -363,8 +380,8 @@ const parseTimeLimits = (tokenizer: Tokenizer): ParseResult<[Dayjs | null, Dayjs
     }
   }
 
-  const datetime1 = dayjs(t.value, 'YYYY-MM-DDTHH:mm', true);
-  if (!datetime1.isValid()) {
+  let datetime1 = stringToDayjs(t.value ?? '');
+  if (datetime1 === null) {
     return {
       success: false,
       error: `Invalid datetime ${t.value} after '${anchor1}'`,
@@ -401,8 +418,8 @@ const parseTimeLimits = (tokenizer: Tokenizer): ParseResult<[Dayjs | null, Dayjs
     }
   }
 
-  const datetime2 = dayjs(t.value, 'YYYY-MM-DDTHH:mm', true);
-  if (!datetime2.isValid()) {
+  const datetime2 = stringToDayjs(t.value ?? '');
+  if (datetime2 === null) {
     return {
       success: false,
       error: `Invalid datetime ${t.value} after '${anchor2}'`,
