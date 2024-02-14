@@ -34,7 +34,7 @@ export const chapterNavItem = (cursor: Cursor<ChapterEntry>): ChapterNavItem => 
     path: cursor.contentPath(),
     name: entry.name,
     title: entry.title,
-    lead: entry.attrs.lead,
+    lead: entry.data.lead,
   };
 };
 
@@ -68,7 +68,7 @@ export const ChapterContentType = defineContentType('kodim/chapter', {
     const entry = cursor.entry();
     return Result.success({
       ...buildBaseContent(cursor),
-      lead: entry.attrs.lead,
+      lead: entry.data.lead,
       lessons: cursor.children().map((c) => lessonNavItem(c))
     });
   },

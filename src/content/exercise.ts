@@ -1,5 +1,5 @@
 import path from 'path';
-import { Indexer, LeafEntry } from 'filefish/indexer';
+import { EntryAccess, Indexer, LeafEntry } from 'filefish/indexer';
 import { defineContentType } from 'filefish/content-type';
 import { FsNode } from 'fs-inquire';
 import { Cursor } from 'filefish/cursor';
@@ -12,16 +12,12 @@ import { BaseContent, BaseNavItem } from './base.js';
 
 export type Demand = 1 | 2 | 3 | 4 | 5;
 
-export type SolutionAccess = 'allow' | 'lock' | 'hide';
-
 export type ExerciseData = {
   readonly lead: string,
   readonly demand: Demand,
 }
 
-export type ExerciseEntry = LeafEntry<FsNode, ExerciseData & {
-  readonly solutionAccess: SolutionAccess,
-}>;
+export type ExerciseEntry = LeafEntry<FsNode, ExerciseData>;
 
 export interface ExerciseNavItem extends BaseNavItem, ExerciseData {
   num: number;
@@ -36,7 +32,7 @@ export interface ExerciseFile {
   readonly title: string;
   readonly demand: Demand;
   readonly lead?: string;
-  readonly solutionAccess?: SolutionAccess;
+  readonly solutionAccess?: EntryAccess;
   readonly assets: string[];
 }
 
@@ -63,8 +59,8 @@ export const exerciseNavItem = (cursor: Cursor<ExerciseEntry>): ExerciseNavItem 
     path: cursor.contentPath(),
     name: entry.name,
     title: entry.title,
-    lead: entry.attrs.lead,
-    demand: entry.attrs.demand,
+    lead: entry.data.lead,
+    demand: entry.data.demand,
     num: cursor.pos() + 1,
   };
 }
@@ -72,15 +68,24 @@ export const exerciseNavItem = (cursor: Cursor<ExerciseEntry>): ExerciseNavItem 
 export const ExerciseContentType = defineContentType('kodim/exercise', {
   async index(source: FsNode, indexer: Indexer): Promise<ExerciseEntry> {
     const exerciseFile = await indexExercise(source);
+    const solutionAccess = String(exerciseFile.solutionAccess);
 
-    const attrs = {
+    const data = {
       lead: exerciseFile.lead ?? 'no-lead',
       demand: exerciseFile.demand,
-      solutionAccess: exerciseFile.solutionAccess ?? 'allow',
     };
 
+    const access: EntryAccess = ['public', 'protected'].includes(solutionAccess)
+      ? solutionAccess as EntryAccess
+      : 'public';
+
+    if (exerciseFile.title === 'Registrační formulář') {
+      console.log('exerciseFile', exerciseFile);
+      console.log('access', access);
+    }
+
     return {
-      ...indexer.buildLeafEntry(source.fileName, source, 'protected', attrs),
+      ...indexer.buildLeafEntry(source.fileName, source, access, data),
       title: exerciseFile.title,
       assets: {
         folder: source.type === 'file'

@@ -1,8 +1,9 @@
 import dayjs from "dayjs";
-import { Agent, Cursor } from "filefish/cursor";
+import { Agent, Cursor, publicAgent } from "filefish/cursor";
 import { AccessRule, parseAccessRule } from "./parse-access-rule.js";
 import { matchAccessRule } from "./match-access-rule.js";
 import { Result } from "monadix/result";
+export { publicAgent } from "filefish/cursor";
 
 export class ClaimsAgent implements Agent {
   private readonly rules: AccessRule[];
@@ -23,10 +24,4 @@ export class ClaimsAgent implements Agent {
   }
 }
 
-export class PublicAgent implements Agent {
-  public getPermission(): 'open' | 'locked' {
-    return 'locked';
-  }
-}
-
-export type CmsAgent = ClaimsAgent | PublicAgent;
+export type CmsAgent = ClaimsAgent | typeof publicAgent;

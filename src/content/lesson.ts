@@ -41,7 +41,7 @@ export const lessonNavItem = (cursor: Cursor<LessonEntry>): LessonNavItem => {
     num: cursor.pos() + 1,
     name: entry.name,
     title: entry.title,
-    lead: entry.attrs.lead,
+    lead: entry.data.lead,
     locked: cursor.permission() === 'locked',
   };
 };
@@ -82,7 +82,7 @@ export const LessonContentType = defineContentType('kodim/lesson', {
     return Result.success({
       ...buildBaseContent(cursor),
       num: cursor.pos() + 1,
-      lead: entry.attrs.lead,
+      lead: entry.data.lead,
       sections: cursor.children().map((c) => sectionNavItem(c)),
       prev: prevSibling === null ? null : lessonNavItem(prevSibling),
       next: nextSibling === null ? null : lessonNavItem(nextSibling),

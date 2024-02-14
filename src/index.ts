@@ -6,7 +6,7 @@ import { Exercise, ExerciseContentType } from "./content/exercise.js";
 import { Lesson, LessonContentType } from "./content/lesson.js";
 import { RootEntry, Root, RootContentType, RootSource } from "./content/root.js";
 import { Section, SectionContentType } from "./content/section.js";
-import { Topic, TopicContentType } from "./content/topic.js";
+import { DivisionContentType, CoursesDivision } from "./content/division.js";
 import { KodimCmsIndexer, RepoRegistry } from "./cms-indexer.js";
 import { Indexer } from "filefish/indexer";
 import { Agent, Cursor, agnosticAgent } from "filefish/cursor";
@@ -64,14 +64,14 @@ export class KodimCms {
     return root.getOrElse(null);
   }
 
-  public async loadTopic(agent: Agent, topicId: string): Promise<Topic | null> {
-    const topicCursor = this.ff.rootCursor(agent).navigate(topicId);
-    if (topicCursor === null) {
+  public async loadDivision(agent: Agent, divisionId: string): Promise<CoursesDivision | null> {
+    const divisionCursor = this.ff.rootCursor(agent).navigate(divisionId);
+    if (divisionCursor === null) {
       return null;
     }
 
-    const topic = await this.ff.loadContent(topicCursor, TopicContentType);
-    return topic.getOrElse(null);
+    const division = await this.ff.loadContent(divisionCursor, DivisionContentType);
+    return division.getOrElse(null);
   }
 
   public async loadCourse(agent: Agent, topicId: string, courseId: string): Promise<Course | null> {

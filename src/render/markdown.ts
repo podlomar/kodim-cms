@@ -88,18 +88,20 @@ export const processExercise = async (
     rootChildren.push(node);
   }
   
+  console.log('cursor.permission()', cursor.permission());
+
   return {
     ...buildBaseContent(cursor),
-    lead: entry.attrs.lead,
-    demand: entry.attrs.demand,
+    lead: entry.data.lead,
+    demand: entry.data.demand,
     num: cursor.pos() + 1,
     assign: {
       ...root,
       children: rootChildren,
     },
-    solution: solution === null || entry.attrs.solutionAccess === 'hide'
+    solution: solution === null
       ? 'none'
-      : entry.attrs.solutionAccess === 'lock'
+      : cursor.permission() === 'locked'
         ? 'locked'
         : {
           type: 'root',

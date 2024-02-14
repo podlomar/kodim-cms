@@ -52,10 +52,10 @@ export const courseNavItem = (cursor: Cursor<CourseEntry>, loader: Loader): Cour
     
   return {
     ...buildBaseNavItem(cursor),
-    lead: entry.attrs.lead,
-    image: loader.buildAssetUrlPath(cursor, entry.attrs.image),
-    organization: entry.attrs.organization,
-    topic: entry.attrs.topic,
+    lead: entry.data.lead,
+    image: loader.buildAssetUrlPath(cursor, entry.data.image),
+    organization: entry.data.organization,
+    topic: entry.data.topic,
   };
 };
 
@@ -95,7 +95,7 @@ export const CourseContentType = defineContentType('kodim/course', {
         access: 'public',
         subEntries: await indexer.indexChildren(source.name, folders, LessonContentType),
         title: '',
-        attrs: {
+        data: {
           lead: ''
         },
       }];
@@ -120,10 +120,10 @@ export const CourseContentType = defineContentType('kodim/course', {
     const entry = cursor.entry();
     return Result.success({
       ...buildBaseContent(cursor),
-      lead: entry.attrs.lead,
-      image: loader.buildAssetUrlPath(cursor, entry.attrs.image),
-      organization: entry.attrs.organization,
-      topic: entry.attrs.topic,
+      lead: entry.data.lead,
+      image: loader.buildAssetUrlPath(cursor, entry.data.image),
+      organization: entry.data.organization,
+      topic: entry.data.topic,
       chapters: cursor.children().map((c) => chapterNavItem(c)),
     });
   },

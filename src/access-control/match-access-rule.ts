@@ -17,7 +17,8 @@ export const matchEntry = (entry: IndexEntry, pattern: EntryPattern): boolean =>
   }
 
   const filter = pattern.filter;
-  const propValue = entry.attrs[filter.name];
+  // @ts-expect-error
+  const propValue = entry.data[filter.name];
 
   if (filter.op === '=') {
     return propValue === filter.value;

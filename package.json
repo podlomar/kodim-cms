@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "dayjs": "^1.11.10",
-    "filefish": "^1.1.4",
+    "filefish": "^1.1.5",
     "fs-inquire": "^1.0.0",
     "hast": "^1.0.0",
     "hast-util-select": "^6.0.0",
