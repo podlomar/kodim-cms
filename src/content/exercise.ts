@@ -79,11 +79,6 @@ export const ExerciseContentType = defineContentType('kodim/exercise', {
       ? solutionAccess as EntryAccess
       : 'public';
 
-    if (exerciseFile.title === 'Registrační formulář') {
-      console.log('exerciseFile', exerciseFile);
-      console.log('access', access);
-    }
-
     return {
       ...indexer.buildLeafEntry(source.fileName, source, access, data),
       title: exerciseFile.title,

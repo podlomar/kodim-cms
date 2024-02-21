@@ -88,8 +88,6 @@ export const processExercise = async (
     rootChildren.push(node);
   }
   
-  console.log('cursor.permission()', cursor.permission());
-
   return {
     ...buildBaseContent(cursor),
     lead: entry.data.lead,
