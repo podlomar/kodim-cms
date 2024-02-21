@@ -77,12 +77,12 @@ export const matchAccessRule = (cursor: Cursor, rule: AccessRule, time: Dayjs): 
 
   let patternIndex = 0;
   let pathIndex = 0;
-  while (patternIndex < query.length) {
+  while (pathIndex < entryPath.length) {
     const patternPart = query[patternIndex];
     const pathItem = entryPath[pathIndex];
 
-    if (pathItem === undefined) {
-      return patternPart.name === '**';
+    if (patternPart === undefined) {
+      return false;
     }
 
     if (!matchEntry(pathItem.entry, patternPart)) {
@@ -92,8 +92,9 @@ export const matchAccessRule = (cursor: Cursor, rule: AccessRule, time: Dayjs): 
     if (patternPart.name !== '**') {
       patternIndex++;
     }
+
     pathIndex++;
   }
 
-  return pathIndex === entryPath.length;
+  return true;
 };
