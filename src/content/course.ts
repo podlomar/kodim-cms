@@ -26,7 +26,7 @@ export type CourseSource = {
 
 export type CourseData = {
   readonly lead: string,
-  readonly image: string,
+  readonly image: string | null,
   readonly organization: Organization,
   readonly topic: string | null,
 }
@@ -53,7 +53,7 @@ export const courseNavItem = (cursor: Cursor<CourseEntry>, loader: Loader): Cour
   return {
     ...buildBaseNavItem(cursor),
     lead: entry.data.lead,
-    image: loader.buildAssetUrlPath(cursor, entry.data.image),
+    image: entry.data.image === null ? null : loader.buildAssetUrlPath(cursor, entry.data.image),
     organization: entry.data.organization,
     topic: entry.data.topic,
   };
@@ -80,7 +80,7 @@ export const CourseContentType = defineContentType('kodim/course', {
 
     const data: CourseData = {
       lead: entryFile.lead ?? '',
-      image: image ?? 'unknown',
+      image,
       organization: source.organization,
       topic: source.topic,
     };
@@ -117,13 +117,9 @@ export const CourseContentType = defineContentType('kodim/course', {
   async loadContent(
     cursor: Cursor<CourseEntry>, loader: Loader,
   ): Promise<Result<Course, LoadError>>  {
-    const entry = cursor.entry();
     return Result.success({
       ...buildBaseContent(cursor),
-      lead: entry.data.lead,
-      image: loader.buildAssetUrlPath(cursor, entry.data.image),
-      organization: entry.data.organization,
-      topic: entry.data.topic,
+      ...courseNavItem(cursor, loader),
       chapters: cursor.children().map((c) => chapterNavItem(c)),
     });
   },
