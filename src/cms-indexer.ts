@@ -8,7 +8,7 @@ export type RepoRecord = {
 };
 
 export type RepoRegistry = { 
-  [repoUrl: string]: RepoRecord[];
+  [repoUrl in string]?: RepoRecord[];
 };
 
 export class KodimCmsIndexer extends FilefishIndexer {
@@ -30,10 +30,8 @@ export class KodimCmsIndexer extends FilefishIndexer {
     contentType: ContentType<any, any, any>,
   ): void {
     const normlizedUrl = repoUrl.endsWith('.git') ? repoUrl : repoUrl + '.git';
-    if (!this.repoRegistry[normlizedUrl]) {
-      this.repoRegistry[normlizedUrl] = [];
-    }
-
-    this.repoRegistry[normlizedUrl].push({ repoPath, contentPath, contentType });
+    const records = this.repoRegistry[normlizedUrl] ?? [];
+    records.push({ repoPath, contentPath, contentType });
+    this.repoRegistry[normlizedUrl] = records;
   }
 }

@@ -11,11 +11,20 @@ import { KodimCmsIndexer, RepoRegistry } from "./cms-indexer.js";
 import { Indexer } from "filefish/indexer";
 import { Agent, Cursor, agnosticAgent } from "filefish/cursor";
 
-interface ReindexResult {
+export interface OkReindexResult {
+  status: 'ok';
   fetch: FetchResult;
   head: string;
   statuses: string[];
 }
+
+export interface ErrorReindexResult {
+  status: 'error';
+  code: 'not-found' | 'no-such-repo' | 'fatal-error';
+  error?: string;
+}
+
+export type ReindexResult = OkReindexResult | ErrorReindexResult;
 
 export class KodimCms {
   private readonly ff: Filefish<RootEntry>;
@@ -166,42 +175,53 @@ export class KodimCms {
 
   public async reindexFromRepo(
     repoUrl: string, branchName: string
-  ): Promise<ReindexResult | 'not-found' | 'no-such-repo'> {
-    const normlizedUrl = repoUrl.endsWith('.git') ? repoUrl : repoUrl + '.git';
-    
-    const repoRecords = this.repoRegistry[normlizedUrl];
-    if (repoRecords === undefined) {
-      return 'no-such-repo';
+  ): Promise<ReindexResult> {
+    try {
+      const normlizedUrl = repoUrl.endsWith('.git') ? repoUrl : repoUrl + '.git';
+      
+      const repoRecords = this.repoRegistry[normlizedUrl];
+      if (repoRecords === undefined) {
+        return { status: 'error', code: 'no-such-repo' };
+      }
+      
+      const git = simpleGit({
+        baseDir: repoRecords[0].repoPath,
+        binary: 'git',
+      });
+
+      
+      const fetchResult = await git.fetch('origin', branchName);
+      const resetResult = await git.reset(ResetMode.HARD, [`origin/${branchName}`]);
+      
+      const statuses = await Promise.all(
+        repoRecords.map(async (repoRecord) => {
+          const cursor = this.ff.rootCursor(agnosticAgent).navigate(...repoRecord.contentPath);
+          if (cursor === null) {
+            return 'not-found';
+          }
+
+          const result = await this.ff.reindex(cursor, repoRecord.contentType);
+          if (result === 'not-found' || result === 'wrong-content-type') {
+            return 'not-found';
+          }
+          
+          return 'ok';
+        })
+      );
+
+      return {
+        status: 'ok',
+        fetch: fetchResult,
+        head: resetResult,
+        statuses,
+      };
+    } catch (error: any) {
+      console.error('GIT ERROR', error);
+      return {
+        status: 'error',
+        code: 'fatal-error',
+        error: error.toString(),
+      };
     }
-    
-    const git = simpleGit({
-      baseDir: repoRecords[0].repoPath,
-      binary: 'git',
-    });
-
-    const fetchResult = await git.fetch('origin', branchName);
-    const resetResult = await git.reset(ResetMode.HARD, [`origin/${branchName}`]);
-    
-    const statuses = await Promise.all(
-      repoRecords.map(async (repoRecord) => {
-        const cursor = this.ff.rootCursor(agnosticAgent).navigate(...repoRecord.contentPath);
-        if (cursor === null) {
-          return 'not-found';
-        }
-
-        const result = await this.ff.reindex(cursor, repoRecord.contentType);
-        if (result === 'not-found' || result === 'wrong-content-type') {
-          return 'not-found';
-        }
-        
-        return 'ok';
-      })
-    );
-
-    return {
-      fetch: fetchResult,
-      head: resetResult,
-      statuses,
-    };
   }
 }

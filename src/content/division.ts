@@ -95,7 +95,7 @@ export const DivisionContentType = defineContentType('kodim/division', {
       kodimCmsIndexer.registerRepo(
         courseSource.repo.url,
         courseSource.repo.folder,
-        [courseSource.topic ?? 'draft', courseSource.name],
+        [source.name, courseSource.name],
         CourseContentType,
       );
     }
