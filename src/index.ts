@@ -148,6 +148,22 @@ export class KodimCms {
     return exercise.getOrElse(null);
   }
 
+  public async reindexCourse(
+    topicId: string, courseId: string
+  ): Promise<'not-found' | 'wrong-content-type' | 'ok'> {
+    const cursor = this.ff.rootCursor(agnosticAgent).navigate(topicId, courseId);
+    if (cursor === null) {
+      return 'not-found';
+    }
+
+    const result = await this.ff.reindex(cursor, CourseContentType);
+    if (result === 'not-found' || result === 'wrong-content-type') {
+      return result;
+    }
+
+    return 'ok';
+  }
+
   public async reindexFromRepo(
     repoUrl: string, branchName: string
   ): Promise<ReindexResult | 'not-found' | 'no-such-repo'> {
