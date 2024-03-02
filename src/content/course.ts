@@ -10,6 +10,8 @@ import { LessonContentType } from './lesson.js';
 import { Result } from 'monadix/result';
 import { BaseContent, BaseNavItem, buildBaseContent, buildBaseNavItem } from './base.js';
 import { LoadError, Loader } from 'filefish/loader';
+import { Root as HastRoot } from 'hast';
+import { processCourseInfo as processCourseIntro } from '../render/markdown.js';
 
 export type Organization = 'kodim' | 'czechitas';
 
@@ -31,19 +33,27 @@ export type CourseData = {
   readonly topic: string | null,
 }
 
-export type CourseEntry = ParentEntry<CourseSource, ChapterEntry, CourseData>;
+export type CourseEntry = ParentEntry<CourseSource, ChapterEntry, CourseData> & {
+  readonly intro: string | null,
+};
 
 interface EntryFile {
   readonly title?: string,
   readonly lead?: string,
   readonly image?: string,
+  readonly intro?: string,
   readonly chapters?: string[];
   readonly lessons?: string[];
 }
 
 export interface CourseNavItem extends BaseNavItem, CourseData {};
 
+export interface CourseIntro {
+  items: HastRoot[];
+}
+
 export interface Course extends CourseNavItem, BaseContent {
+  intro: CourseIntro | null;
   chapters: ChapterNavItem[];
 }
 
@@ -110,6 +120,7 @@ export const CourseContentType = defineContentType('kodim/course', {
     return {
       ...indexer.buildParentEntry(source.name, source, 'public', data, subEntries),
       title: entryFile.title ?? source.name,
+      intro: entryFile.intro ?? null,
       assets,
     };
   },
@@ -117,9 +128,23 @@ export const CourseContentType = defineContentType('kodim/course', {
   async loadContent(
     cursor: Cursor<CourseEntry>, loader: Loader,
   ): Promise<Result<Course, LoadError>>  {
+    const entry = cursor.entry();
+    const introFile = entry.intro === null
+      ? null
+      : path.join(entry.source.folderNode.path, entry.intro);
+    
+    const exists = introFile === null
+      ? false
+      : await fs.access(introFile).then(() => true).catch(() => false);
+    
+    const intro = exists && introFile !== null
+      ? await processCourseIntro(introFile, cursor, loader)
+      : null;
+
     return Result.success({
       ...buildBaseContent(cursor),
       ...courseNavItem(cursor, loader),
+      intro,
       chapters: cursor.children().map((c) => chapterNavItem(c)),
     });
   },

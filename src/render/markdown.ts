@@ -1,17 +1,53 @@
-import { SectionBlock, SectionContentType, SectionEntry } from "../content/section.js";
+import { SectionBlock, SectionEntry } from "../content/section.js";
 import { RootContent, Text } from "hast";
 import { Loader } from "filefish/loader";
 import { Cursor } from "filefish/cursor";
-import { Exercise, ExerciseContentType, ExerciseEntry, exerciseNavItem } from "../content/exercise.js";
+import { Exercise, ExerciseEntry, exerciseNavItem } from "../content/exercise.js";
 import { MarkdownSource } from "./markdown-source.js";
 import { FsNode } from "fs-inquire";
 import { buildBaseContent } from "../content/base.js";
+import { CourseEntry, CourseIntro } from "../content/course.js";
+import { Root as HastRoot } from 'hast';
+
+export const processCourseInfo = async (
+  file: string, cursor: Cursor<CourseEntry>, loader: Loader,
+): Promise<CourseIntro> => {
+  const source = await MarkdownSource.fromFile(file);
+  const root = await source.process(cursor, loader);
+  const items: HastRoot[] = [];
+
+  for(const node of root.children) {
+    if (node.type === 'doctype' || node.type === 'comment') {
+      continue;
+    }
+      
+    if (node.type === 'text' && node.value.trim() === '') {
+      continue;
+    }
+    
+    if (node.type === 'element' && node.tagName === 'h2') {
+      items.push({
+        type: 'root',
+        children: [node],
+      });
+    } else {
+      const lastItem = items.at(-1);
+      if (lastItem === undefined) {
+        continue;
+      }
+      
+      lastItem.children.push(node);
+    } 
+  }
+    
+  return { items };
+};
 
 export const processSection = async (
   file: string, cursor: Cursor<SectionEntry>, loader: Loader,
 ): Promise<SectionBlock[]> => {
   const source = await MarkdownSource.fromFile(file);
-  const root = await source.process(cursor, SectionContentType, loader);
+  const root = await source.process(cursor, loader);
   const blocks: SectionBlock[] = [];
 
   for(const node of root.children) {
@@ -66,7 +102,7 @@ export const processExercise = async (
   
   const entry = cursor.entry();
   const source = await MarkdownSource.fromFile(filePath);
-  const root = await source.process(cursor, ExerciseContentType, loader);
+  const root = await source.process(cursor, loader);
   
   const rootChildren: RootContent[] = [];
   let solution: RootContent | null = null;

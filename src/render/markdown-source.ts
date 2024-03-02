@@ -86,11 +86,7 @@ export class MarkdownSource {
     return assets;
   }
 
-  public async process(
-    cursor: Cursor,
-    contentType: ContentType<any, any, any>,
-    loader: Loader,
-  ): Promise<HastRoot> {
+  public async process(cursor: Cursor, loader: Loader): Promise<HastRoot> {
     const hast = await unifiedProcessor.run(this.root);
     const assetLinks = hast.children
       .filter((node): node is Element => node.type === 'element')
