@@ -35,6 +35,7 @@ export type CourseData = {
 
 export type CourseEntry = ParentEntry<CourseSource, ChapterEntry, CourseData> & {
   readonly intro: string | null,
+  readonly outboundLink: string | null,
 };
 
 interface EntryFile {
@@ -42,6 +43,7 @@ interface EntryFile {
   readonly lead?: string,
   readonly image?: string,
   readonly intro?: string,
+  readonly outboundLink?: string,
   readonly chapters?: string[];
   readonly lessons?: string[];
 }
@@ -54,6 +56,7 @@ export interface CourseIntro {
 
 export interface Course extends CourseNavItem, BaseContent {
   intro: CourseIntro | null;
+  outboundLink: string | null;
   chapters: ChapterNavItem[];
 }
 
@@ -121,6 +124,7 @@ export const CourseContentType = defineContentType('kodim/course', {
       ...indexer.buildParentEntry(source.name, source, 'public', data, subEntries),
       title: entryFile.title ?? source.name,
       intro: entryFile.intro ?? null,
+      outboundLink: entryFile.outboundLink ?? null,
       assets,
     };
   },
@@ -145,6 +149,7 @@ export const CourseContentType = defineContentType('kodim/course', {
       ...buildBaseContent(cursor),
       ...courseNavItem(cursor, loader),
       intro,
+      outboundLink: entry.outboundLink,
       chapters: cursor.children().map((c) => chapterNavItem(c)),
     });
   },
