@@ -4,7 +4,7 @@ import { defineContentType } from 'filefish/content-type';
 import { FileNode, folder, fsNode } from 'fs-inquire';
 import { toString as mdastToString } from 'mdast-util-to-string'
 import { Cursor } from 'filefish/cursor';
-import { ExerciseContentType, ExerciseEntry, ExerciseNavItem } from './exercise.js';
+import { ExerciseContentType, ExerciseEntry, ExerciseNavItem, exerciseNavItem } from './exercise.js';
 import { processSection } from '../render/markdown.js';
 import { Root as HastRoot } from 'hast';
 import { MarkdownSource } from '../render/markdown-source.js';
@@ -22,7 +22,9 @@ interface SectionFile {
   excs: string[];
 }
 
-export type SectionNavItem = BaseNavItem;
+export interface SectionNavItem extends BaseNavItem {
+  exercises?: ExerciseNavItem[],
+}
 
 export interface TextBlock {
   type: 'hast',
@@ -78,10 +80,12 @@ export const indexSection = async (file: string): Promise<SectionFile | undefine
 
 export const sectionNavItem = (cursor: Cursor<SectionEntry>): SectionNavItem => {
   const entry = cursor.entry();
+  const exercises = cursor.children().map(exerciseNavItem);
   return {
     path: cursor.contentPath(),
     name: entry.name,
     title: entry.title,
+    exercises,
   };
 };
 

@@ -4,10 +4,11 @@ import { Loader } from "filefish/loader";
 import { Cursor } from "filefish/cursor";
 import { Exercise, ExerciseEntry, exerciseNavItem } from "../content/exercise.js";
 import { MarkdownSource } from "./markdown-source.js";
-import { FsNode } from "fs-inquire";
+import { FileNode, FsNode } from "fs-inquire";
 import { buildBaseContent } from "../content/base.js";
 import { CourseEntry, CourseIntro } from "../content/course.js";
 import { Root as HastRoot } from 'hast';
+import { ArticleEntry } from "../content/article.js";
 
 export const processCourseInfo = async (
   file: string, cursor: Cursor<CourseEntry>, loader: Loader,

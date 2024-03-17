@@ -6,10 +6,12 @@ import { Exercise, ExerciseContentType } from "./content/exercise.js";
 import { Lesson, LessonContentType } from "./content/lesson.js";
 import { RootEntry, Root, RootContentType, RootSource } from "./content/root.js";
 import { Section, SectionContentType } from "./content/section.js";
-import { DivisionContentType, CoursesDivision } from "./content/division.js";
+import { CoursesDivisionContentType, CoursesDivision } from "./content/courses-division.js";
 import { KodimCmsIndexer, RepoRegistry } from "./cms-indexer.js";
 import { Indexer } from "filefish/indexer";
 import { Agent, Cursor, agnosticAgent } from "filefish/cursor";
+import { BlogDivision, BlogDivisionContentType } from "./content/blog-division.js";
+import { Article, ArticleContentType } from "./content/article.js";
 
 export interface OkReindexResult {
   status: 'ok';
@@ -25,6 +27,8 @@ export interface ErrorReindexResult {
 }
 
 export type ReindexResult = OkReindexResult | ErrorReindexResult;
+
+export type Division = CoursesDivision | BlogDivision;
 
 export class KodimCms {
   private readonly ff: Filefish<RootEntry>;
@@ -73,13 +77,18 @@ export class KodimCms {
     return root.getOrElse(null);
   }
 
-  public async loadDivision(agent: Agent, divisionId: string): Promise<CoursesDivision | null> {
+  public async loadDivision(agent: Agent, divisionId: string): Promise<Division | null> {
     const divisionCursor = this.ff.rootCursor(agent).navigate(divisionId);
     if (divisionCursor === null) {
       return null;
     }
 
-    const division = await this.ff.loadContent(divisionCursor, DivisionContentType);
+    if (CoursesDivisionContentType.fitsCursor(divisionCursor)) {
+      const division = await this.ff.loadContent(divisionCursor, CoursesDivisionContentType);
+      return division.getOrElse(null);
+    }
+
+    const division = await this.ff.loadContent(divisionCursor, BlogDivisionContentType);
     return division.getOrElse(null);
   }
 
@@ -114,6 +123,15 @@ export class KodimCms {
     }
     const lesson = await this.ff.loadContent(lessonCursor, LessonContentType);
     return lesson.getOrElse(null);
+  }
+
+  public async loadBlogArticle(agent: Agent, articleId: string): Promise<Article | null> {
+    const articleCursor = this.ff.rootCursor(agent).navigate('blog', 'clanky', articleId);
+    if (articleCursor === null) {
+      return null;
+    }
+    const article = await this.ff.loadContent(articleCursor, ArticleContentType);
+    return article.getOrElse(null);
   }
 
   public async loadSection(

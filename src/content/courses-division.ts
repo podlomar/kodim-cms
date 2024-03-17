@@ -24,7 +24,6 @@ export interface Topic {
 };
 
 export interface CoursesDivisionData {
-  type: 'courses',
   topics: TopicSource[],
 }
 
@@ -41,13 +40,12 @@ export interface TopicSource {
 }
 
 export interface CoursesDivisionSource {
-  type: 'courses';
   name: string,
   title: string,
   topics: TopicSource[],
 }
 
-export type DivisionEntry = ParentEntry<
+export type CoursesDivisionEntry = ParentEntry<
   CoursesDivisionSource,
   CourseEntry, 
   CoursesDivisionData
@@ -64,8 +62,10 @@ export interface CourseDef {
   } | null;
 }
 
-export const DivisionContentType = defineContentType('kodim/division', {
-  async index(source: CoursesDivisionSource, indexer: Indexer): Promise<DivisionEntry> {
+export const CoursesDivisionContentType = defineContentType('kodim/courses-division', {
+  async index(
+    source: CoursesDivisionSource, indexer: Indexer
+  ): Promise<CoursesDivisionEntry> {
     const kodimCmsIndexer = indexer as KodimCmsIndexer;    
     const courseSources: CourseSource[] = [];
     for (const topicSource of source.topics) {
@@ -116,7 +116,7 @@ export const DivisionContentType = defineContentType('kodim/division', {
   },
 
   async loadContent(
-    cursor: Cursor<DivisionEntry>, loader: Loader,
+    cursor: Cursor<CoursesDivisionEntry>, loader: Loader,
   ): Promise<Result<CoursesDivision, LoadError>>  {
     const entry = cursor.entry();
     const topics: Topic[] = [];
