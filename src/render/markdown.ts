@@ -129,6 +129,7 @@ export const processExercise = async (
     ...buildBaseContent(cursor),
     lead: entry.data.lead,
     demand: entry.data.demand,
+    context: entry.data.context,
     num: cursor.pos() + 1,
     assign: {
       ...root,

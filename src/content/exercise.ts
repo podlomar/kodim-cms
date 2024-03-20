@@ -15,6 +15,7 @@ export type Demand = 1 | 2 | 3 | 4 | 5;
 export type ExerciseData = {
   readonly lead: string,
   readonly demand: Demand,
+  readonly context: string | null,
 }
 
 export type ExerciseEntry = LeafEntry<FsNode, ExerciseData>;
@@ -31,6 +32,7 @@ export interface Exercise extends BaseContent, ExerciseNavItem {
 export interface ExerciseFile {
   readonly title: string;
   readonly demand: Demand;
+  readonly context?: string;
   readonly lead?: string;
   readonly solutionAccess?: EntryAccess;
   readonly assets: string[];
@@ -48,6 +50,7 @@ const indexExercise = async (fsNode: FsNode): Promise<ExerciseFile> => {
     title: frontMatter.title,
     demand: frontMatter.demand,
     lead: frontMatter.lead,
+    context: frontMatter.context,
     solutionAccess: frontMatter.solutionAccess,
     assets,
   };
@@ -61,6 +64,7 @@ export const exerciseNavItem = (cursor: Cursor<ExerciseEntry>): ExerciseNavItem 
     title: entry.title,
     lead: entry.data.lead,
     demand: entry.data.demand,
+    context: entry.data.context,
     num: cursor.pos() + 1,
   };
 }
@@ -73,6 +77,7 @@ export const ExerciseContentType = defineContentType('kodim/exercise', {
     const data = {
       lead: exerciseFile.lead ?? 'no-lead',
       demand: exerciseFile.demand,
+      context: exerciseFile.context ?? null,
     };
 
     const access: EntryAccess = ['public', 'protected'].includes(solutionAccess)
