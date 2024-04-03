@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import yaml from 'yaml';
 import { unified } from "unified";
 import parse from "remark-parse";
+import supersub from 'remark-supersub';
 import frontmatter from 'remark-frontmatter';
 import directive from "remark-directive";
 import gfm from 'remark-gfm';
@@ -14,11 +15,11 @@ import { selectAll as hastSelectAll } from 'hast-util-select';
 import { Root, Content } from "mdast";
 import { Root as HastRoot, Element } from "hast";
 import { Cursor } from 'filefish/cursor';
-import { ContentType } from 'filefish/content-type';
 import { Loader } from 'filefish/loader';
 
 const unifiedProcessor = unified()
   .use(parse)
+  .use(supersub)
   .use(frontmatter)
   .use(gfm)
   .use(directive)

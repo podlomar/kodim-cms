@@ -46,6 +46,7 @@
     "remark-kbd-plus": "^1.0.20",
     "remark-parse": "^10.0.0",
     "remark-rehype": "^10.1.0",
+    "remark-supersub": "^1.0.0",
     "simple-git": "^3.19.1",
     "unist-util-select": "^5.0.0",
     "yaml": "^1.10.2"
