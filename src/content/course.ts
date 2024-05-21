@@ -24,6 +24,7 @@ export type CourseSource = {
   } | null,
   readonly topic: string | null,
   readonly organization: Organization,
+  readonly draft: boolean;
 }
 
 export type CourseData = {
@@ -31,6 +32,7 @@ export type CourseData = {
   readonly image: string | null,
   readonly organization: Organization,
   readonly topic: string | null,
+  readonly draft: boolean;
 }
 
 export type CourseEntry = ParentEntry<CourseSource, ChapterEntry, CourseData> & {
@@ -69,6 +71,7 @@ export const courseNavItem = (cursor: Cursor<CourseEntry>, loader: Loader): Cour
     image: entry.data.image === null ? null : loader.buildAssetUrlPath(cursor, entry.data.image),
     organization: entry.data.organization,
     topic: entry.data.topic,
+    draft: entry.data.draft,
   };
 };
 
@@ -96,6 +99,7 @@ export const CourseContentType = defineContentType('kodim/course', {
       image,
       organization: source.organization,
       topic: source.topic,
+      draft: source.draft,
     };
 
     const subEntries: ChapterEntry[] = entryFile.lessons === undefined
