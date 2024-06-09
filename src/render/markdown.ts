@@ -4,17 +4,16 @@ import { Loader } from "filefish/loader";
 import { Cursor } from "filefish/cursor";
 import { Exercise, ExerciseEntry, exerciseNavItem } from "../content/exercise.js";
 import { MarkdownSource } from "./markdown-source.js";
-import { FileNode, FsNode } from "fs-inquire";
+import { FsNode } from "fs-inquire";
 import { buildBaseContent } from "../content/base.js";
 import { CourseEntry, CourseIntro } from "../content/course.js";
 import { Root as HastRoot } from 'hast';
-import { ArticleEntry } from "../content/article.js";
 
 export const processCourseInfo = async (
   file: string, cursor: Cursor<CourseEntry>, loader: Loader,
 ): Promise<CourseIntro> => {
   const source = await MarkdownSource.fromFile(file);
-  const root = await source.process(cursor, loader);
+  const { content: root } = await source.process(cursor, loader);
   const items: HastRoot[] = [];
 
   for(const node of root.children) {
@@ -44,11 +43,16 @@ export const processCourseInfo = async (
   return { items };
 };
 
+interface ProcessedSection {
+  blocks: SectionBlock[],
+  styles: string[],
+}
+
 export const processSection = async (
   file: string, cursor: Cursor<SectionEntry>, loader: Loader,
-): Promise<SectionBlock[]> => {
+): Promise<ProcessedSection> => {
   const source = await MarkdownSource.fromFile(file);
-  const root = await source.process(cursor, loader);
+  const { content: root, styles } = await source.process(cursor, loader);
   const blocks: SectionBlock[] = [];
 
   for(const node of root.children) {
@@ -84,14 +88,14 @@ export const processSection = async (
         root: {
           type: 'root',
           children: [node],
-        }
+        },
       });
     } else {
       lastBlock.root.children.push(node);
     } 
   }
     
-  return blocks;
+  return { blocks, styles };
 };
 
 export const processExercise = async (
@@ -103,7 +107,7 @@ export const processExercise = async (
   
   const entry = cursor.entry();
   const source = await MarkdownSource.fromFile(filePath);
-  const root = await source.process(cursor, loader);
+  const { content: root, styles } = await source.process(cursor, loader);
   
   const rootChildren: RootContent[] = [];
   let solution: RootContent | null = null;
@@ -135,6 +139,7 @@ export const processExercise = async (
       ...root,
       children: rootChildren,
     },
+    styles,
     solution: solution === null
       ? 'none'
       : cursor.permission() === 'locked'

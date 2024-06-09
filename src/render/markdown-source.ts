@@ -2,31 +2,105 @@ import fs from 'node:fs/promises';
 import yaml from 'yaml';
 import { unified } from "unified";
 import parse from "remark-parse";
+import math from 'remark-math';
 import supersub from 'remark-supersub';
 import frontmatter from 'remark-frontmatter';
 import directive from "remark-directive";
 import gfm from 'remark-gfm';
 import rehype from "remark-rehype";
 import rehypeHighlight from "rehype-highlight";
+import rehypeMathjax from 'rehype-mathjax';
 import directiveRehype from "remark-directive-rehype";
-import stringify from "rehype-stringify";
 import { selectAll } from "unist-util-select";
 import { selectAll as hastSelectAll } from 'hast-util-select';
 import { Root, Content } from "mdast";
-import { Root as HastRoot, Element } from "hast";
+import {
+  Root as HastRoot,
+  Element,
+  Content as HastContent,
+  ElementContent,
+  RootContent,
+  Text,
+} from "hast";
 import { Cursor } from 'filefish/cursor';
 import { Loader } from 'filefish/loader';
 
 const unifiedProcessor = unified()
   .use(parse)
+  .use(math)
   .use(supersub)
   .use(frontmatter)
   .use(gfm)
   .use(directive)
   .use(directiveRehype)
   .use(rehype)
-  .use(rehypeHighlight, { ignoreMissing: true })
-  .use(stringify);
+  .use(rehypeHighlight)
+  .use(rehypeMathjax, {
+    svg: {
+      scale: 1.05,
+    }
+  });
+
+interface ProcessedContent<T> {
+  content: T,
+  styles: string[],
+}
+
+const extractContentStyles = <T extends HastContent>(
+  content: T
+): ProcessedContent<T> | string => {
+  if (content.type === 'element') {
+    if (content.tagName === 'style') {
+      return content.children.map((text) => (text as Text).value).join('\n');
+    }
+    
+    const styles: string[] = [];
+    const newChildren: ElementContent[] = [];
+
+    for(const child of content.children) {
+      const extracted = extractContentStyles(child);
+      if (typeof extracted === 'string') {
+        styles.push(extracted);
+      } else {
+        styles.push(...extracted.styles);
+        newChildren.push(extracted.content);
+      }
+    }
+
+    return {
+      content: {
+        ...content,
+        children: newChildren,
+      },
+      styles,
+    };
+  }
+
+  return {
+    content,
+    styles: [],
+  };
+}
+
+const extractStyles = (root: HastRoot): [HastRoot, string[]] => {
+  const styles: string[] = [];
+  const newChildren: RootContent[] = [];
+
+  for(const child of root.children) {
+    const extracted = extractContentStyles(child);
+    if (typeof extracted === 'string') {
+      styles.push(extracted);
+    } else {
+      styles.push(...extracted.styles);
+      newChildren.push(extracted.content);
+    }
+  }
+
+  return [{
+    ...root,
+    children: newChildren,
+  }, styles];
+}
 
 export class MarkdownSource {
   private root: Root;
@@ -87,8 +161,11 @@ export class MarkdownSource {
     return assets;
   }
 
-  public async process(cursor: Cursor, loader: Loader): Promise<HastRoot> {
+  public async process(cursor: Cursor, loader: Loader): Promise<ProcessedContent<HastRoot>> {
     const hast = await unifiedProcessor.run(this.root);
+    const [processedHast, styles] = extractStyles(hast);
+
+    console.log('processedHast', styles);
     const assetLinks = hast.children
       .filter((node): node is Element => node.type === 'element')
       // FIXME: This is some weirdness with the hast types
@@ -110,6 +187,9 @@ export class MarkdownSource {
       }
     }
     
-    return hast;
+    return {
+      content: processedHast,
+      styles,
+    }
   }
 }

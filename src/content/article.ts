@@ -29,7 +29,8 @@ export interface ArticleNavItem extends BaseNavItem, ArticleData {};
 export interface Article extends ArticleNavItem, BaseContent {
   prev: ArticleNavItem | null,
   next: ArticleNavItem | null,
-  content: HastRoot
+  content: HastRoot,
+  styles: string[],
 }
 
 export const articleNavItem = (cursor: Cursor<ArticleEntry>): ArticleNavItem => {
@@ -73,9 +74,14 @@ const indexArticle = async (filePath: string): Promise<ArticleFile> => {
   };
 }
 
+interface LoadedArticle {
+  content: HastRoot,
+  styles: string[],
+}
+
 export const loadArticle = async (
   filePath: string, cursor: Cursor<ArticleEntry>, loader: Loader,
-): Promise<HastRoot | null> => {
+): Promise<LoadedArticle | null> => {
   try {
     const source = await MarkdownSource.fromFile(filePath);
     return source.process(cursor, loader);
@@ -110,14 +116,15 @@ export const ArticleContentType = defineContentType('kodim/article', {
     const entry = cursor.entry();
     const prevSibling = cursor.prevSibling();
     const nextSibling = cursor.nextSibling();
-    const content = await loadArticle(
+    const loaded = await loadArticle(
       path.join(entry.source.path, 'article.md'), cursor, loader
     );
     
-    if (content === null) {
+    if (loaded === null) {
       return Result.fail('not-found');
     }
 
+    const { content, styles } = loaded;
     return Result.success({
       ...buildBaseContent(cursor),  
       lead: entry.data.lead,
@@ -127,6 +134,7 @@ export const ArticleContentType = defineContentType('kodim/article', {
       prev: prevSibling === null ? null : articleNavItem(prevSibling),
       next: nextSibling === null ? null : articleNavItem(nextSibling),
       content,
+      styles,
     });
   },
 });

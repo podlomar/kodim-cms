@@ -27,6 +27,7 @@ export interface ExerciseNavItem extends BaseNavItem, ExerciseData {
 export interface Exercise extends BaseContent, ExerciseNavItem {
   assign: HastRoot,
   solution: HastRoot | 'locked' | 'none',
+  styles: string[],
 }
 
 export interface ExerciseFile {

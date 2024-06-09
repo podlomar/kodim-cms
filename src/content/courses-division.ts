@@ -122,10 +122,7 @@ export const CoursesDivisionContentType = defineContentType('kodim/courses-divis
   ): Promise<Result<CoursesDivision, LoadError>>  {
     const entry = cursor.entry();
     const topics: Topic[] = [];
-    console.log('loading courses division', entry.data.topics);
-    
     for (const topicSource of entry.data.topics) {
-      cursor.children().forEach((c) => console.log(c.entry().data));
       const courses = cursor.children()
         .filter((c) => c.entry().data.topic === topicSource.name && !c.entry().data.draft)
         .map((c) => courseNavItem(c, loader));

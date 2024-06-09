@@ -40,6 +40,7 @@ export type SectionBlock = TextBlock | ExerciseBlock;
 
 export interface Section extends SectionNavItem, BaseContent {
   blocks: SectionBlock[],
+  styles: string[],
   prev: SectionNavItem | null,
   next: SectionNavItem | null,
 }
@@ -118,13 +119,13 @@ export const SectionContentType = defineContentType('kodim/section', {
     const entry = cursor.entry();
     const prevSibling = cursor.prevSibling();
     const nextSibling = cursor.nextSibling();
-    const blocks = await processSection(entry.source.path, cursor, loader);
+    const processed = await processSection(entry.source.path, cursor, loader);
 
     return Result.success({
       ...buildBaseContent(cursor),
       prev: prevSibling === null ? null : sectionNavItem(prevSibling),
       next: nextSibling === null ? null : sectionNavItem(nextSibling),
-      blocks,
+      ...processed
     });
   },
 });
