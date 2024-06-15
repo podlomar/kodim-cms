@@ -1,6 +1,6 @@
 {
   "name": "kodim-cms",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Content management system for kodim.cz",
   "author": "Martin Podloucký",
   "main": "esm/index.js",
