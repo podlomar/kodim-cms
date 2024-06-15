@@ -11,6 +11,7 @@ import { ArticlesContentType, ArticlesEntry } from './articles.js';
 
 export interface BlogDivision extends BaseContent {
   type: 'blog',
+  interest: string,
   articles: ArticleNavItem[],
 };
 
@@ -38,6 +39,7 @@ export const BlogDivisionContentType = defineContentType('kodim/blog-division', 
     return Result.success({
       ...buildBaseContent(cursor),
       type: 'blog',
+      interest: 'Články na blogu',
       articles,
     });
   },

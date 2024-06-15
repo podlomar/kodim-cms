@@ -173,6 +173,10 @@ export class MarkdownSource {
       .flatMap((node) => hastSelectAll('fig, a, img', node));
 
     for (const link of assetLinks) {
+      if (link.tagName === 'fig') {
+        console.log('fig', link);
+      }
+      
       const url = link.properties!.href ?? link.properties!.src;
       if (typeof url !== 'string' || !url.startsWith('assets/')) {
         continue;

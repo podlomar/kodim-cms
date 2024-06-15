@@ -25,10 +25,12 @@ export interface Topic {
 
 export interface CoursesDivisionData {
   topics: TopicSource[],
+  interest: string,
 }
 
 export interface CoursesDivision extends BaseContent {
   type: 'courses',
+  interest: string,
   topics: Topic[],
 };
 
@@ -42,6 +44,7 @@ export interface TopicSource {
 export interface CoursesDivisionSource {
   name: string,
   title: string,
+  interest: string,
   topics: TopicSource[],
 }
 
@@ -105,6 +108,7 @@ export const CoursesDivisionContentType = defineContentType('kodim/courses-divis
     const data = {
       type: 'courses' as const,
       topics: source.topics,
+      interest: source.interest,
     };
 
     const subEntries = await indexer.indexChildren(
@@ -139,6 +143,7 @@ export const CoursesDivisionContentType = defineContentType('kodim/courses-divis
       ...buildBaseContent(cursor),
       type: 'courses',
       topics,
+      interest: entry.data.interest,
     });
   },
 });
