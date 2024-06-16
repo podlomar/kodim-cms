@@ -34,7 +34,10 @@ const unifiedProcessor = unified()
   .use(directive)
   .use(directiveRehype)
   .use(rehype)
-  .use(rehypeHighlight)
+  .use(rehypeHighlight, {
+    subset: false,
+    ignoreMissing: true,
+  })
   .use(rehypeMathjax, {
     svg: {
       scale: 1.05,
