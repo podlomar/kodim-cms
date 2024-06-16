@@ -1,6 +1,3 @@
-import path from 'path';
-import { promises as fs } from 'fs';
-import yaml from 'yaml';
 import { EntryAccess, Indexer, ParentEntry } from 'filefish/indexer';
 import { defineContentType } from 'filefish/content-type';
 import { folder, FolderNode } from 'fs-inquire';
@@ -9,18 +6,19 @@ import { SectionContentType, SectionEntry, sectionNavItem, SectionNavItem } from
 import { BaseContent, BaseNavItem, buildBaseContent } from './base.js';
 import { LoadError, Loader } from 'filefish/loader';
 import { Result } from 'monadix/result';
+import { parseEntryFile } from './common.js';
 
 export type LessonData = {
-  lead: string,
+  lead: string | null,
 }
 
 export type LessonEntry = ParentEntry<FolderNode, SectionEntry, LessonData>;
 
 interface EntryFile {
-  title: string,
-  lead: string,
+  title?: string,
+  lead?: string,
   access?: EntryAccess,
-  sections: string[];
+  sections?: string[];
 }
 
 export interface LessonNavItem extends BaseNavItem, LessonData {
@@ -48,27 +46,23 @@ export const lessonNavItem = (cursor: Cursor<LessonEntry>): LessonNavItem => {
 
 export const LessonContentType = defineContentType('kodim/lesson', {
   async index(source: FolderNode, indexer: Indexer): Promise<LessonEntry> {
-    const entryFileContent = await fs.readFile(
-      path.resolve(source.path, 'entry.yml'), 'utf-8'
-    );
-    const entryFile = yaml.parse(entryFileContent) as EntryFile;
-    
+    const entryFile: EntryFile = await parseEntryFile(source.path);
     const sectionFiles = folder(source)
       .select
       .files
-      .byPaths(entryFile.sections, '.md')
+      .byPaths(entryFile.sections ?? [], '.md')
       .getOrThrow();
 
     const access = ['public', 'protected'].includes(String(entryFile.access))
       ? entryFile.access!
       : 'public';
 
-    const data = { lead: entryFile.lead };
+    const data = { lead: entryFile.lead ?? null};
     const subEntries = await indexer.indexChildren(source.fileName, sectionFiles, SectionContentType);
     
     return {
       ...indexer.buildParentEntry(source.fileName, source, access, data, subEntries),
-      title: entryFile.title,
+      title: entryFile.title ?? source.fileName,
     };
   },
 
