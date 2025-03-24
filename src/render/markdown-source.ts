@@ -167,8 +167,6 @@ export class MarkdownSource {
   public async process(cursor: Cursor, loader: Loader): Promise<ProcessedContent<HastRoot>> {
     const hast = await unifiedProcessor.run(this.root);
     const [processedHast, styles] = extractStyles(hast);
-
-    console.log('processedHast', styles);
     const assetLinks = hast.children
       .filter((node): node is Element => node.type === 'element')
       // FIXME: This is some weirdness with the hast types
@@ -176,10 +174,6 @@ export class MarkdownSource {
       .flatMap((node) => hastSelectAll('fig, a, img', node));
 
     for (const link of assetLinks) {
-      if (link.tagName === 'fig') {
-        console.log('fig', link);
-      }
-      
       const url = link.properties!.href ?? link.properties!.src;
       if (typeof url !== 'string' || !url.startsWith('assets/')) {
         continue;
