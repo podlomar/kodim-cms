@@ -6,7 +6,7 @@ import { Cursor } from 'filefish/cursor';
 import { BaseContent, BaseNavItem, buildBaseContent } from './base.js';
 import { LoadError, Loader } from 'filefish/loader';
 import { Result } from 'monadix/result';
-import { Root as HastRoot } from 'hast';
+import { Root as HastRoot, RootContent } from 'hast';
 import { MarkdownSource } from '../render/markdown-source.js';
 
 export interface Author {
@@ -24,12 +24,13 @@ export type ArticleData = {
 
 export type ArticleEntry = LeafEntry<FolderNode, ArticleData>;
 
-export interface ArticleNavItem extends BaseNavItem, ArticleData {};
+export interface ArticleNavItem extends BaseNavItem, ArticleData { };
 
 export interface Article extends ArticleNavItem, BaseContent {
   prev: ArticleNavItem | null,
   next: ArticleNavItem | null,
   content: HastRoot,
+  summary: HastRoot | null,
   styles: string[],
 }
 
@@ -75,6 +76,7 @@ const indexArticle = async (filePath: string): Promise<ArticleFile> => {
 }
 
 interface LoadedArticle {
+  summary: HastRoot | null,
   content: HastRoot,
   styles: string[],
 }
@@ -84,7 +86,39 @@ export const loadArticle = async (
 ): Promise<LoadedArticle | null> => {
   try {
     const source = await MarkdownSource.fromFile(filePath);
-    return source.process(cursor, loader);
+    const { content: root, styles } = await source.process(cursor, loader);
+
+    const rootChildren: RootContent[] = [];
+    let summary: RootContent | null = null;
+
+    for (const node of root.children) {
+      if (node.type === 'doctype' || node.type === 'comment') {
+        continue;
+      }
+
+      if (node.type === 'text' && node.value.trim() === '') {
+        continue;
+      }
+
+      if (node.type === 'element' && node.tagName === 'summary') {
+        summary = node;
+        continue;
+      }
+
+      rootChildren.push(node);
+    }
+
+    return {
+      summary: summary === null ? null : {
+        type: 'root',
+        children: summary.children,
+      },
+      content: {
+        ...root,
+        children: rootChildren,
+      },
+      styles,
+    };
   } catch {
     return null;
   }
@@ -119,14 +153,14 @@ export const ArticleContentType = defineContentType('kodim/article', {
     const loaded = await loadArticle(
       path.join(entry.source.path, 'article.md'), cursor, loader
     );
-    
+
     if (loaded === null) {
       return Result.fail('not-found');
     }
 
-    const { content, styles } = loaded;
+    const { content, summary, styles } = loaded;
     return Result.success({
-      ...buildBaseContent(cursor),  
+      ...buildBaseContent(cursor),
       lead: entry.data.lead,
       author: entry.data.author,
       date: entry.data.date,
@@ -134,6 +168,7 @@ export const ArticleContentType = defineContentType('kodim/article', {
       prev: prevSibling === null ? null : articleNavItem(prevSibling),
       next: nextSibling === null ? null : articleNavItem(nextSibling),
       content,
+      summary,
       styles,
     });
   },
