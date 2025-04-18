@@ -1,4 +1,6 @@
+import { promises as fs } from 'fs';
 import path from 'path';
+import yaml from 'yaml';
 import { Indexer, LeafEntry } from 'filefish/indexer';
 import { defineContentType } from 'filefish/content-type';
 import { FolderNode } from 'fs-inquire';
@@ -22,7 +24,9 @@ export type ArticleData = {
   draft: boolean,
 }
 
-export type ArticleEntry = LeafEntry<FolderNode, ArticleData>;
+export type ArticleEntry = LeafEntry<FolderNode, ArticleData> & {
+  seriesFile: string | null,
+};
 
 export interface ArticleNavItem extends BaseNavItem, ArticleData { };
 
@@ -31,6 +35,7 @@ export interface Article extends ArticleNavItem, BaseContent {
   next: ArticleNavItem | null,
   content: HastRoot,
   summary: HastRoot | null,
+  seriesIndex: SeriesIndex | null,
   styles: string[],
 }
 
@@ -51,6 +56,7 @@ interface ArticleFile {
   readonly title: string;
   readonly lead: string;
   readonly author: Author;
+  readonly series: string | null;
   readonly date: string;
   readonly assets: string[];
   readonly draft: boolean;
@@ -69,15 +75,37 @@ const indexArticle = async (filePath: string): Promise<ArticleFile> => {
       link: frontMatter.author?.link,
       avatar: frontMatter.author?.avatar,
     },
+    series: frontMatter.series ?? null,
     date: frontMatter.date ?? 'Unknown date',
     draft: frontMatter.draft ?? false,
     assets,
   };
 }
 
+export interface SeriesIndex {
+  title: string;
+  lead: string;
+  parts: {
+    title: string;
+    link: string;
+    lead: string;
+  }[];
+}
+
+export const loadSeriesIndex = async (file: string): Promise<SeriesIndex | null> => {
+  try {
+    const content = await fs.readFile(file, 'utf-8');
+    return yaml.parse(content);
+  } catch (e) {
+    console.error('Error loading series index:', e);
+    return null;
+  }
+};
+
 interface LoadedArticle {
   summary: HastRoot | null,
   content: HastRoot,
+  seriesIndex: SeriesIndex | null,
   styles: string[],
 }
 
@@ -108,6 +136,11 @@ export const loadArticle = async (
       rootChildren.push(node);
     }
 
+    const seriesFile = cursor.entry().seriesFile;
+    const seriesIndex = seriesFile === null
+      ? null
+      : await loadSeriesIndex(seriesFile);
+
     return {
       summary: summary === null ? null : {
         type: 'root',
@@ -117,6 +150,7 @@ export const loadArticle = async (
         ...root,
         children: rootChildren,
       },
+      seriesIndex,
       styles,
     };
   } catch {
@@ -127,6 +161,10 @@ export const loadArticle = async (
 export const ArticleContentType = defineContentType('kodim/article', {
   async index(source: FolderNode, indexer: Indexer): Promise<ArticleEntry> {
     const articleFile = await indexArticle(path.join(source.path, 'article.md'));
+    const seriesFile = articleFile.series === null
+      ? null
+      : path.join(path.dirname(source.path), '../series', `${articleFile.series}.yml`);
+    console.log('seriesFile', seriesFile);
     const data: ArticleData = {
       lead: articleFile.lead,
       author: articleFile.author,
@@ -137,6 +175,7 @@ export const ArticleContentType = defineContentType('kodim/article', {
     return {
       ...indexer.buildLeafEntry(source.fileName, source, 'public', data),
       title: articleFile.title,
+      seriesFile,
       assets: {
         folder: path.join(source.path, 'assets'),
         names: articleFile.assets,
@@ -158,11 +197,12 @@ export const ArticleContentType = defineContentType('kodim/article', {
       return Result.fail('not-found');
     }
 
-    const { content, summary, styles } = loaded;
+    const { content, summary, seriesIndex, styles } = loaded;
     return Result.success({
       ...buildBaseContent(cursor),
       lead: entry.data.lead,
       author: entry.data.author,
+      seriesIndex,
       date: entry.data.date,
       draft: entry.data.draft,
       prev: prevSibling === null ? null : articleNavItem(prevSibling),
