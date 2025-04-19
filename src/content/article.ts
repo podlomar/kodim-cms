@@ -164,7 +164,7 @@ export const ArticleContentType = defineContentType('kodim/article', {
     const seriesFile = articleFile.series === null
       ? null
       : path.join(path.dirname(source.path), '../series', `${articleFile.series}.yml`);
-    console.log('seriesFile', seriesFile);
+
     const data: ArticleData = {
       lead: articleFile.lead,
       author: articleFile.author,
